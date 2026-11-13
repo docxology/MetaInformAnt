@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import functools
 import http.server
+import stat
 import tempfile
 import threading
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pytest
@@ -446,3 +448,114 @@ class TestIOEdgeCases:
 
         assert not csv_file.exists()
         assert not csv_file.with_suffix(".csv.tmp").exists()
+
+    @pytest.mark.parametrize("suffix", [".json", ".json.gz"])
+    @pytest.mark.parametrize("serialization_fails", [False, True])
+    def test_atomic_json_preserves_another_writers_temporary_path(
+        self, tmp_path: Path, suffix: str, serialization_fails: bool
+    ) -> None:
+        from metainformant.core.io.errors import IOError as CoreIOError
+
+        path = tmp_path / f"shared{suffix}"
+        foreign = path.with_suffix(path.suffix + ".tmp")
+        foreign.write_bytes(b"another writer owns these bytes")
+        before = foreign.stat()
+        if serialization_fails:
+            with pytest.raises(CoreIOError):
+                io.dump_json({"invalid": {1, 2}}, path)
+        else:
+            io.dump_json({"complete": True}, path)
+            assert io.load_json(path) == {"complete": True}
+
+        assert foreign.read_bytes() == b"another writer owns these bytes"
+        after = foreign.stat()
+        assert (after.st_dev, after.st_ino, after.st_mode, after.st_size, after.st_mtime_ns, after.st_ctime_ns) == (
+            before.st_dev,
+            before.st_ino,
+            before.st_mode,
+            before.st_size,
+            before.st_mtime_ns,
+            before.st_ctime_ns,
+        )
+        expected = {foreign} if serialization_fails else {foreign, path}
+        assert set(tmp_path.iterdir()) == expected
+
+    @pytest.mark.parametrize("suffix", [".json", ".json.gz"])
+    def test_atomic_json_concurrent_writes_publish_complete_values(self, tmp_path: Path, suffix: str) -> None:
+        path = tmp_path / f"shared{suffix}"
+        values = [{"writer": i, "payload": str(i) * 65536} for i in range(8)]
+        start = threading.Barrier(len(values), timeout=10)
+
+        def publish(value: dict[str, object]) -> None:
+            start.wait()
+            io.dump_json(value, path)
+            assert io.load_json(path) in values
+
+        with ThreadPoolExecutor(max_workers=len(values)) as pool:
+            list(pool.map(publish, values))
+        assert io.load_json(path) in values
+        assert set(tmp_path.iterdir()) == {path}
+
+    @pytest.mark.parametrize("suffix", [".json", ".json.gz"])
+    def test_atomic_json_serialization_failure_preserves_published_value(self, tmp_path: Path, suffix: str) -> None:
+        from metainformant.core.io.errors import IOError as CoreIOError
+
+        path = tmp_path / f"published{suffix}"
+        io.dump_json({"preserved": [1, 2, 3]}, path, atomic=False)
+        before_bytes = path.read_bytes()
+        before = path.stat()
+        with pytest.raises(CoreIOError):
+            io.dump_json({"invalid": {1, 2}}, path)
+        assert path.read_bytes() == before_bytes
+        after = path.stat()
+        assert (after.st_dev, after.st_ino, after.st_mode, after.st_size, after.st_mtime_ns, after.st_ctime_ns) == (
+            before.st_dev,
+            before.st_ino,
+            before.st_mode,
+            before.st_size,
+            before.st_mtime_ns,
+            before.st_ctime_ns,
+        )
+        assert set(tmp_path.iterdir()) == {path}
+
+    def test_atomic_json_replacing_directory_refuses_and_retains_entries(self, tmp_path: Path) -> None:
+        from metainformant.core.io.errors import IOError as CoreIOError
+
+        path = tmp_path / "directory.json"
+        path.mkdir()
+        marker = path / "retained"
+        marker.write_bytes(b"owned data")
+        with pytest.raises(CoreIOError):
+            io.dump_json({"cannot": "replace directory"}, path)
+        assert marker.read_bytes() == b"owned data"
+        assert set(tmp_path.iterdir()) == {path}
+
+    @pytest.mark.parametrize("suffix", [".json", ".json.gz"])
+    @pytest.mark.parametrize("mode", [0o444, 0o640, 0o644])
+    def test_atomic_json_preserves_existing_permissions(self, tmp_path: Path, suffix: str, mode: int) -> None:
+        path = tmp_path / f"published{suffix}"
+        io.dump_json({"old": True}, path, atomic=False)
+        path.chmod(mode)
+        io.dump_json({"new": True}, path)
+        assert io.load_json(path) == {"new": True}
+        assert stat.S_IMODE(path.stat().st_mode) == mode
+        assert set(tmp_path.iterdir()) == {path}
+
+    @pytest.mark.parametrize("suffix", [".json", ".json.gz"])
+    def test_atomic_json_staging_remains_private(self, tmp_path: Path, suffix: str) -> None:
+        path = tmp_path / f"published{suffix}"
+        io.dump_json({"old": True}, path, atomic=False)
+        path.chmod(0o640)
+        observed = []
+
+        class InspectStaging(dict):
+            def items(self):
+                staging = [p for p in tmp_path.iterdir() if p != path]
+                assert len(staging) == 1
+                observed.append(stat.S_IMODE(staging[0].stat().st_mode))
+                return super().items()
+
+        io.dump_json(InspectStaging(new=True), path)
+        assert observed == [0o600]
+        assert io.load_json(path) == {"new": True}
+        assert set(tmp_path.iterdir()) == {path}

@@ -5,6 +5,7 @@ real configuration files, and real class methods.
 """
 
 import gzip
+import hashlib
 import json
 import subprocess
 import sys
@@ -1532,8 +1533,18 @@ def _stub_preflight(_data_root: object, **_kwargs: object) -> dict[str, str]:
     return {"data_root": "stub", "amalgkit_cli": "stub"}
 
 
+def _isolated_data_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """run_all takes the campaign writer lock of the data root; give each test its own existing root."""
+
+    data_root = tmp_path / "data_root"
+    data_root.mkdir(exist_ok=True)
+    monkeypatch.setenv("AMALGKIT_DATA_ROOT", str(data_root))
+    return data_root
+
+
 def test_run_all_keeps_submitted_sample_tasks_bounded(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """A large task list never exceeds the configured in-flight window."""
+    _isolated_data_root(tmp_path, monkeypatch)
 
     from concurrent.futures import ThreadPoolExecutor as RealThreadPoolExecutor
 
@@ -1605,10 +1616,14 @@ def test_run_all_keeps_submitted_sample_tasks_bounded(tmp_path: Path, monkeypatc
     assert executor.max_pending <= 2
 
 
-def test_run_all_parallelizes_discovery_and_preserves_species_order(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Discovery overlaps, but the execution task list follows config order."""
+def test_run_all_parallelizes_discovery_and_runs_every_species(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Discovery overlaps and every discovered species' task runs.
+
+    Execution streams: the first species to finish discovery starts first, so
+    the order across simultaneously finishing species is not fixed here; the
+    deterministic queue order is covered in test_cohort_scheduling.py.
+    """
+    _isolated_data_root(tmp_path, monkeypatch)
 
     orchestrator = StreamingPipelineOrchestrator(
         tmp_path / "config",
@@ -1641,7 +1656,7 @@ def test_run_all_parallelizes_discovery_and_preserves_species_order(
     monkeypatch.setattr(orchestrator_module, "run_campaign_preflight", _stub_preflight)
     monkeypatch.setattr(orchestrator, "discover_species_tasks", fake_discover)
     monkeypatch.setattr(orchestrator, "process_single_sample", fake_process)
-    orchestrator.run_all(
+    summary = orchestrator.run_all(
         ["amalgkit_first.yaml", "amalgkit_second.yaml", "amalgkit_third.yaml"],
         max_gb=1.0,
         workers=1,
@@ -1651,49 +1666,66 @@ def test_run_all_parallelizes_discovery_and_preserves_species_order(
     )
 
     assert set(started) == {"amalgkit_first.yaml", "amalgkit_second.yaml", "amalgkit_third.yaml"}
-    assert observed == ["first", "second", "third"]
+    assert sorted(observed) == ["first", "second", "third"]
+    assert summary["discovery_failures"] == {}
+    assert summary["tasks_scheduled"] == 3
 
 
-def test_run_all_aborts_before_execution_on_discovery_exception(
+def test_run_all_skips_a_failed_species_discovery_and_exits_retryable(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A failed species discovery cannot silently produce a partial campaign."""
+    """A failed species discovery skips that species; the others run and the exit code is 75."""
+    _isolated_data_root(tmp_path, monkeypatch)
 
     orchestrator = StreamingPipelineOrchestrator(
         tmp_path / "config",
         tmp_path / "logs",
         db_path=tmp_path / "progress.db",
     )
-    executed = False
+    executed: list[str] = []
 
     def fake_discover(config_name: str, *_args: object) -> list[dict[str, object]]:
         if config_name == "amalgkit_bad.yaml":
             raise RuntimeError("reference preparation failed")
-        return []
+        return [
+            {
+                "srr": "SRR_GOOD",
+                "batch_idx": 1,
+                "fastq_dir": tmp_path / "fastq" / "good",
+                "config_path": tmp_path / "good.yaml",
+                "species_name": "good",
+            }
+        ]
 
-    def fake_process(*_args: object, **_kwargs: object) -> dict[str, object]:
-        nonlocal executed
-        executed = True
+    def fake_process(*args: object, **_kwargs: object) -> dict[str, object]:
+        executed.append(str(args[0]))
+        orchestrator.db.init_species(str(args[4]), [str(args[0])])
+        orchestrator.db.set_state(str(args[4]), str(args[0]), "quantified")
         return {"quantified": True, "skipped": False, "error": None}
 
     monkeypatch.setattr(orchestrator_module, "run_campaign_preflight", _stub_preflight)
     monkeypatch.setattr(orchestrator, "discover_species_tasks", fake_discover)
     monkeypatch.setattr(orchestrator, "process_single_sample", fake_process)
-    with pytest.raises(RuntimeError, match="Species discovery failed"):
-        orchestrator.run_all(
-            ["amalgkit_good.yaml", "amalgkit_bad.yaml"],
-            max_gb=1.0,
-            workers=1,
-            threads=1,
-            discovery_workers=2,
-        )
-    assert executed is False
+    summary = orchestrator.run_all(
+        ["amalgkit_good.yaml", "amalgkit_bad.yaml"],
+        max_gb=1.0,
+        workers=1,
+        threads=1,
+        discovery_workers=2,
+    )
+    assert executed == ["SRR_GOOD"]
+    assert summary["exit_code"] == 75
+    assert summary["status"] == "retryable_work_remains"
+    assert summary["remaining_by_state"] == {}
+    assert list(summary["discovery_failures"]) == ["amalgkit_bad.yaml"]
+    assert "reference preparation failed" in summary["discovery_failures"]["amalgkit_bad.yaml"]
 
 
 def test_run_all_routes_deferred_ncbi_acquisition_back_to_primary_lane(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """A deferred extraction must finish acquisition before primary quantification resumes."""
+    _isolated_data_root(tmp_path, monkeypatch)
 
     task = {
         "srr": "SRR_DEFERRED",
@@ -1755,6 +1787,7 @@ def test_deferred_ncbi_fallback_does_not_starve_primary_executor(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """A blocked one-slot fallback must not prevent the next ENA task from running."""
+    _isolated_data_root(tmp_path, monkeypatch)
 
     tasks = [
         {
@@ -1892,6 +1925,7 @@ def test_reference_alias_manifest_is_byte_idempotent(tmp_path: Path, monkeypatch
         [],
     )
     first_bytes = first.read_bytes()
+    first_identity = (first.stat().st_ino, first.stat().st_mtime_ns)
     time.sleep(1.1)
     second = _write_reference_alias_manifest(
         "test_species",
@@ -1910,6 +1944,9 @@ def test_reference_alias_manifest_is_byte_idempotent(tmp_path: Path, monkeypatch
         [],
     )
     assert second.read_bytes() == first_bytes
+    # Identical bytes are not rewritten at all: the file keeps its inode and mtime.
+    assert (second.stat().st_ino, second.stat().st_mtime_ns) == first_identity
+    assert sorted(path.name for path in second.parent.iterdir()) == ["reference_aliases.json"]
 
 
 def _raw_validation_marker_is_byte_idempotent(tmp_path: Path) -> None:
@@ -2078,7 +2115,8 @@ def test_build_quant_command_uses_atomic_local_index_cache(tmp_path: Path, monke
     assert cmd[cmd.index("--index_dir") + 1] == str(cached_dir)
     assert (cached_dir / "genome.idx").read_bytes() == source.read_bytes()
     manifest = yaml.safe_load((cached_dir / ".metainformant_index_cache.json").read_text())
-    assert manifest["schema"] == "metainformant.rna.index_cache.v1"
+    assert manifest["schema"] == "metainformant.rna.index_cache.v2"
+    assert manifest["copies"]["genome.idx"]["sha256"] == hashlib.sha256(b"reference-index").hexdigest()
     assert manifest["source"] == str(source_dir)
 
     source.write_bytes(b"updated-reference-index")

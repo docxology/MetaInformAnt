@@ -129,7 +129,11 @@ class TestDiffusion:
         assert set(selected["node_flows"]) == {3, 5}
         assert selected["target_nodes"] == [3, 5]
         for node in (3, 5):
-            assert selected["node_flows"][node] == pytest.approx(everything["node_flows"][node])
+            # pytest >= 9.2 rejects approx() on nested containers; compare each field.
+            chosen, full = selected["node_flows"][node], everything["node_flows"][node]
+            assert set(chosen) == set(full)
+            assert chosen["final_signal"] == pytest.approx(full["final_signal"])
+            assert chosen["signal_history"] == pytest.approx(full["signal_history"])
 
     def test_the_signal_is_a_distribution_and_never_nan(self) -> None:
         result = information_flow(nx.karate_club_graph(), source_nodes=[0, 33], method="diffusion", steps=20)

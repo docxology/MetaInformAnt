@@ -2,7 +2,7 @@
 
 ## Scope
 
-- Domain: RNA and Amalgkit 0.16.60
+- Domain: RNA and the pinned Amalgkit build (0.16.108, commit 1d1566638abe)
 - Source: `src/metainformant/rna/`
 - Tests: `tests/rna/test_rna_*.py`
 - Documentation: `docs/rna/` and `projects/hymenoptera_amalgkit/doc/`

@@ -221,15 +221,16 @@ def ensure_amalgkit_available():
     Policy:
     - Tests must use the real external tool (real-implementation policy).
     - If `amalgkit` is not available, we SKIP tests that request this fixture
-      (rather than failing the entire suite or attempting network installs unexpectedly).
-    - Optional: set `METAINFORMANT_AK_AUTO_INSTALL=1` to attempt installation via `uv`.
+      (rather than failing the entire suite).
+    - Tests never install anything: provision the pinned build from the lock
+      with `uv sync --frozen --extra rna`.
     """
     import os
     from pathlib import Path
 
     import pytest
 
-    from metainformant.rna.amalgkit.amalgkit import check_cli_available, ensure_cli_available
+    from metainformant.rna.amalgkit.amalgkit import AMALGKIT_SYNC_HINT, check_cli_available
 
     # Ensure user local bin is in PATH (common for --user installs)
     user_bin = Path.home() / ".local" / "bin"
@@ -242,23 +243,7 @@ def ensure_amalgkit_available():
     if ok:
         return ok, msg
 
-    auto_install = os.environ.get("METAINFORMANT_AK_AUTO_INSTALL", "").strip().lower() in {"1", "true", "yes"}
-    if auto_install:
-        ok2, msg2, install_record = ensure_cli_available(auto_install=True)
-        if ok2:
-            return ok2, msg2
-        extra = ""
-        if install_record and install_record.get("attempted"):
-            extra = (
-                f"\nInstall attempt failed with return code: {install_record.get('return_code')}"
-                f"\nInstall stderr (first 500 chars): {str(install_record.get('stderr', ''))[:500]}"
-            )
-        pytest.skip(f"amalgkit not available and auto-install failed: {msg2}{extra}")
-
-    pytest.skip(
-        "amalgkit CLI not available on PATH. Install the pinned release (recommended: `uv sync --extra rna`) "
-        "or set `METAINFORMANT_AK_AUTO_INSTALL=1` to attempt installation for this test run."
-    )
+    pytest.skip(f"amalgkit CLI not available ({msg}). Install the pinned build with `{AMALGKIT_SYNC_HINT}`.")
 
 
 class TestFileSystem:

@@ -12,16 +12,21 @@ capacity checks; they are not remaining network-byte estimates. Stage journals
 remain operational evidence. Reused outputs are excluded from new-sample rate,
 and neither a larger frontier nor local fixtures establish a campaign speedup.
 
-The [working observation protocol](../../projects/hymenoptera_amalgkit/docs/manuscript/working_operational_update.md)
-describes explicit phase-bound tables, figures and an operational manuscript
+The observation bundle ([`scripts/rna/observe_acquisition.py`](../../scripts/rna/observe_acquisition.py))
+writes explicit phase-bound tables, figures and an operational manuscript
 supplement. These report producer startup counts separately from newly
 restore-verified outputs; they do not satisfy the full manuscript release gates.
 
 ## Tool contract
 
-Amalgkit is pinned to **0.16.60**, tag `v0.16.60`, source revision
-`c656a52aacdcee6fd3bf7e8031769ca957204ebc`. This is the latest upstream release
-verified on 2026-10-05 ([release](https://github.com/kfuku52/amalgkit/releases/tag/v0.16.60)).
+Amalgkit is pinned to **0.16.108**, upstream commit
+`1d1566638abe32e79ee262193bb88769c3482e76` (2026-11-11). Upstream tags only x.y.0 releases, so the
+pin is a commit, recorded in `pyproject.toml`, `uv.lock` and
+`REQUIRED_AMALGKIT_VERSION`/`AMALGKIT_SOURCE_REVISION`; the runtime fails closed
+unless the installed distribution reports that commit. Quantifications made
+under the previous pin (0.16.60, tag `v0.16.60`, revision
+`c656a52aacdcee6fd3bf7e8031769ca957204ebc`) remain reusable as
+`version_drift_compatible` when their non-version contract is unchanged.
 The worker also verifies Kallisto 0.52.0 and SRA Toolkit 3.4.1. The current downstream
 Amalgkit stages are Python implementations. A newer
 upstream development commit is not silently substituted into the campaign.

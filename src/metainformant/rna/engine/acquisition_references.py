@@ -3,35 +3,21 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
 from importlib import import_module
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
 from metainformant.rna.engine.acquisition_manifest import sha256_file
+from metainformant.rna.engine.reference_digest import IndexDigestCache
 from metainformant.rna.engine.streaming_orchestrator import (
     _build_quant_command,
     _ensure_reference_alias_indexes,
     _species_work_dir,
 )
 
-
-@dataclass(slots=True)
-class _IndexDigests:
-    values: dict[tuple[Path, int, int, int, int, int], str] = field(default_factory=dict)
-
-    def digest(self, path: Path) -> str:
-        resolved = path.resolve(strict=True)
-        before = resolved.stat()
-        signature = (resolved, before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns, before.st_ctime_ns)
-        if signature not in self.values:
-            digest = sha256_file(resolved)
-            after = resolved.stat()
-            if signature != (resolved, after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns, after.st_ctime_ns):
-                raise ValueError(f"reference index changed while hashing: {resolved}")
-            self.values[signature] = digest
-        return self.values[signature]
+# Historical private name, kept so existing callers and tests keep working.
+_IndexDigests = IndexDigestCache
 
 
 def prepare_reference_inputs(
@@ -57,7 +43,7 @@ def prepare_reference_inputs(
 
     species_configs = {str(task["species"]): str(task["config_name"]) for task in tasks}
     records: list[dict[str, Any]] = []
-    index_digests = _IndexDigests()
+    index_digests = IndexDigestCache()
     for species, config_name in sorted(species_configs.items()):
         config_path = config_dir / config_name
         if not config_path.is_file():

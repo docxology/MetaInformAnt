@@ -144,9 +144,19 @@ Write object to JSON file.
 **Raises**: `IOError` on write failure
 
 **Atomic write behavior**:
-1. Write to `path + ".tmp"` (or `.json.gz.tmp` for gzipped)
-2. `fsync()` if available
-3. `os.replace(tmp, final)` — atomic on POSIX
+1. Reserve a unique, owner-only temporary file in the destination directory with
+   the existing `atomic.atomic_write()` helper.
+2. Serialize the complete plain or gzip JSON value.
+3. Preserve an existing regular destination's permission bits after flushing the
+   complete value, close the write handle, then replace the destination atomically. A new destination
+   retains the helper's owner-only mode. Concurrent writers publish complete
+   values, and the last replacement wins.
+4. Serialization failure preserves the previous destination and removes only the
+   current writer's temporary file.
+
+This helper provides atomic publication, without a file/directory `fsync()` or a
+power-loss durability guarantee. Read-modify-write transactions require separate
+coordination. Caller-owned sibling files such as `result.json.tmp` are preserved.
 
 This ensures readers never see partial writes.
 

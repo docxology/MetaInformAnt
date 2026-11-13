@@ -8,6 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `metainformant.rna.engine.quant_snapshot` (`scripts/rna/export_quant_snapshot.py`):
+  exports verified frozen-cohort quantifications (abundance, HDF5, run info,
+  provenance and binding witnesses; never indexes or reads) to a portable,
+  Git-comparable snapshot with a per-species inventory. Compares against a Git
+  tree (HDF5 as LFS pointers) so a sparse checkout can be extended; never
+  replaces existing bytes; plan by default.
+- `metainformant.rna.engine.cohort_host` (`scripts/rna/prepare_cohort_host.py`):
+  prepares a fresh data root for frozen-cohort species by placing the cohort's
+  exact kallisto index and writing the verified reference manifest; plan by
+  default, idempotent, refuses different index bytes.
+- Physical-file verification snapshots (`core.io.verification.BoundReads`) and
+  conservative recovery process observations (`rna.engine.process_observation`),
+  with real file-change, PID-identity, denied-inspection and timeout controls.
 - Local RNA acquisition frontier (`metainformant.rna.engine.acquisition_frontier`,
   opt-in via `AMALGKIT_LOCAL_FRONTIER_SIZE`): separate acquisition, recovery and
   quantification pools bounded by a planned-identity frontier and frozen
@@ -73,6 +86,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reports a stale core API reference.
 
 ### Changed
+- Amalgkit is pinned to 0.16.108 at upstream commit
+  `1d1566638abe32e79ee262193bb88769c3482e76` (upstream tags only x.y.0
+  releases). `pyproject.toml`, `uv.lock` and the runtime constants carry the
+  same commit, and the runtime fails closed unless the installed distribution's
+  `direct_url.json` names it. `AMALGKIT_RELEASE_TAG` is now the source label
+  `master@1d1566638abe`. `uv lock --upgrade` changed 96 packages (pandas stays
+  3.0.6 under upstream's `<3.1` cap; umap-learn 0.6.0, pytest 9.2.0, igraph
+  1.0.0, leidenalg 0.12.0); ruff 0.17.5 joins the dev extra and group.
+- The Amalgkit option allow-list mirrors the installed parser, including the
+  0.16.108 additions, with per-command yes/no options. Configuration keys no
+  Amalgkit command accepts are reported once instead of dropped silently.
+- `kallisto index` runs with a private `-T` directory, so concurrent builds no
+  longer collide in `./tmp`.
+- The Docker image installs Amalgkit from `uv.lock` (`uv sync --frozen --extra
+  rna`) and pins kallisto 0.52.0 and SRA Toolkit 3.4.1.
+- UMAP calls pass `compatibility_layout=True`, keeping the 0.5.x layout under
+  umap-learn 0.6.
+- Native VCF parsing accepts absent optional CHR2/POS2 metadata for BND
+  records whose ALT supplies the mate, preserving native parser errors.
+- Rank-deficient structural-variant PCA returns exactly zero scores for
+  undefined Gram-matrix components, matching its zero eigenvalues and loadings.
+- Full-coverage CI records native structural-variant contract failures before
+  the broad suite; its complete test scope, coverage floor and job limit remain.
 - RNA acquisition anchors its first-pass service deadline at admission, before
   synchronous logging. Admission queue time remains outside that budget.
 - Unknown pharmacogenomic alleles now produce Indeterminate calls, unsupported
@@ -203,6 +239,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     residue. Quality metrics raise for unsupported data types.
 
 ### Removed
+- Runtime installation of Amalgkit. `ensure_cli_available` and
+  `ensure_required_amalgkit` never run `uv pip install`; a missing or different
+  build fails with the hint `uv sync --frozen --extra rna`.
+  `auto_install_amalgkit` defaults to false, and `true` in existing
+  configurations is accepted but ignored with a one-time warning.
 - The generated Cursor skill wrappers (`.cursor/`), their generator
   (`scripts/package/generate_cursor_skills.py`), its parity test and
   `docs/CURSOR_SKILLS.md`. The `cursorrules/` guidelines remain.

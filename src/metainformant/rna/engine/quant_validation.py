@@ -8,11 +8,6 @@ import math
 from pathlib import Path
 from typing import Any
 
-from metainformant.rna.amalgkit import (
-    AMALGKIT_RELEASE_TAG,
-    AMALGKIT_SOURCE_REVISION,
-    REQUIRED_AMALGKIT_VERSION,
-)
 from metainformant.rna.engine.provenance import (
     QUANT_PROVENANCE_FILENAME,
     quantification_contract_id,
@@ -37,21 +32,28 @@ def validate_quantification(
     expected_config_sha256: str | None = None,
     expected_reference_sha256: str | None = None,
 ) -> tuple[dict[str, Any], list[Path], int]:
-    """Validate portable provenance, unique features and real numeric outputs."""
+    """Validate portable provenance, unique features and real numeric outputs.
+
+    The non-runtime quantification contract is compared (``quant_contract_id``
+    must equal the contract recomputed from the sidecar, and the optional
+    expected config/reference hashes must match). The Amalgkit runtime is
+    observed metadata, not part of the contract: a receipt written under one
+    Amalgkit pin restores under another, and classification then reports
+    ``version_drift_compatible`` (see
+    :func:`metainformant.rna.engine.provenance.quantification_runtime_status`).
+    The runtime must still be recorded.
+    """
     receipt_key("validation", species, accession)
     provenance_path = sample_dir / QUANT_PROVENANCE_FILENAME
     provenance = json.loads(provenance_path.read_text())
+    if not isinstance(provenance, dict):
+        # Callers treat every corrupt receipt or sidecar as ValueError.
+        raise ValueError("sample provenance must be a JSON object")  # noqa: TRY004
     if provenance.get("species") != species or provenance.get("run_accession") != accession:
         raise ValueError("sample provenance identity mismatch")
-    if any(
-        provenance.get(k) != v
-        for k, v in {
-            "amalgkit_version": REQUIRED_AMALGKIT_VERSION,
-            "amalgkit_release_tag": AMALGKIT_RELEASE_TAG,
-            "amalgkit_source_revision": AMALGKIT_SOURCE_REVISION,
-        }.items()
-    ):
-        raise ValueError("sample runtime differs from current contract")
+    recorded_version = provenance.get("amalgkit_version")
+    if not isinstance(recorded_version, str) or not recorded_version:
+        raise ValueError("sample runtime is not recorded")
     contract = quantification_contract_id(provenance)
     if not contract or provenance.get("quant_contract_id") != contract:
         raise ValueError("quantification contract checksum mismatch")

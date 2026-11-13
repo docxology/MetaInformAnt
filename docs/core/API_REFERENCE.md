@@ -8,8 +8,8 @@ topic guides contain behavioral guidance, examples, and caveats.
 Compatibility facades are excluded from the inventory and remain
 supported through the import paths described in [index.md](index.md).
 
-**Public symbols:** 243
-**Canonical modules:** 30
+**Public symbols:** 247
+**Canonical modules:** 31
 
 ## Module index
 
@@ -30,6 +30,7 @@ supported through the import paths described in [index.md](index.md).
 | [metainformant.core.io.download_robust](#metainformantcoreiodownload_robust) | 3 |
 | [metainformant.core.io.errors](#metainformantcoreioerrors) | 1 |
 | [metainformant.core.io.io](#metainformantcoreioio) | 24 |
+| [metainformant.core.io.verification](#metainformantcoreioverification) | 4 |
 | [metainformant.core.ncbi](#metainformantcorencbi) | 3 |
 | [metainformant.core.sequence](#metainformantcoresequence) | 2 |
 | [metainformant.core.ui.tui](#metainformantcoreuitui) | 9 |
@@ -275,6 +276,15 @@ supported through the import paths described in [index.md](index.md).
 | `write_jsonl` | function | `(rows: Iterable[Mapping[str, Any]], path: str \| Path, *, atomic: bool = True) -> None` | Write rows as JSON Lines format (one JSON object per line). |
 | `write_parquet` | function | `(df: Any, path: str \| Path, **kwargs: Any) -> None` | Write DataFrame to Parquet file. |
 | `write_tsv` | function | `(data: Iterable[Sequence[Any]], path: str \| Path) -> None` | Write TSV file. |
+
+## metainformant.core.io.verification
+
+| Symbol | Kind | Signature | Summary |
+| --- | --- | --- | --- |
+| `BoundReads` | class | `() -> None` | Hash each path once while checking its physical identity throughout. |
+| `BoundReads.bytes_hashed` | method | `() -> int` | Return bytes actually hashed by this instance. |
+| `BoundReads.finish` | method | `() -> None` | Refuse any file change since its last verified byte read. |
+| `VerificationChangedError` | class | `()` | A required physical file disappeared, redirected, or changed. |
 
 ## metainformant.core.ncbi
 

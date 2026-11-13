@@ -177,8 +177,9 @@ def test_api_integration() -> None:
 
 Optional tools for workflows:
 
-- **amalgkit**: `uv sync --extra rna` (exact `0.16.60`)
-- **SRA Toolkit**: `apt-get install sra-toolkit`
+- **amalgkit**: `uv sync --frozen --extra rna` (exact `0.16.108`, upstream commit `1d1566638abe32e79ee262193bb88769c3482e76`; never installed at runtime)
+- **kallisto 0.52.0** (index_version 13, matching existing quantifications): `brew install kallisto` or bioconda `kallisto=0.52.0`
+- **SRA Toolkit 3.4.1** (`fasterq-dump`, `prefetch`, `vdb-validate`): `brew install sratoolkit` or the NCBI release tarball
 - **samtools/bcftools/bwa**: `apt-get install samtools bcftools bwa`
 - **muscle/clustalo**: `apt-get install muscle clustalo`
 

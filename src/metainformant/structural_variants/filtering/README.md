@@ -33,3 +33,8 @@ filtered, _ = quality_filter.filter_by_size(filtered, min_size=50, max_size=10_0
 merged, merge_stats = merge.merge_callsets({"caller1": caller1_svs, "caller2": caller2_svs}, min_overlap=0.5)
 deduped, n_removed = merge.deduplicate_variants(filtered)
 ```
+
+Native VCF parsing checks for optional `CHR2` and `POS2` fields before reading
+them. A BND record can describe its mate entirely in ALT without declaring
+these INFO fields. Errors in required fallback metadata propagate; they do not trigger
+a text-parser fallback.

@@ -2,8 +2,9 @@
 
 The engine implements the current Amalgkit workflow as a bounded producer,
 SQLite progress store, typed workflow planner, and hash-bound evidence layer.
-The producer refuses to start into a broken environment: `run_all()` executes
-the campaign preflight before any discovery or scheduling work.
+The producer refuses to start into a broken environment: `run_all()` holds
+the campaign writer lock of the data root and executes the campaign preflight
+before any discovery or scheduling work.
 
 ## Components
 
@@ -52,8 +53,12 @@ serial probe attempts, including misses.
 | Module | Purpose |
 |---|---|
 | `streaming_orchestrator.py` | ENA-first metadata, acquisition, integration, and quantification |
-| `preflight.py` | Mandatory start-of-run environment preflight (data-root write probe, amalgkit CLI resolution) |
-| `progress_db.py` | Concurrent-safe SQLite sample state, exclusions, and resume queries |
+| `campaign_lock.py` | One `flock` writer per data root (`<root>/.campaign.flock`): producer, import, migration and seal exclude each other; `status`/`run` CLI; producer exit codes |
+| `preflight.py` | Mandatory start-of-run environment preflight (data-root write probe, producer tools, kallisto compatibility, free-space floors, optional reuse dry-run) |
+| `process_observation.py` | Native confirmed absence/zombie checks for recovery observers; live or denied processes remain unresolved |
+| `progress_db.py` | Concurrent-safe SQLite sample state, exclusions, resume queries, and frozen-cohort migration |
+| `cohort.py` | Frozen cohort definition (`COHORT.json`), install, hash verification, producer task tables, data-root maintenance lock |
+| `quant_import.py` | Plan/execute import of verified quantifications from other data roots (never overwrites) |
 | `campaign_status.py`, `campaign_status_io.py`, `campaign_status_cli.py` | Read-only frozen-inventory cloud/local status, complete stage marginals and per-sample transfer candidates; receipt/file presence is distinct from checksum validation |
 | `campaign_observation.py`, `campaign_observation_report.py`, `campaign_observation_cli.py` | Explicit manifest/phase journal capture, restore-bound new-output counts, isolated tables/figures/working supplement; operational evidence only |
 | `progress_dashboard.py` | Mosaic PDF/PNG dashboard of per-species sample processing status rendered from the progress DB |
@@ -65,7 +70,10 @@ serial probe attempts, including misses.
 | `workflow_steps.py` | Individual current step implementations |
 | `workflow_cleanup.py` | Provenance-gated raw cleanup and disk checks |
 | `provenance.py` | Hash-bound metadata, quantification, and downstream receipts |
-| `raw_cleanup.py` | Provenance-gated per-sample reclamation of raw FASTQ/SRA inputs once a current-contract quantification exists |
+| `raw_cleanup.py` | Per-accession reclamation primitives: raw FASTQ/SRA and failed partials in `getfastq`, orphaned `.fasterq_tmp/<run>` staging, and the shared `.sra-cache` entries |
+| `raw_reclamation.py` | Audited reclamation pass (`scripts/rna/reclaim_quantified_raw.py`): releases inputs only for content-verified reusable outputs or cohort permanent exclusions; dry run by default, maintenance-locked `--execute` |
+| `cohort_host.py` | Fresh-host preparation (`scripts/rna/prepare_cohort_host.py`): places the frozen cohort's exact kallisto index bytes where each species configuration resolves them and writes the reference manifest cohort discovery and imports require; never replaces different bytes (a rebuilt index is not byte-identical); plan by default |
+| `quant_snapshot.py` | Portable snapshot export (`scripts/rna/export_quant_snapshot.py`): copies only content-verified reusable cohort outputs (allowlisted payload and witness files, never indexes or reads), compares against a destination or a Git tree (LFS pointers for HDF5), never overwrites, and writes a timestamp-free inventory; plan by default |
 | `species.py` | Shared config and data-root discovery |
 | `pipeline.py` | Matrix and downstream table helpers |
 | `discovery.py` | Read-only species and sample discovery utilities |
@@ -80,7 +88,6 @@ serial probe attempts, including misses.
   `write_observation_bundle()` refuses live-root destinations and existing outputs.
   The thin entry point is `scripts/rna/observe_acquisition.py`; optional transfer
   observations are explicit inputs, never selected by modification time.
-  [Working observation protocol](../../../../projects/hymenoptera_amalgkit/docs/manuscript/working_operational_update.md).
 
 - `acquisition_*` implements generic frozen local/AWS manifest acquisition,
   disjoint allocations, stage-resource controls, replay journals, live regional
@@ -130,13 +137,55 @@ serial probe attempts, including misses.
   [deadline planning contract](../../../../docs/rna/GENERIC_ACQUISITION.md#deadline-planning-for-new-admissions).
 
 - `StreamingPipelineOrchestrator.run_all()` starts the bounded producer for a
-  declared config set. It first runs `run_campaign_preflight()`
-  (data-root write probe plus bare `amalgkit` PATH resolution) and refuses to
-  start on failure; the same check is available standalone via
+  declared config set and returns a run summary. It holds the campaign writer
+  lock (`campaign_lock.acquire(root, "producer")`) for the whole run and
+  raises `CampaignLockBusy` before touching state when another writer (a
+  producer, an import, a live shell launcher's `results/.full_campaign.lock`
+  or the acquisition worker's `.acquisition.lock`) holds the root. Under the
+  lock it runs `run_campaign_preflight()` (data-root write probe, every
+  producer tool on PATH, installed kallisto equal to the version and index
+  format recorded in one `run_info.json` per species, free-space floors) and
+  refuses to start on failure; the same check is available standalone via
   `python -m metainformant.rna.engine.preflight --data-root <root>`.
   A start-of-run preflight prevents the observed 2026-09-03 failure class in
   which a producer without external-volume write access failed thousands of
   tasks before its first successful write.
+  Startup then returns every `downloading`/`downloaded`/`quantifying` row and
+  every environment-class failure to `pending` (no age threshold:
+  `AMALGKIT_PIPELINE_STALE_DOWNLOADING_SECONDS` is ignored), keeps
+  `permanent_drop` rows excluded and runs the reuse dry-run: it classifies a
+  deterministic sample (`--reuse-dry-run FRACTION`, else
+  `AMALGKIT_PREFLIGHT_REUSE_DRY_RUN`, else 1% with `--cohort` and off
+  without; `0` turns it off) of each species' recorded-quantified outputs and
+  refuses (exit 69) when more than 1% of the readable sample would be
+  quarantined. An output whose files exist but cannot be read is reported as
+  unreadable, not counted, as in reconcile.
+- Resume reconcile (`ProgressDB.reconcile_outputs()`) lists each species'
+  quant directory once and trusts an output whose provenance sidecar
+  fingerprint `(st_ino, st_size, st_mtime_ns)` and scope (configuration
+  sha256, reference sha256, rule revision and pinned Amalgkit runtime) equal
+  its recorded audit: one `lstat`, no reads. Only new or changed outputs are
+  classified, and all changes land in one transaction that leaves unchanged
+  rows' `updated_at` alone. `AMALGKIT_RESUME_VERIFY_HASHES=1` re-judges and
+  re-hashes every output. A 10,000-output synthetic fixture restarts in
+  0.16 s with 10,000 `lstat` calls (cold first pass 2.3 s, internal SSD).
+- An environment circuit breaker stops admitting samples after
+  `AMALGKIT_ENV_FAILURE_TRIP` (default 5) consecutive EPERM, EACCES, EROFS,
+  ENXIO or ENOSPC failures under the data root; those rows stay `pending`
+  with an `environment-deferred[...]` note. The summary's `exit_code`, which
+  `scripts/rna/run_all_species.py` and `process_species.py` exit with, is
+  `0` (drained: every scheduled task, and in cohort mode every cohort row,
+  quantified or permanently excluded; without a cohort quarantined and held
+  tasks also count as drained), `65` (cohort mode only: nothing is left to
+  run, but rows are held by the retry bookkeeping, quarantined or above
+  `--max-gb`; the summary's `needs_operator` counts them and finalization
+  would refuse them), `75` (retryable work remains, including backed-off
+  tasks, species whose discovery failed this run, outputs reconcile could not
+  read and a run stopped by SIGINT/SIGTERM/SIGHUP), `73` (another writer
+  holds the root), `69` (environment, preflight or cohort failure, including
+  the breaker and a lost database volume) or `70` (internal error). The
+  scripts log INFO to `<root>/logs/<script>_<utc>_<pid>.log`; the final
+  `Producer finished:` line carries the `needs_operator` counts.
 - `quant_sample()` bounds each quantification with
   `AMALGKIT_PIPELINE_QUANT_TIMEOUT_SECONDS` (default 7200) and, when
   `AMALGKIT_PIPELINE_QUANT_STALL_TIMEOUT_SECONDS` is set to a positive
@@ -151,7 +200,8 @@ serial probe attempts, including misses.
 - `classify_sample_error()` (in `progress_db.py`) maps stored sample
   failure text to a durable class via the order-sensitive markers in
   `SAMPLE_ERROR_CLASSES` (first match wins): `environment_write_denied`,
-  `environment_missing_tool`, `transfer_all_sources_failed`,
+  `environment_access_denied`, `environment_read_only`, `environment_no_space`,
+  `environment_device_unavailable` (ENXIO), `environment_missing_tool`, `transfer_all_sources_failed`,
   `extraction_timeout`, `quantification_timeout`, `quantification_failed`,
   `quantification_exception`; text matching no marker is `unclassified`,
   and a missing/empty error is `unrecorded`. Terminal-failure audits can
@@ -202,6 +252,57 @@ orchestrator = StreamingPipelineOrchestrator(
 The project shell entrypoint supplies bounded resource budgets and owns the
 producer/downstream lock boundary. See the [running guide](../../../../projects/hymenoptera_amalgkit/doc/00_setup/04_running_the_pipeline.md)
 and [storage contract](../../../../projects/hymenoptera_amalgkit/doc/01_infrastructure/02_storage_contract.md).
+
+### Frozen cohort mode
+
+A frozen cohort (`cohort.py`) is a directory holding the frozen acquisition
+snapshot verbatim (`snapshot.json`, `manifest.jsonl`, `inventory.json`,
+`inputs/<species>/work/{metadata/metadata_selected.tsv,index/<Stem>.idx}`)
+plus `COHORT.json` (schema `metainformant.rna.frozen_cohort.v1`): sha256 and
+size of every file, per-species configuration/metadata/index digests and the
+`permanent_drop` exclusions. The definition has no timestamps of its own, so
+its sha256 can be pinned. `load_frozen_cohort()` re-hashes every file and
+checks manifest, inventory and that each task's `batch_index` is its row in
+the frozen table; any mismatch raises `CohortError`.
+
+```bash
+python -m metainformant.rna.engine.cohort define  --source FROZEN --cohort-id ID --output COHORT.json
+python -m metainformant.rna.engine.cohort install --source FROZEN --cohort-dir DIR --cohort-id ID
+python -m metainformant.rna.engine.cohort verify  --cohort DIR --config-dir CONFIGS
+python -m metainformant.rna.engine.cohort migrate-db --cohort DIR --db ROOT/pipeline_progress.db
+python3 scripts/rna/run_all_species.py --cohort DIR [--cohort-definition-sha256 HEX] ...
+```
+
+With `--cohort`, discovery builds tasks only from the cohort minus
+`permanent_drop` exclusions (cohort and DB) minus reusable, quarantined and
+size-deferred runs. It never runs Amalgkit metadata/select or tissue
+normalization, never writes `metadata_selected.tsv`, and prunes nothing.
+`amalgkit quant --metadata` receives `work/metadata/metadata_cohort_<ID>.tsv`
+(frozen rows of the schedulable tasks, written atomically only when its bytes
+change); every quantification refuses a batch whose row is not its run.
+Without a cohort the producer scripts refuse an NCBI metadata refresh unless
+`--refresh-metadata` is given; `--max-gb` defaults to `AMALGKIT_MAX_SAMPLE_GB`
+(the launcher's budget), then `PIPELINE_MAX_GB`, then 1000.
+
+`ProgressDB.prune_species()` no longer deletes rows outside the task universe;
+it reports them. `migrate_to_cohort()` adds missing task rows, records cohort
+exclusions, resets environment-class failures (`RETRYABLE_ENVIRONMENT_CLASSES`;
+transfer failures only on request) to `pending` with the old message after a
+`reset-by-cohort-migration[<class>]` prefix, and binds the store to the cohort
+in `campaign_meta`, all in one transaction.
+
+`scripts/rna/import_quantifications.py` (`quant_import.py`) imports outputs
+from other data roots: each sample is validated in its source context (reuse
+contract v2 with content hashes, numeric checks, and an optional reference-bound
+receipt store), must match the cohort configuration and index bytes that the
+destination itself uses (else `reference_mismatch`), and is copied into a
+staging directory, re-hashed, given a portable binding witness and published
+with one `rename`. Existing destination samples are never replaced
+(`exists_identical` / `exists_different`); a conflict records whether the
+abundance tables differ (`quantification`) and which side's evidence proves the
+index bytes rather than only the index name (`index_bytes_proven`). Decisions
+go to a JSON-lines manifest; a dry run writes it only to an explicit
+`--manifest` path.
 
 ### Restored quantification inputs
 
@@ -257,3 +358,5 @@ network bytes; this policy does not alter validation, concurrency or deadlines.
 ### Frozen size supplements
 
 Local bounded frontiers can fill zero estimated compressed FASTQ weights from an independently reviewed size supplement without changing the frozen task manifest, task IDs, references, metadata inputs, or checkpoint identity. Configure both AMALGKIT_LOCAL_SIZE_OVERLAY_PATH (an existing absolute nonsymlink file) and AMALGKIT_LOCAL_SIZE_OVERLAY_SHA256. The overlay binds the exact frozen manifest hash, preserves run/layout/reference identity, and requires positive per-mate byte counts and advertised MD5s from HTTPS ENA file URLs. It cannot replace positive frozen weights. Global ordering and raw reservation use the same immutable size map; actual download/FASTQ validation and service deadlines remain unchanged. Overlay file metadata is a planning estimate, not new validation of downloaded payloads. The runtime, active scope, frontier events, and worker result record its path/hash/count. Missing or conflicting configuration refuses rather than silently falling back.
+
+[Recovery observations and preservation](../../../../docs/rna/recovery.md) separates native liveness, raw DB custody, fixture deadlines and launch authority.

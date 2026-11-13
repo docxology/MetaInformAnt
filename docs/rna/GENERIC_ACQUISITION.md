@@ -10,7 +10,7 @@ Read-only operational bundles use `scripts/rna/observe_acquisition.py`. Explicit
 manifest/phase paths bind tables, captions and canonical figures to captured
 inputs; new output counts require restore/provenance/abundance agreement.
 Startup counts remain producer-reported, and these bundles never establish
-scientific release readiness. See the [working observation protocol](../../projects/hymenoptera_amalgkit/docs/manuscript/working_operational_update.md).
+scientific release readiness. The entry point is [`scripts/rna/observe_acquisition.py`](../../scripts/rna/observe_acquisition.py).
 
 ## Commands
 
