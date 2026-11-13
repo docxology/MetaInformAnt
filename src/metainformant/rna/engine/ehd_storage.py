@@ -60,7 +60,11 @@ class EHDWritePolicy:
         _contained(self.log, self.namespace, directory=True, required=False)
         _contained(self.database, self.namespace, directory=False)
         for key in _WRITE_ROOTS:
-            _contained(Path(os.environ[key]), self.namespace, directory=True)
+            value = os.environ.get(key)
+            if value is None:
+                raise ValueError(f"EHD write root {key} is not set")
+            _contained(Path(value), self.namespace, directory=True)
+        # TMPDIR is one of _WRITE_ROOTS, so it is present once the loop passes.
         if Path(tempfile.gettempdir()).resolve(strict=True) != Path(os.environ["TMPDIR"]):
             raise ValueError("Actual Python temporary directory is outside the EHD binding")
         if output is not None:
