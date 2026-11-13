@@ -764,6 +764,18 @@ class ENADownloader:
         # same invocation and can discard bytes received during that
         # attempt. Separate invocations allow ``--continue-at -`` to
         # advance from the retained partial after exit 18/52 failures.
+        #
+        # The ENA md5 and gzip checks are not fused into the transfer
+        # (audit F17, 2026-11-12): hashing and inflating in-stream needs
+        # curl to write to a Python pipe instead of ``-o``, which (1) breaks
+        # ``--continue-at -`` (a resumed transfer would have to re-read the
+        # retained prefix to rebuild the md5 and inflate state, the read
+        # this would save), (2) mixes ``--write-out`` with the payload and
+        # (3) moves the process-group timeout and the curl speed floor onto
+        # a Python reader thread. The one post-transfer read below
+        # (verify_gzip_integrity) stays. This direct path checks gzip only;
+        # the ENA md5 is verified by the staging lane (ena_staging, with
+        # AMALGKIT_LOCAL_ENA_SCRATCH_DIR) in a read of its own.
         cmd = [
             "curl",
             "-fsSL",
