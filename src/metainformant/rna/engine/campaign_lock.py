@@ -39,12 +39,6 @@ download or ``kallisto`` keeps the root locked after its parent is SIGKILLed.
 in the process that already holds the lock nests (reference counted); a
 different ``kind`` is refused, exactly as another process would be.
 
-**Other writers recognized.** Before claiming the root, the lock also refuses
-while the legacy shell launcher's directory locks
-(``results/.full_campaign.lock``, ``results/.finalization.lock``) name a live
-process that is not an ancestor of this one, and while another process holds
-the manifest worker's ``<root>/.acquisition.lock`` flock.
-
 Exit codes used by the producer entry points (BSD ``sysexits``):
 ``0`` drained, ``75`` resumable work remains, ``73`` lock busy, ``69``
 environment or preflight failure, ``70`` internal error.
@@ -64,7 +58,6 @@ import socket
 import subprocess
 import sys
 import threading
-import time
 from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -78,12 +71,6 @@ TOKEN_ENV = "METAINFORMANT_CAMPAIGN_LOCK_TOKEN"
 FD_ENV = "METAINFORMANT_CAMPAIGN_LOCK_FD"
 # Kinds a holder admits as token-inheriting children besides its own kind.
 INHERITABLE_KINDS: Mapping[str, frozenset[str]] = {"launcher": frozenset({"producer", "finalization"})}
-# Directory locks created by the shell launchers (mkdir + pid file).
-LEGACY_DIRECTORY_LOCKS = ("results/.full_campaign.lock", "results/.finalization.lock")
-# The manifest acquisition worker's flock (acquisition_worker.run_manifest).
-FOREIGN_FLOCKS = (".acquisition.lock",)
-# A legacy directory lock without a pid file younger than this is a launcher between mkdir and its pid write.
-LEGACY_PIDLESS_GRACE_SECONDS = 60.0
 
 EXIT_OK = 0
 # Cohort mode: nothing more can run, but some cohort rows are held, quarantined or above max_gb (EX_DATAERR).
@@ -215,7 +202,7 @@ def _read_owner_fd(fd: int) -> dict[str, Any] | None:
         return None
     try:
         payload = json.loads(data.decode("utf-8")) if data.strip() else None
-    except (UnicodeDecodeError, ValueError):
+    except UnicodeDecodeError, ValueError:
         return None
     return payload if isinstance(payload, dict) else None
 
@@ -262,104 +249,11 @@ def may_inherit(owner_kind: str | None, kind: str) -> bool:
     return kind == owner_kind or kind in INHERITABLE_KINDS.get(owner_kind, frozenset())
 
 
-def _pid_alive(pid: int) -> bool:
-    if pid <= 0:
-        return False
-    try:
-        os.kill(pid, 0)
-    except ProcessLookupError:
-        return False
-    except PermissionError:
-        return True
-    return True
-
-
-def _ancestor_pids() -> set[int]:
-    """Process ids of this process's ancestors (the shell launcher is one when it started us)."""
-
-    try:
-        import psutil
-
-        return {parent.pid for parent in psutil.Process().parents()}
-    except Exception:  # noqa: BLE001 - psutil may be unavailable or the table unreadable; fall back to the parent
-        return {os.getppid()}
-
-
-def _legacy_directory_lock_holders(root: Path) -> list[dict[str, Any]]:
-    """Live, non-ancestor owners of the shell launchers' directory locks."""
-
-    holders: list[dict[str, Any]] = []
-    ancestors: set[int] | None = None
-    for relative in LEGACY_DIRECTORY_LOCKS:
-        directory = root / relative
-        try:
-            info = directory.lstat()
-        except OSError:
-            continue
-        pid_text = None
-        try:
-            pid_text = (directory / "pid").read_text().strip()
-        except OSError:
-            pass
-        if not pid_text:
-            if time.time() - info.st_mtime < LEGACY_PIDLESS_GRACE_SECONDS:
-                holders.append({"lock": relative, "pid": None, "reason": "launcher lock without a pid file yet"})
-            continue
-        try:
-            pid = int(pid_text)
-        except ValueError:
-            continue
-        if not _pid_alive(pid):
-            continue
-        if ancestors is None:
-            ancestors = _ancestor_pids()
-        if pid in ancestors:
-            continue
-        holders.append({"lock": relative, "pid": pid, "reason": "live launcher process"})
-    return holders
-
-
-def _foreign_flock_holders(root: Path) -> list[dict[str, Any]]:
-    """Other lanes' flocks on this root that some process holds right now."""
-
-    holders: list[dict[str, Any]] = []
-    for relative in FOREIGN_FLOCKS:
-        try:
-            fd = os.open(root / relative, os.O_RDONLY | os.O_CLOEXEC)
-        except OSError:
-            continue
-        try:
-            try:
-                fcntl.flock(fd, fcntl.LOCK_SH | fcntl.LOCK_NB)
-            except BlockingIOError:
-                holders.append({"lock": relative, "pid": None, "reason": "flock held by another process"})
-            else:
-                fcntl.flock(fd, fcntl.LOCK_UN)
-        finally:
-            os.close(fd)
-    return holders
-
-
 def _describe(holder: Mapping[str, Any] | None) -> str:
     if not holder:
         return "unknown holder"
     parts = [f"{key}={holder[key]}" for key in ("kind", "pid", "host", "started_at") if holder.get(key) is not None]
     return ", ".join(parts) or "unknown holder"
-
-
-def _refuse_other_lanes(root: Path) -> None:
-    """Raise :class:`CampaignLockBusy` while a legacy launcher lock or another lane's flock is live."""
-
-    others = _legacy_directory_lock_holders(root) + _foreign_flock_holders(root)
-    if others:
-        first = others[0]
-        raise CampaignLockBusy(
-            f"another campaign lane holds {root / first['lock']} ({first['reason']}"
-            + (f", pid {first['pid']}" if first.get("pid") else "")
-            + ")",
-            holder=first,
-            path=root / first["lock"],
-        )
 
 
 def acquire(
@@ -401,9 +295,6 @@ def acquire(
             return CampaignLock(root, path, kind, held.token, dict(held.owner), inherited=True, _key=key)
 
     token = environment.get(TOKEN_ENV, "").strip()
-    if not token:
-        # Refuse before creating anything; re-checked below once the flock is held (a launcher may start between).
-        _refuse_other_lanes(root)
     fd = os.open(path, os.O_RDWR | os.O_CREAT | os.O_CLOEXEC, 0o644)
     try:
         try:
@@ -432,7 +323,6 @@ def acquire(
             raise CampaignLockBusy(
                 f"campaign data root is locked by another writer ({_describe(owner)}): {path}", holder=owner, path=path
             ) from None
-        _refuse_other_lanes(root)
         token = secrets.token_hex(16)
         owner = {
             "schema": LOCK_SCHEMA,
@@ -491,7 +381,6 @@ def writer_status(data_root: str | Path, *, environ: Mapping[str, str] | None = 
         "held": False,
         "inside_lock": False,
         "owner": read_owner(root),
-        "other_writers": [],
     }
     key = _key_for(path)
     with _HELD_GUARD:
@@ -517,9 +406,7 @@ def writer_status(data_root: str | Path, *, environ: Mapping[str, str] | None = 
             token = environment.get(TOKEN_ENV, "").strip()
             owner = status["owner"] or {}
             status["inside_lock"] = bool(token) and secrets.compare_digest(str(owner.get("token", "")), token)
-    if root.is_dir():
-        status["other_writers"] = _legacy_directory_lock_holders(root) + _foreign_flock_holders(root)
-    status["quiescent"] = (not status["held"] or status["inside_lock"]) and not status["other_writers"]
+    status["quiescent"] = not status["held"] or status["inside_lock"]
     return status
 
 

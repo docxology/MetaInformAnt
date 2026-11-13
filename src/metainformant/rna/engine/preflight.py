@@ -406,7 +406,7 @@ def reuse_dry_run(
                 with strict_reads():
                     try:
                         is_directory = stat.S_ISDIR(path.stat().st_mode)
-                    except (FileNotFoundError, NotADirectoryError):
+                    except FileNotFoundError, NotADirectoryError:
                         is_directory = False
                     if not is_directory:
                         bad.append(f"{run}: no output directory")

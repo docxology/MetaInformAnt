@@ -62,7 +62,7 @@ def test_a_damaged_staged_copy_of_the_same_size_is_staged_again(tmp_path: Path) 
     index_dir = _reference(tmp_path)
     staged = Path(_staged_exact_index_dir(str(index_dir), SPECIES))
     copy = staged / "Bombus_terrestris.idx"
-    copy.write_bytes(b"X" * len(EXACT))  # same size: the old size-only check reused it forever
+    copy.write_bytes(b"X" * len(EXACT))  # same size: a size-only check would reuse it
 
     again = Path(_staged_exact_index_dir(str(index_dir), SPECIES))
 

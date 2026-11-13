@@ -18,6 +18,7 @@ import pandas as pd
 import pytest
 import yaml
 
+from metainformant.rna.amalgkit.sra_environment import ensure_ncbi_settings
 from metainformant.rna.engine import streaming_orchestrator as orchestrator_module
 from metainformant.rna.engine.provenance import (
     is_current_metadata,
@@ -30,7 +31,6 @@ from metainformant.rna.engine.streaming_orchestrator import (
     _build_quant_command,
     _build_sample_tasks,
     _campaign_cached_sra_path,
-    _ensure_ncbi_settings_for_data_root,
     _ensure_reference_alias_indexes,
     _filter_kallisto_ineligible_reads,
     _filter_metadata_by_size,
@@ -1126,8 +1126,7 @@ def test_fasterq_paired_metadata_single_read_output_is_reconciled(
     marker = json.loads((tmp_path / "raw_validation" / "SRR_LAYOUT_MISMATCH.json").read_text())
     assert marker["declared_library_layout"] == "paired"
     assert marker["effective_library_layout"] == "single"
-    # The witness name is historical evidence and remains reusable across
-    # runtime version drift.
+    # The witness value is fixed and stays reusable across runtime version drift.
     assert marker["layout_reconciliation"] == "amalgkit_0.16.38_paired_metadata_single_fastq"
 
 
@@ -1520,7 +1519,7 @@ def test_campaign_ncbi_settings_preserve_global_configuration(tmp_path: Path) ->
     """The campaign-local VDB file routes SRA caches without editing user settings."""
 
     data_root = tmp_path / "campaign-data"
-    settings_path = _ensure_ncbi_settings_for_data_root(data_root)
+    settings_path = ensure_ncbi_settings(data_root)
 
     assert settings_path.is_file()
     assert (data_root / ".sra-cache").is_dir()

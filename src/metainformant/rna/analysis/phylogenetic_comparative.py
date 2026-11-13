@@ -400,7 +400,7 @@ def _validated_response(response: pd.Series) -> tuple[np.ndarray, list[str]]:
         labels.append(label)
     try:
         values = response.to_numpy(dtype=float)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         raise ValueError("response values must be numeric") from None
     non_finite = [labels[i] for i, value in enumerate(values) if not np.isfinite(value)]
     if non_finite:
@@ -433,7 +433,7 @@ def _validated_predictors(predictors: pd.Series | pd.DataFrame, labels: Sequence
     aligned = frame.loc[labels, columns]
     try:
         values = aligned.to_numpy(dtype=float)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         raise ValueError("predictor values must be numeric") from None
     for column_index, column in enumerate(columns):
         offenders = [labels[i] for i in range(len(labels)) if not np.isfinite(values[i, column_index])]

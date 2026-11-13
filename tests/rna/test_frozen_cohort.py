@@ -11,11 +11,9 @@ import pytest
 from metainformant.rna.engine.cohort import (
     COHORT_DEFINITION_FILENAME,
     CohortError,
-    DataRootBusy,
     build_cohort_definition,
     cohort_task_table_bytes,
     cohort_task_table_name,
-    data_root_maintenance_lock,
     default_max_sample_gb,
     install_cohort,
     load_frozen_cohort,
@@ -100,16 +98,15 @@ def test_install_removes_the_temporaries_of_a_killed_install(tmp_path: Path) -> 
     install_cohort(source.root, tmp_path / "cohort", cohort_id=COHORT_ID)
     index_dir = tmp_path / "cohort" / "inputs" / SPECIES / "work" / "index"
     current = index_dir / f".{INDEX_NAME}.a1b2c3d4.cohort-install.tmp"
-    legacy = index_dir / f".{INDEX_NAME}.k9x8w7v6"  # mkstemp's shape before the suffix existed
-    foreign = index_dir / ".operator-notes"  # not a temp of a listed file: left alone
-    for path in (current, legacy, foreign):
+    foreign = index_dir / ".operator-notes"  # not an install temp: left alone
+    for path in (current, foreign):
         path.write_bytes(INDEX_BYTES[:100])
 
     again = install_cohort(source.root, tmp_path / "cohort", cohort_id=COHORT_ID)
 
     relative = f"inputs/{SPECIES}/work/index"
-    assert again["stale_temporaries_removed"] == sorted([f"{relative}/{current.name}", f"{relative}/{legacy.name}"])
-    assert not current.exists() and not legacy.exists() and foreign.exists()
+    assert again["stale_temporaries_removed"] == [f"{relative}/{current.name}"]
+    assert not current.exists() and foreign.exists()
     assert again["copied"] == 0 and again["identical"] == 6
 
 
@@ -215,19 +212,6 @@ def test_species_reference_must_hash_to_the_cohort_index(installed: Path, tmp_pa
     assert not check.ok and "differ from the cohort index" in check.reason
     missing = verify_species_reference(cohort, tmp_path / "absent", SPECIES)
     assert not missing.ok and "unreadable" in missing.reason
-
-
-def test_maintenance_lock_refuses_launcher_locks_and_second_holders(tmp_path: Path) -> None:
-    with data_root_maintenance_lock(tmp_path, purpose="test"):
-        with pytest.raises(DataRootBusy):
-            with data_root_maintenance_lock(tmp_path, purpose="second"):
-                pass
-    with data_root_maintenance_lock(tmp_path, purpose="again"):
-        pass
-    (tmp_path / "results" / ".full_campaign.lock").mkdir(parents=True)
-    with pytest.raises(DataRootBusy, match="launcher lock"):
-        with data_root_maintenance_lock(tmp_path, purpose="test"):
-            pass
 
 
 def test_max_sample_budget_follows_the_launcher() -> None:

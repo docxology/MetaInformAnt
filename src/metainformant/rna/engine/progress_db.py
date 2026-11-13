@@ -66,28 +66,6 @@ EXCLUSION_REASON_CODES = frozenset({"permanent_drop", "re_download"})
 DEFAULT_DB_PATH = Path("output/amalgkit/pipeline_progress.db")
 
 
-def configured_progress_db_path(default: Path, configured: str | None) -> Path:
-    """Resolve an explicitly migrated progress store, refusing implicit creation.
-
-    An override must name an existing absolute regular file without symlinks or
-    lexical parent traversal. Migration and storage-root attestation belong to
-    the campaign operator; this helper never copies or initializes that store.
-    """
-    if configured is None:
-        return default
-    path = Path(configured)
-    if (
-        not configured
-        or not path.is_absolute()
-        or ".." in path.parts
-        or any(part.is_symlink() for part in (path, *path.parents))
-        or not path.is_file()
-        or path.resolve(strict=True) != path
-    ):
-        raise ValueError("Configured progress database must be an existing absolute nonsymlink file")
-    return path
-
-
 SAMPLE_ERROR_CLASSES: dict[str, str] = {
     "environment_write_denied": "Operation not permitted",
     "environment_access_denied": "Permission denied",
@@ -519,11 +497,10 @@ class ProgressDB:
     def prune_species(self, species: str, srr_ids: List[str]) -> int:
         """Report progress rows outside the current task universe; never delete them.
 
-        Rows outside ``srr_ids`` used to be deleted when a refreshed metadata
-        query changed the set of public runs. That silently dropped quantified
-        states, failure history and the rows behind exclusions, so this is now
-        report-only: every row is kept with its state and error, and the
-        scheduler simply never builds a task for it. Task building, not row
+        A refreshed metadata query can change the set of public runs; every
+        row outside ``srr_ids`` is kept with its state and error (quantified
+        states, failure history and the rows behind exclusions), and the
+        scheduler never builds a task for it. Task building, not row
         deletion, defines the work; finalization must count against the task
         universe (for example a frozen cohort), not against raw table rows.
 
@@ -2388,10 +2365,10 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
     if args.command == "retry-status":
         print(json.dumps(retry_status(db_path), indent=2, sort_keys=True))
         return 0
-    from metainformant.rna.engine.cohort import DataRootBusy, data_root_maintenance_lock
+    from metainformant.rna.engine.campaign_lock import CampaignLockBusy, acquire_writer
 
     try:
-        with data_root_maintenance_lock(db_path.parent, purpose="release-holds"), ProgressDB(db_path) as db:
+        with acquire_writer(db_path.parent, "release-holds"), ProgressDB(db_path) as db:
             released = db.release_retry_holds(
                 policy=RetryPolicy.from_environment(),
                 species=args.species,
@@ -2402,7 +2379,7 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
                     else (RETRY_LAYOUT_MISMATCH, RETRY_PERMANENT, "attempts_exhausted")
                 ),
             )
-    except (DataRootBusy, OSError) as error:
+    except (CampaignLockBusy, OSError) as error:
         print(f"error: {error}", file=sys.stderr)
         return 2
     print(json.dumps({"released": released}, indent=2, sort_keys=True))

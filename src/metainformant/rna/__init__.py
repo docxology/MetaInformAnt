@@ -1,6 +1,6 @@
 """RNA transcriptomic analysis and workflow orchestration.
 
-Subpackages load on first access so acquisition workers do not initialize
+Subpackages load on first access so the streaming producer does not initialize
 analysis plotting or platform font discovery during startup.
 """
 

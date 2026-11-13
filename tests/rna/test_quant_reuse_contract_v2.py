@@ -18,11 +18,7 @@ from pathlib import Path
 import pytest
 
 from metainformant.rna.engine import provenance
-from metainformant.rna.engine.durable_quant import (
-    DirectoryStore,
-    lock_quantification,
-    restore_quantification,
-)
+from metainformant.rna.engine.durable_quant import lock_quantification, restore_quantification
 from metainformant.rna.engine.provenance import (
     EVIDENCE_BINDING_WITNESS,
     EVIDENCE_LOCAL_RESTORE_PROOF,
@@ -48,6 +44,7 @@ from metainformant.rna.engine.provenance import (
     write_quant_provenance,
     write_reference_binding,
 )
+from metainformant.rna.engine.quant_storage import DirectoryStore
 from metainformant.rna.engine.quant_validation import validate_quantification
 from metainformant.rna.engine.reference_digest import IndexDigestCache
 
@@ -202,11 +199,11 @@ def test_deleted_config_path_with_identical_bytes_stays_reusable(root: Root) -> 
     assert classify_quantification(root.sample(), ACCESSION)["reason"] == "configuration checksum mismatch"
 
     context = build_species_reuse_context(SPECIES, current_config)
-    legacy = classify_quantification(
+    verdict = classify_quantification(
         root.sample(), ACCESSION, expected_config_sha256=context.config_sha256, verify_content=True
     )
-    assert legacy["status"] == QUANT_STATUS_CURRENT
-    assert legacy["evidence"] == {"config": "content", "reference": f"{EVIDENCE_REFERENCE_MANIFEST}:relative"}
+    assert verdict["status"] == QUANT_STATUS_CURRENT
+    assert verdict["evidence"] == {"config": "content", "reference": f"{EVIDENCE_REFERENCE_MANIFEST}:relative"}
 
     cohort = classify_cohort_quantification(root.sample(), root.expectation(), verify_content=True)
     assert cohort["status"] == QUANT_STATUS_CURRENT
@@ -222,9 +219,9 @@ def test_different_config_bytes_are_invalid(root: Root) -> None:
     other.write_bytes(CONFIG_BYTES + b"# edited\n")
     context = build_species_reuse_context(SPECIES, other)
 
-    legacy = classify_quantification(root.sample(), ACCESSION, expected_config_sha256=context.config_sha256)
-    assert legacy["status"] == QUANT_STATUS_INVALID
-    assert legacy["reason"] == "configuration differs from current runtime configuration"
+    verdict = classify_quantification(root.sample(), ACCESSION, expected_config_sha256=context.config_sha256)
+    assert verdict["status"] == QUANT_STATUS_INVALID
+    assert verdict["reason"] == "configuration differs from current runtime configuration"
 
     cohort = classify_cohort_quantification(root.sample(), root.expectation(config_sha256=context.config_sha256))
     assert cohort["status"] == QUANT_STATUS_INVALID
@@ -258,8 +255,8 @@ def test_moved_data_root_rebinds_by_relative_manifest_and_index_bytes(root: Root
     assert cohort["status"] == QUANT_STATUS_CURRENT
     assert cohort["evidence"]["index_paths"] == "rerooted"
 
-    legacy = classify_quantification(sample, ACCESSION, expected_config_sha256=_sha(CONFIG_BYTES))
-    assert legacy["status"] == QUANT_STATUS_CURRENT
+    verdict = classify_quantification(sample, ACCESSION, expected_config_sha256=_sha(CONFIG_BYTES))
+    assert verdict["status"] == QUANT_STATUS_CURRENT
 
 
 def test_wrong_or_missing_index_bytes_are_invalid(root: Root) -> None:
@@ -295,9 +292,9 @@ def test_binding_witness_decouples_reuse_from_the_mutable_manifest(root: Root) -
     # Downstream tools that know no cohort accept the same witness once the
     # recorded config path is gone.
     root.repo_config.unlink()
-    legacy = classify_quantification(root.sample(), ACCESSION)
-    assert legacy["status"] == QUANT_STATUS_CURRENT
-    assert legacy["evidence"] == {"config": EVIDENCE_BINDING_WITNESS, "reference": EVIDENCE_BINDING_WITNESS}
+    verdict = classify_quantification(root.sample(), ACCESSION)
+    assert verdict["status"] == QUANT_STATUS_CURRENT
+    assert verdict["evidence"] == {"config": EVIDENCE_BINDING_WITNESS, "reference": EVIDENCE_BINDING_WITNESS}
     assert witness.read_bytes().count(b"/") == 0  # no paths inside the witness
 
 
@@ -405,8 +402,8 @@ def test_s3_receipt_restore_under_bumped_runtime_is_drift_compatible(
     assert cohort["status"] == QUANT_STATUS_VERSION_DRIFT
     assert cohort["evidence"] == {"kind": EVIDENCE_RESTORED_WITNESS}
     assert cohort["observed_amalgkit_version"] != BUMPED_RUNTIME["REQUIRED_AMALGKIT_VERSION"]
-    legacy = classify_quantification(destination, ACCESSION, verify_content=True)
-    assert legacy["status"] == QUANT_STATUS_VERSION_DRIFT
+    verdict = classify_quantification(destination, ACCESSION, verify_content=True)
+    assert verdict["status"] == QUANT_STATUS_VERSION_DRIFT
     # Re-validation of the restored output also passes under the bumped runtime.
     _, files, rows = validate_quantification(destination, SPECIES, ACCESSION)
     assert rows == 8 and [path.name for path in files] == [
@@ -571,7 +568,7 @@ def test_index_digest_cache_shares_hard_links_and_rehashes_edits(tmp_path: Path)
     assert cache.digest_or_none(tmp_path / "missing.idx") is None
 
 
-def test_non_cohort_context_uses_content_bound_legacy_classification(root: Root) -> None:
+def test_non_cohort_context_uses_content_bound_classification(root: Root) -> None:
     context = build_species_reuse_context(SPECIES, root.repo_config)
     assert not context.is_cohort
     root.repo_config.unlink()
@@ -723,7 +720,7 @@ def test_resume_keeps_outputs_whose_config_checkout_was_deleted(
     orchestrator.db.init_species(SPECIES, [ACCESSION, "SRR124"])
     quant_dir = root.data / SPECIES / "work" / "quant"
 
-    # Without the content binding the old resume path would promote nothing...
+    # Without the content binding, reconcile promotes nothing...
     assert orchestrator.db.reconcile(SPECIES, quant_dir) == 0
 
     assert orchestrator._register_reuse_context(SPECIES, current, current) is not None
@@ -733,7 +730,7 @@ def test_resume_keeps_outputs_whose_config_checkout_was_deleted(
     assert orchestrator.db.get_state(SPECIES, "SRR124") == "quantified"
     assert orchestrator.is_quantified(SPECIES, ACCESSION)
 
-    # ...and an alias runtime YAML keeps the historical path-based check.
+    # ...and an alias runtime YAML uses the path-based check.
     assert orchestrator._register_reuse_context("other_species", current, tmp_path / "alias.yaml") is None
 
 
@@ -768,7 +765,7 @@ def test_previous_pin_outputs_resume_as_drift_without_requantification(
     quant_dir = root.data / SPECIES / "work" / "quant"
     assert orchestrator._register_reuse_context(SPECIES, current, current) is not None
     # The producer's one-pass resume reconcile...
-    summary = orchestrator._reconcile_legacy_species(SPECIES, current, quant_dir)
+    summary = orchestrator._reconcile_discovered_species(SPECIES, current, quant_dir)
     assert summary["classified"] == 2
     assert sorted(orchestrator.db.get_samples(SPECIES, "quantified")) == [ACCESSION, "SRR124"]
     # ...and the public ProgressDB.reconcile both promote drift outputs.
@@ -793,7 +790,7 @@ PROJECT_CONFIG_DIR = REPO_ROOT / "projects" / "hymenoptera_amalgkit" / "config" 
 # Frozen cohort hymenoptera27-20261005 (inventory.json), species apis_mellifera.
 APIS_FROZEN_CONFIG_SHA256 = "98b763fd4b16a471b61892df9cd53cc9244ff100e3f20ea44702ef4ca40ef1d1"
 APIS_FROZEN_INDEX_SHA256 = "d2e9e3acd83ca0d8e988b901c5cdcfa25e6d47efb351e794e01f708a049c1b17"
-APIS_LEGACY_RUNS = ("DRR087067", "SRR12584109")
+APIS_PREVIOUS_PIN_RUNS = ("DRR087067", "SRR12584109")
 APIS_WITNESS_RUN = "SRR14374131"
 
 
@@ -805,7 +802,7 @@ def real_apis_root() -> Path:
     if not value:
         pytest.skip(f"{REAL_FIXTURE_ENV} is not set")
     root = Path(value)
-    needed = [root / "apis_mellifera/work/quant" / run for run in (*APIS_LEGACY_RUNS, APIS_WITNESS_RUN)]
+    needed = [root / "apis_mellifera/work/quant" / run for run in (*APIS_PREVIOUS_PIN_RUNS, APIS_WITNESS_RUN)]
     needed += [root / "apis_mellifera/work/reference/reference_aliases.json", root / "apis_mellifera/genome/index"]
     if not all(path.exists() for path in needed):
         pytest.skip(f"{REAL_FIXTURE_ENV} does not hold the copied apis_mellifera fixture")
@@ -826,14 +823,14 @@ def _apis_context(config: Path) -> object:
     )
 
 
-def test_real_legacy_outputs_are_reusable_under_the_current_repo_config(real_apis_root: Path) -> None:
+def test_real_previous_pin_outputs_are_reusable_under_the_current_repo_config(real_apis_root: Path) -> None:
     config = PROJECT_CONFIG_DIR / "amalgkit_apis_mellifera.yaml"
     context = _apis_context(config)
     assert context.config_sha256 == APIS_FROZEN_CONFIG_SHA256  # checked-in YAML bytes equal the frozen cohort's
-    for run in APIS_LEGACY_RUNS:
+    for run in APIS_PREVIOUS_PIN_RUNS:
         sample = real_apis_root / "apis_mellifera/work/quant" / run
         sidecar = json.loads((sample / QUANT_PROVENANCE_FILENAME).read_text())
-        assert sidecar["config_path"].startswith("/Volumes/external_drive/Git/")  # the retired, deleted checkout
+        assert sidecar["config_path"].startswith("/Volumes/external_drive/Git/")  # the deleted checkout
         assert not (sample / provenance.RESTORED_INPUTS_DIR).exists()
         assert {key: sidecar[key] for key in PREVIOUS_PIN_RUNTIME} == PREVIOUS_PIN_RUNTIME
         result = context.classify(sample, verify_content=True)
@@ -844,8 +841,8 @@ def test_real_legacy_outputs_are_reusable_under_the_current_repo_config(real_api
             "manifest": "relative",
             "index_paths": "rerooted",
         }
-        legacy = classify_quantification(sample, run, expected_config_sha256=context.config_sha256)
-        assert legacy["status"] == QUANT_STATUS_VERSION_DRIFT
+        verdict = classify_quantification(sample, run, expected_config_sha256=context.config_sha256)
+        assert verdict["status"] == QUANT_STATUS_VERSION_DRIFT
 
 
 def test_real_restored_witness_output_is_reusable(real_apis_root: Path) -> None:
@@ -862,9 +859,9 @@ def test_real_outputs_survive_a_bump_and_reject_other_config_bytes(
 ) -> None:
     _bump_runtime(monkeypatch)
     context = _apis_context(PROJECT_CONFIG_DIR / "amalgkit_apis_mellifera.yaml")
-    for run in (*APIS_LEGACY_RUNS, APIS_WITNESS_RUN):
+    for run in (*APIS_PREVIOUS_PIN_RUNS, APIS_WITNESS_RUN):
         sample = real_apis_root / "apis_mellifera/work/quant" / run
         assert context.classify(sample)["status"] == QUANT_STATUS_VERSION_DRIFT
     other = _apis_context(PROJECT_CONFIG_DIR / "amalgkit_bombus_terrestris.yaml")
-    sample = real_apis_root / "apis_mellifera/work/quant" / APIS_LEGACY_RUNS[0]
+    sample = real_apis_root / "apis_mellifera/work/quant" / APIS_PREVIOUS_PIN_RUNS[0]
     assert other.classify(sample)["status"] == QUANT_STATUS_INVALID

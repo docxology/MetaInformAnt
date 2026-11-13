@@ -15,8 +15,6 @@ work_dir: output/amalgkit/temnothorax_longispinosus/work
 log_dir: output/amalgkit/temnothorax_longispinosus/logs
 threads: 16
 
-auto_install_amalgkit: true
-
 # Pre-selection filtering rules
 filters:
   require_tissue: false

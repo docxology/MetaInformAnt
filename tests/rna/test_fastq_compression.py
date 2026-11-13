@@ -5,7 +5,6 @@ from __future__ import annotations
 import gzip
 import shutil
 import subprocess
-import sys
 from pathlib import Path
 
 import pytest
@@ -50,34 +49,3 @@ def test_environment_level_is_explicit_and_strict(monkeypatch: pytest.MonkeyPatc
         monkeypatch.setenv("AMALGKIT_PIPELINE_COMPRESSION_LEVEL", invalid)
         with pytest.raises(ValueError):
             compression_level()
-
-
-def test_controller_requires_explicit_frozen_configuration(tmp_path: Path) -> None:
-    root = Path(__file__).resolve().parents[2]
-    command = [
-        sys.executable,
-        str(root / "scripts/rna/acquisition.py"),
-        "aws",
-        "--campaign-root",
-        str(tmp_path),
-        "--repo",
-        str(root),
-        "--bucket",
-        "unused",
-        "--cohort",
-        "unused",
-        "--budget",
-        "750",
-        "--historical-gross",
-        "0",
-        "--ami",
-        "unused",
-        "--instance-profile",
-        "unused",
-        "--worker-compression-level",
-        "1",
-    ]
-    result = subprocess.run(command, capture_output=True, text=True)
-    assert result.returncode != 0
-    assert "requires an explicit --config-dir" in result.stderr
-    assert list(tmp_path.iterdir()) == []

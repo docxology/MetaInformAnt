@@ -11,7 +11,7 @@ from metainformant.rna.engine.streaming_orchestrator import (
 )
 
 
-@pytest.mark.parametrize("layout", ["sample", "legacy", "native_sample", "native_legacy"])
+@pytest.mark.parametrize("layout", ["sample", "shared", "native_sample", "native_shared"])
 @pytest.mark.parametrize("suffix", [".sra", ".sra.cache"])
 def test_exact_prefetched_archive_is_discovered_without_unrelated_files(
     tmp_path: Path,

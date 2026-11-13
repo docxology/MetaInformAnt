@@ -22,7 +22,7 @@ silently substituted for the per-species finalization chain.
 - [Configuration](CONFIGURATION.md)
 - [Workflow execution](workflow.md)
 - [Campaign CLI reference](CAMPAIGN_CLI.md)
-- [Durable quantification and AWS completion](DURABLE_QUANT.md)
+- [Durable quantification](DURABLE_QUANT.md)
 - [Hymenoptera numerical methods and analysis boundaries](HYMENOPTERA_METHODS.md)
 - [Command reference](amalgkit/commands.md)
 - [Step reference](amalgkit/steps/README.md)
@@ -82,4 +82,3 @@ and `metainformant.rna.steps`. The command registry is the source of truth
 for current subcommands; use `amalgkit --help` and the project verification
 scripts to confirm the installed environment before a real run.
 
-See the dated [Hymenoptera completion checkpoint](HYMENOPTERA_STATUS_20261005.md) for coverage, figures, and remaining gates.

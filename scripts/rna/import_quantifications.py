@@ -2,8 +2,8 @@
 """Import verified quantifications from other data roots into a campaign data root.
 
 Dry run (default) writes a JSON-lines decision manifest to ``--manifest`` and
-changes nothing; ``--execute`` copies verified samples under the data-root
-maintenance lock and never replaces an existing sample directory. See
+changes nothing; ``--execute`` copies verified samples under the campaign
+writer lock and never replaces an existing sample directory. See
 ``metainformant.rna.engine.quant_import`` for the decision rules.
 
 Usage:

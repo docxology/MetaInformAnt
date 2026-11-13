@@ -70,7 +70,9 @@ finally:engine.db.close()
 
 
 @pytest.mark.parametrize("mode", ["ssd_compute", "hd_first"])
-def test_legacy_modes_still_bind_the_real_system_volume(native_acquisition_factory, tmp_path: Path, mode: str) -> None:
+def test_host_storage_modes_still_bind_the_real_system_volume(
+    native_acquisition_factory, tmp_path: Path, mode: str
+) -> None:
     fixture = native_acquisition_factory()
     env = native_environment(tmp_path, fixture)
     env["AMALGKIT_LOCAL_STORAGE_MODE"] = mode

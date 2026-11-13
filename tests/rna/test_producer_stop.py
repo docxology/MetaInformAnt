@@ -144,7 +144,7 @@ class Producer:
         for pid_file in (self.base / "beats").glob("*.pid"):
             try:
                 os.killpg(int(pid_file.read_text()), signal.SIGKILL)
-            except (ProcessLookupError, PermissionError, ValueError):
+            except ProcessLookupError, PermissionError, ValueError:
                 pass
 
 

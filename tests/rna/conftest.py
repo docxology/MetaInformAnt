@@ -11,6 +11,7 @@ from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 from uuid import uuid4
 
 import pytest
@@ -29,6 +30,46 @@ class NativeAcquisitionFiles:
     config: Path
     manifest: Path
 
+    def produce(self, accession: str = "SRR123", *, db_path: Path | None = None, **options: Any) -> dict[str, Any]:
+        """Run one manifest task through a fresh streaming producer and return its sample result.
+
+        A fresh producer reads the current environment, as each launch of the
+        live lane does. The species' reference aliases are prepared first, as
+        the producer does before it admits a species' samples; ``options`` are
+        passed to ``process_single_sample``.
+        """
+        import yaml
+
+        from metainformant.rna.engine.streaming_orchestrator import (
+            StreamingPipelineOrchestrator,
+            _ensure_reference_alias_indexes,
+        )
+
+        tasks = [json.loads(line) for line in self.manifest.read_text().splitlines()]
+        task = next(task for task in tasks if task["accession"] == accession)
+        config = yaml.safe_load((self.config_dir / task["config_name"]).read_text()) or {}
+        with self.metadata.open(newline="") as handle:
+            targets = sorted({row["scientific_name"] for row in csv.DictReader(handle, delimiter="\t")})
+        ready, missing, _ = _ensure_reference_alias_indexes(config, task["species"], targets)
+        assert ready, missing
+        producer = StreamingPipelineOrchestrator(
+            self.config_dir, self.data / "logs", db_path=db_path or self.data / "pipeline_progress.db"
+        )
+        try:
+            producer.db.init_species(task["species"], [str(entry["accession"]) for entry in tasks])
+            return producer.process_single_sample(
+                accession,
+                int(task["batch_index"]),
+                self.work / "getfastq",
+                self.config_dir / task["config_name"],
+                task["species"],
+                1,
+                task["expected_paired"],
+                **options,
+            )
+        finally:
+            producer.db.close()
+
 
 @pytest.fixture
 def native_acquisition_factory(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
@@ -42,13 +83,7 @@ def native_acquisition_factory(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     ) -> NativeAcquisitionFiles:
         if not shutil.which("kallisto") or not shutil.which("amalgkit"):
             pytest.skip("Real Kallisto and Amalgkit executables are required")
-        for name in (
-            "AMALGKIT_DURABLE_BUCKET",
-            "AMALGKIT_DURABLE_COHORT",
-            "AMALGKIT_CLOUD_MAX_RAW_BYTES",
-            "AMALGKIT_WORKER_DEADLINE_EPOCH",
-        ):
-            monkeypatch.delenv(name, raising=False)
+        monkeypatch.delenv("AMALGKIT_MAX_RAW_BYTES", raising=False)
         data = tmp_path / "data"
         for name, value in {
             "AMALGKIT_DATA_ROOT": str(data),

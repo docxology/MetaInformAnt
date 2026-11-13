@@ -17,10 +17,10 @@ Scopes (each per accession, see :mod:`metainformant.rna.engine.raw_cleanup`):
   cohort task naming the accession is reusable or permanently excluded.
 
 The default is a read-only dry run that prints a JSON summary; ``--manifest``
-also writes the full plan.  ``--execute`` refuses while a producer is alive or
-a campaign/maintenance lock is held, holds the data-root maintenance lock for
-the whole pass, writes the planned manifest before removing anything, and
-replaces it with the executed record at the end.
+also writes the full plan.  ``--execute`` refuses while another writer holds
+the data root, holds the campaign writer lock for the whole pass, writes the
+planned manifest before removing anything, and replaces it with the executed
+record at the end.
 """
 
 from __future__ import annotations
@@ -35,13 +35,8 @@ from pathlib import Path
 from typing import Any
 
 from metainformant.rna.core.sample_utils import find_quantification_file
-from metainformant.rna.engine.campaign_lock import writer_status
-from metainformant.rna.engine.cohort import (
-    DataRootBusy,
-    FrozenCohort,
-    data_root_maintenance_lock,
-    load_frozen_cohort,
-)
+from metainformant.rna.engine.campaign_lock import CampaignLockBusy, acquire_writer, writer_status
+from metainformant.rna.engine.cohort import FrozenCohort, load_frozen_cohort
 from metainformant.rna.engine.provenance import (
     REUSABLE_QUANT_STATUSES,
     SpeciesReuseContext,
@@ -220,12 +215,9 @@ def _remaining_cache(cache_root: Path) -> dict[str, int]:
 
 def _describe_writers(status: dict[str, Any]) -> str:
     owner = status.get("owner") or {}
-    parts = []
     if status.get("held") and not status.get("inside_lock"):
-        parts.append(f"campaign lock held by {owner.get('kind', 'unknown')} pid {owner.get('pid', '?')}")
-    for holder in status.get("other_writers") or []:
-        parts.append(f"{holder.get('lock')}: {holder.get('reason')} (pid {holder.get('pid')})")
-    return "; ".join(parts) or "unknown writer"
+        return f"campaign lock held by {owner.get('kind', 'unknown')} pid {owner.get('pid', '?')}"
+    return "unknown writer"
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -374,7 +366,7 @@ def _run(args: argparse.Namespace) -> int:
             _write_json_atomic(manifest_path, payload)
     else:
         try:
-            with data_root_maintenance_lock(data_root, purpose="raw-reclamation"):
+            with acquire_writer(data_root, "raw-reclamation"):
                 assert manifest_path is not None
                 _write_json_atomic(manifest_path, payload)
                 payload.update(run_pass())
@@ -382,7 +374,7 @@ def _run(args: argparse.Namespace) -> int:
                 payload["completed_at"] = datetime.now(timezone.utc).isoformat()
                 payload["sra_cache_remaining_after"] = _remaining_cache(cache_root) if args.include_sra_cache else None
                 _write_json_atomic(manifest_path, payload)
-        except DataRootBusy as busy:
+        except CampaignLockBusy as busy:
             raise SystemExit(f"refusing to reclaim: {busy}") from None
 
     summary = {

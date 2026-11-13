@@ -129,7 +129,7 @@ def validate_fastq_records(paths: list[Path], *, deadline_at: float | None = Non
                 if any(key is None for key in records) or len(set(records)) != 1:
                     return False
                 count += 1
-    except (OSError, EOFError, zlib.error):
+    except OSError, EOFError, zlib.error:
         return False
     return count > 0
 

@@ -182,7 +182,7 @@ def extract_sra_directly(config: AmalgkitWorkflowConfig, sra_dir: Path, output_d
     # Clean up temp dir
     try:
         shutil.rmtree(tmp_dir)
-    except (OSError, PermissionError, FileNotFoundError):
+    except OSError, PermissionError, FileNotFoundError:
         pass
 
     return extracted_count
