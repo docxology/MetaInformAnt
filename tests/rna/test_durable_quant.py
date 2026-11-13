@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -13,7 +14,11 @@ from metainformant.rna.engine.durable_quant import (
     lock_quantification,
     restore_quantification,
 )
-from metainformant.rna.engine.provenance import write_quant_provenance
+from metainformant.rna.engine.provenance import (
+    QUANT_PROVENANCE_FILENAME,
+    sync_sample_outputs,
+    write_quant_provenance,
+)
 from metainformant.rna.engine.streaming_orchestrator import (
     build_pipeline_resource_profile,
 )
@@ -497,3 +502,31 @@ def test_campaign_restore_rejects_unsafe_configuration_names(tmp_path: Path, nam
     with pytest.raises(ValueError, match="unsafe frozen configuration"):
         verify_locked_campaign(inventory, store, "cohort", destination, config_dir=tmp_path)
     assert not destination.exists()
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="root opens files without read permission")
+def test_the_sidecar_is_published_only_after_every_output_was_flushed(tmp_path: Path) -> None:
+    quant, config = sample(tmp_path)
+    (quant / ".partial").write_text("dot files are not outputs")
+    (quant / "subdir").mkdir()
+    # The abundance table and the run info; dot files (the sidecar is one, written durably on its own) and
+    # directories are skipped.
+    assert sync_sample_outputs(quant) == 2
+
+    sidecar = quant / QUANT_PROVENANCE_FILENAME
+    sidecar.unlink()
+    h5 = quant / "SRR123_abundance.h5"
+    h5.write_bytes(b"\x89HDF")
+    os.chmod(h5, 0)
+    try:
+        with pytest.raises(PermissionError):
+            write_quant_provenance(
+                quant,
+                species="test_species",
+                run_accession="SRR123",
+                config_path=config,
+                command=["amalgkit", "quant", "--batch", "1"],
+            )
+    finally:
+        os.chmod(h5, 0o644)
+    assert not sidecar.exists()  # never a sidecar over outputs that may not be on the disk
