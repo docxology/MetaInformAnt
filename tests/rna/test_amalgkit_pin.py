@@ -13,8 +13,7 @@ import pytest
 from metainformant.rna import amalgkit
 from metainformant.rna.amalgkit import _amalgkit_impl
 from metainformant.rna.amalgkit.amalgkit import InstalledAmalgkit, verify_installed_amalgkit
-from metainformant.rna.core.deps import check_step_dependencies, ensure_required_amalgkit
-from metainformant.rna.engine.workflow_core import AmalgkitWorkflowConfig, load_workflow_config
+from metainformant.rna.core.deps import ensure_required_amalgkit
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 AMALGKIT_REQUIREMENT = re.compile(r"^amalgkit @ git\+(?P<url>https://\S+?)@(?P<rev>[0-9a-f]{40})$")
@@ -107,7 +106,7 @@ def test_version_mismatch_fails_closed_without_touching_the_environment(caplog: 
     before = {name: _distribution_fingerprint(name) for name in ("amalgkit", "pandas")}
 
     with caplog.at_level(logging.INFO):
-        ok, message, info = amalgkit.ensure_cli_available(auto_install=True, min_version="9999.0.0")
+        ok, message, info = amalgkit.ensure_cli_available(min_version="9999.0.0")
 
     assert not ok
     assert amalgkit.AMALGKIT_SYNC_HINT in message
@@ -132,31 +131,6 @@ def test_pinned_requirement_is_reported_ready() -> None:
     pytest.importorskip("amalgkit")
     ok, message = ensure_required_amalgkit()
     assert ok, message
-
-
-def test_auto_install_key_is_accepted_and_ignored_with_one_warning(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
-) -> None:
-    assert AmalgkitWorkflowConfig(work_dir=tmp_path).auto_install_amalgkit is False
-
-    config_path = tmp_path / "species.yaml"
-    config_path.write_text(
-        f"work_dir: {tmp_path / 'work'}\nthreads: 1\nauto_install_amalgkit: true\nspecies_list:\n  - Test_species\n",
-        encoding="utf-8",
-    )
-    config = load_workflow_config(config_path)
-    assert config.auto_install_amalgkit is True
-
-    monkeypatch.setattr(_amalgkit_impl, "_auto_install_warning_issued", False)
-    with caplog.at_level(logging.WARNING):
-        first = check_step_dependencies("merge", {}, config)
-        second = check_step_dependencies("sanity", {}, config)
-    warnings = [record for record in caplog.records if "auto_install_amalgkit is ignored" in record.getMessage()]
-    assert len(warnings) == 1
-    assert amalgkit.AMALGKIT_SYNC_HINT in warnings[0].getMessage()
-    # The outcome is the same as with the key absent: availability alone decides.
-    absent = AmalgkitWorkflowConfig(work_dir=tmp_path / "work", threads=1, species_list=["Test_species"])
-    assert first[0] == second[0] == check_step_dependencies("merge", {}, absent)[0]
 
 
 def test_container_takes_amalgkit_from_the_lock_and_pins_native_tools() -> None:

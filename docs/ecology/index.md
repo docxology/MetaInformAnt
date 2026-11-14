@@ -1,6 +1,6 @@
 ### Ecology: Overview
 
-Ecological analysis including community composition, biodiversity metrics, ordination, indicator-species tests, functional and phylogenetic diversity, and macroecology. The package is `metainformant.ecology`, with the subpackages `analysis` (the modules `community`, `functional`, `indicators`, `macroecology` and `ordination`), `phylogenetic`, `traits` (an empty placeholder namespace) and `visualization`.
+Ecological analysis including community composition, biodiversity metrics, ordination, indicator-species tests, functional and phylogenetic diversity, and macroecology. The package is `metainformant.ecology`, with the subpackages `analysis` (the modules `community`, `functional`, `indicators`, `macroecology` and `ordination`), `phylogenetic` and `visualization`.
 
 ## Key Components
 

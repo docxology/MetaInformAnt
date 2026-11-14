@@ -12,14 +12,14 @@ def test_p_distance_and_jc69() -> None:
     s1, s2 = "AAAA", "AAAT"
     p = distances.p_distance(s1, s2)
     assert abs(p - 0.25) < 1e-9
-    d = distances.jc69_distance(s1, s2)
+    d = distances.jukes_cantor_distance(s1, s2)
     assert d > 0  # Positive distance
 
 
 def test_kimura_2p_distance() -> None:
     """Test Kimura 2-parameter distance."""
     s1, s2 = "AAAA", "GGGG"  # All transitions
-    d = distances.kimura_2p_distance(s1, s2)
+    d = distances.kimura_distance(s1, s2)
     assert d > 0  # Should be positive
 
 

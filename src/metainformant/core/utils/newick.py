@@ -1,9 +1,8 @@
 """Newick string parsing.
 
 Domain-neutral tree parsing shared by any clade or datatype module that needs
-phylogenetic structure (``dna.phylogeny`` re-exports it for backwards
-compatibility; ``rna.analysis`` consumes it directly here rather than
-importing across domains).
+phylogenetic structure (for example ``dna.phylogeny`` and ``rna.analysis``),
+so that no domain module imports another for it.
 
 The parser accepts a Newick string with branch lengths, nested clades, and
 unlabeled internal nodes (which receive auto-generated ``Internal_N`` names),

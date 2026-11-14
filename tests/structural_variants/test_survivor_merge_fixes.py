@@ -1,14 +1,14 @@
 """Regression tests for ``survivor_merge`` genotypes and qualities.
 
-``survivor_merge`` never looked at the genotype of the calls it merged, so every merged variant came out as
-``./.``, and its quality was ``10 * n_callers * log10(n_callers + 1)``: the same number for two calls of quality
-5 and two calls of quality 900. It now combines the callers' evidence by a documented rule:
+``survivor_merge`` reads the genotype of the calls it merges, so a merged variant is not ``./.``, and its quality
+depends on the calls' qualities, not only on ``10 * n_callers * log10(n_callers + 1)``, which is the same for two
+calls of quality 5 and two calls of quality 900. It combines the callers' evidence by a documented rule:
 
 * genotype: majority vote among the calls' non-missing genotypes, allele order ignored; a tie goes to the
   genotype with the larger summed call quality, then to the one that sorts first;
 * quality: the mean call quality plus the agreement bonus ``10 * n_callers * log10(n_callers + 1)``.
 
-VCF input carries its genotype in the first sample column, which the loaders used to drop.
+VCF input carries its genotype in the first sample column, which the loaders keep.
 """
 
 from __future__ import annotations

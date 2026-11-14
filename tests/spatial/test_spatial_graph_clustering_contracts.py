@@ -19,7 +19,7 @@ try:
     import leidenalg  # noqa: F401
 
     LEIDENALG_AVAILABLE = True
-except (ImportError, SyntaxError):
+except ImportError, SyntaxError:
     LEIDENALG_AVAILABLE = False
 
 
@@ -58,7 +58,7 @@ class TestKnnWeightsAreNotDoubled:
         assert np.all((adjacency > 0).sum(axis=1) >= 4)  # each spot keeps at least its own 4 neighbors
 
     def test_close_mutual_neighbors_are_not_capped_at_one(self) -> None:
-        # With distances below 1 the doubled weights used to be clipped to exactly 1.0
+        # With distances below 1 the doubled weights are not clipped to exactly 1.0
         coordinates = np.array([[0.0, 0.0], [0.2, 0.0], [5.0, 0.0]])
 
         adjacency = build_spatial_graph(coordinates, method="knn", n_neighbors=1).toarray()
@@ -151,7 +151,7 @@ class TestSpatialClusterRadiusGraph:
 class TestLeidenIterations:
     @pytest.mark.parametrize("requested, passed", [(-1, -1), (-5, -1), (1, 1), (2, 2), (7, 7)])
     def test_the_documented_counts_reach_leidenalg_unchanged(self, requested: int, passed: int) -> None:
-        # -1 means "until convergence" and used to be turned into 2 iterations
+        # -1 means "until convergence" and is not turned into 2 iterations
         assert _leidenalg_iterations(requested) == passed
 
     def test_zero_iterations_are_rejected_not_rewritten(self) -> None:

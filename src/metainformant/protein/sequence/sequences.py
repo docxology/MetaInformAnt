@@ -614,11 +614,6 @@ def sequence_summary(seq: str) -> Dict[str, Any]:
     }
 
 
-# Aliases for backward compatibility
-parse_fasta = read_fasta
-is_valid_protein_sequence = validate_protein_sequence
-
-
 def calculate_aa_composition(seq: str) -> Dict[str, float]:
     """Calculate amino acid composition as fractions (0-1).
 

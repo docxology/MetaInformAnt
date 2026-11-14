@@ -161,7 +161,7 @@ def test_numeric_timestamps_are_subtracted_as_given() -> None:
 
 @pytest.mark.parametrize("dim", [0, 3, 5])
 def test_an_embedding_dimension_below_the_six_statistics_is_rejected(dim: int) -> None:
-    """The vector holds six statistics; a smaller ``embedding_dim`` used to yield longer vectors than it claimed."""
+    """The vector holds six statistics; a smaller ``embedding_dim`` cannot describe it and is rejected."""
     with pytest.raises(ValueError, match="at least 6"):
         biological_embedding([SEQ_ONE], "temporal", embedding_dim=dim)
 

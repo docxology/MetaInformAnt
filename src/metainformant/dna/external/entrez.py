@@ -48,7 +48,7 @@ _MAX_SEARCH_RESULTS = 10000  # most records one esearch call is asked for
 def _require_positive_int(value: object, name: str, maximum: Optional[int] = None) -> int:
     """Return ``value`` if it is an integer from 1 to ``maximum``, else raise ``ValueError``.
 
-    A result limit above what a client retrieves used to be cut to that maximum without a word.
+    A result limit above what a client retrieves is refused rather than silently cut to that maximum.
     """
     if isinstance(value, bool) or not isinstance(value, int) or value < 1:
         raise ValueError(f"{name} must be a positive integer, got {value!r}")
@@ -389,9 +389,7 @@ def fetch_fasta_sequence(accession: str, api_key: Optional[str] = None, email: O
 def get_genome_from_ncbi(accession: str, email: Optional[str] = None, api_key: Optional[str] = None) -> Any:
     """Fetch and parse one nucleotide record from NCBI as a ``SeqRecord``.
 
-    This compatibility-level convenience function keeps the public DNA API
-    aligned with the integration workflow while delegating transport to the
-    canonical :class:`EntrezClient` implementation.
+    Convenience wrapper over :class:`EntrezClient`, which handles the transport.
 
     Args:
         accession: NCBI nucleotide accession, optionally with a version.

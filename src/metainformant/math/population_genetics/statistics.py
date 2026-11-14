@@ -131,37 +131,25 @@ def fixation_probability(
     initial_frequency: float | None = None,
     population_size: int | None = None,
     selection_coefficient: float = 0.0,
-    *,
-    Ne: int | None = None,
-    p0: float | None = None,
 ) -> float:
     """Calculate fixation probability under selection.
 
-    Supports multiple calling conventions:
-    - fixation_probability(p0, Ne, selection_coefficient=s)
-    - fixation_probability(selection_coefficient=s, population_size=N)
-
     Args:
-        initial_frequency: Initial allele frequency (p0)
-        population_size: Population size (N)
+        initial_frequency: Initial allele frequency (p0); ``None`` means a single
+            new mutation, ``1 / (2N)``
+        population_size: Population size (N); required
         selection_coefficient: Selection coefficient (s)
-        Ne: Alias for population_size
-        p0: Alias for initial_frequency
 
     Returns:
         Probability of fixation
-    """
-    # Handle parameter aliases
-    if Ne is not None and population_size is None:
-        population_size = Ne
-    if p0 is not None and initial_frequency is None:
-        initial_frequency = p0
 
-    # Default values
+    Raises:
+        ValueError: If ``population_size`` is not given
+    """
+    if population_size is None:
+        raise ValueError("population_size must be provided")
     if initial_frequency is None:
         initial_frequency = 1.0 / (2 * population_size) if population_size else 0.5
-    if population_size is None:
-        raise ValueError("population_size (or Ne) must be provided")
 
     s = selection_coefficient
     N = population_size
@@ -294,7 +282,6 @@ def bootstrap_confidence_interval(
     values: List[float],
     statistic_func: Any | None = None,
     confidence_level: float = 0.95,
-    n_bootstrap: int | None = None,
     n_bootstraps: int = 1000,
     random_state: int | None = None,
 ) -> Dict[str, Any]:
@@ -304,7 +291,6 @@ def bootstrap_confidence_interval(
         values: Original sample values
         statistic_func: Statistic computed on each resample (default ``numpy.mean``)
         confidence_level: Confidence level (0.95 for 95% CI)
-        n_bootstrap: Number of bootstrap resamples; overrides ``n_bootstraps`` when given
         n_bootstraps: Number of bootstrap resamples
         random_state: Seed for ``numpy.random.default_rng``; None draws fresh entropy
 
@@ -313,8 +299,6 @@ def bootstrap_confidence_interval(
         ``n_bootstrap``. An empty ``values`` returns NaN for the statistic and both limits and
         ``n_bootstrap`` 0 rather than raising.
     """
-    if n_bootstrap is not None:
-        n_bootstraps = n_bootstrap
     if statistic_func is None:
         statistic_func = np.mean
     if not values:
@@ -866,15 +850,3 @@ def sample_size_for_power(
     z_power = float(norm.ppf(target_power))
     n_continuous = 2.0 * ((z_alpha + z_power) / effect_size) ** 2
     return max(2, int(math.ceil(n_continuous)))
-
-
-def deterministic_replicate_seeds(base_seed: int, n_replicates: int) -> List[int]:
-    """Stable, order-independent replicate seeds (canonical home: core.utils.seeds).
-
-    Re-exported here for backwards compatibility; the implementation lives in
-    ``metainformant.core.utils.seeds`` so other domains can import it without
-    crossing the math domain boundary.
-    """
-    from metainformant.core.utils.seeds import deterministic_replicate_seeds as _impl
-
-    return _impl(base_seed, n_replicates)

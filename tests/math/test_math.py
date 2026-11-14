@@ -10,22 +10,22 @@ class TestMath:
 
     def test_correlation_coefficient(self):
         """Test Pearson correlation coefficient calculation."""
-        from metainformant.math.core.utilities import correlation_coefficient
+        from metainformant.math.core.utilities import correlation
 
         # Perfect positive correlation
         x = [1, 2, 3, 4, 5]
         y = [2, 4, 6, 8, 10]
-        corr = correlation_coefficient(x, y)
+        corr = correlation(x, y)
         assert abs(corr - 1.0) < 1e-10
 
         # Perfect negative correlation
         y_neg = [10, 8, 6, 4, 2]
-        corr_neg = correlation_coefficient(x, y_neg)
+        corr_neg = correlation(x, y_neg)
         assert abs(corr_neg + 1.0) < 1e-10
 
         # No correlation
         y_random = [1, 5, 2, 8, 3]
-        corr_random = correlation_coefficient(x, y_random)
+        corr_random = correlation(x, y_random)
         assert abs(corr_random) < 0.5  # Should be close to zero
 
     def test_linear_regression(self):
@@ -127,17 +127,17 @@ class TestMath:
     def test_input_validation(self):
         """Test input validation for all new functions."""
         from metainformant.math.core.utilities import (
-            correlation_coefficient,
+            correlation,
             jensen_shannon_divergence,
             linear_regression,
         )
 
         # Test invalid correlation inputs
         with pytest.raises(ValueError):
-            correlation_coefficient([1, 2], [1, 2, 3])  # Different lengths
+            correlation([1, 2], [1, 2, 3])  # Different lengths
 
         # Too short lists return 0.0, not ValueError
-        assert correlation_coefficient([1], [2]) == 0.0
+        assert correlation([1], [2]) == 0.0
 
         # Test invalid regression inputs
         with pytest.raises(ValueError):
@@ -149,13 +149,13 @@ class TestMath:
 
     def test_mathematical_consistency(self):
         """Test mathematical consistency of calculations."""
-        from metainformant.math.core.utilities import correlation_coefficient, linear_regression
+        from metainformant.math.core.utilities import correlation, linear_regression
 
         # Test that correlation and regression are consistent
         x = [1, 2, 3, 4, 5]
         y = [2, 4, 6, 8, 10]  # Perfect correlation
 
-        corr = correlation_coefficient(x, y)
+        corr = correlation(x, y)
         slope, intercept, r_squared = linear_regression(x, y)
 
         # Should have perfect correlation
@@ -184,12 +184,12 @@ class TestMath:
 
     def test_numerical_stability(self):
         """Test numerical stability of calculations."""
-        from metainformant.math.core.utilities import correlation_coefficient, linear_regression
+        from metainformant.math.core.utilities import correlation, linear_regression
 
         # Test with very small values
         x_small = [1e-10, 2e-10, 3e-10]
         y_small = [1e-10, 2e-10, 3e-10]
-        corr_small = correlation_coefficient(x_small, y_small)
+        corr_small = correlation(x_small, y_small)
         assert abs(corr_small - 1.0) < 1e-6  # Should still detect perfect correlation
 
         # Test with very large values

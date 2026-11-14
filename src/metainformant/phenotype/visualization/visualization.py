@@ -89,7 +89,7 @@ def plot_trait_distribution(
             kde = gaussian_kde(trait_values)
             x_range = np.linspace(trait_values.min(), trait_values.max(), 100)
             ax.plot(x_range, kde(x_range), "r-", linewidth=2)
-        except (ValueError, np.linalg.LinAlgError):
+        except ValueError, np.linalg.LinAlgError:
             pass  # Skip KDE if data is singular or insufficient
 
     ax.set_xlabel(f"{trait_name} Value")

@@ -172,7 +172,7 @@ Core functions:
 
 - `dna.variants` - VCF parsing utilities
 - `dna.population` - Population genetics statistics
-- `math.popgen` - Theoretical population genetics
+- `math.population_genetics` - Theoretical population genetics
 - `ml.regression` - Regression models
 - `visualization.plots` - Plotting utilities
 

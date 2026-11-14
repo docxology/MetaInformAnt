@@ -72,19 +72,13 @@ def test_cai_output_pinned() -> None:
     assert codon.cai("ATGGCTATGGCTATGGCT") == pytest.approx(0.9517476831808721)
 
 
-def test_calculate_enc_uses_input_sequence_not_reference() -> None:
-    """ENC is computed from the input sequence's codon frequencies; reference_usage is inert."""
+def test_calculate_enc_uses_input_sequence() -> None:
+    """ENC is computed from the input sequence's own codon frequencies."""
     seq = "ATGGCCATGGCTATGGCCATGGCT"  # balanced Ala GCC/GCT use: F = 0.5 -> ENC 2.0
-    flat_reference = {c: 1.0 / 64 for c in codon.GENETIC_CODE}
-    skewed_reference = {"GCC": 0.95, "GCT": 0.05, "ATG": 1.0}
 
     from_input = codon.calculate_enc(seq)
     assert from_input == pytest.approx(2.0)
-    assert codon.calculate_enc(seq, reference_usage=flat_reference) == pytest.approx(from_input)
-    assert codon.calculate_enc(seq, reference_usage=skewed_reference) == pytest.approx(from_input)
-
-    # A reference-only computation (the old behaviour) would read the flat table
-    # as unbiased (~61) for this sequence; the input-driven value differs.
+    # A flat (unbiased) reference table would read as ~61; the input-driven value differs.
     assert from_input != pytest.approx(61.0)
 
 

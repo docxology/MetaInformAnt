@@ -175,9 +175,9 @@ class TestCanonicalImportPaths:
         """Information metrics advanced.channel should expose channel functions."""
         from metainformant.information.metrics.advanced.channel import channel_capacity  # noqa: F401
 
-    def test_information_metrics_advanced_geometry(self) -> None:
-        """Information metrics advanced.geometry should expose geometry functions."""
-        from metainformant.information.metrics.advanced.geometry import fisher_rao_distance  # noqa: F401
+    def test_information_metrics_advanced_fisher_rao(self) -> None:
+        """Information metrics advanced.fisher_rao should expose Fisher-Rao functions."""
+        from metainformant.information.metrics.advanced.fisher_rao import fisher_rao_distance  # noqa: F401
 
     def test_information_metrics_advanced_semantic(self) -> None:
         """Information metrics advanced.semantic should expose semantic functions."""

@@ -124,9 +124,9 @@ results = workflow.execute_workflow(config)  # runs the planned amalgkit steps (
 
 # === Single-Cell: Cell clustering ===
 from metainformant.singlecell.data import preprocessing
-from metainformant.singlecell.analysis import clustering, dimensionality
+from metainformant.singlecell.analysis import clustering, pca_methods
 adata = preprocessing.load_count_matrix("cells.h5ad", format="h5ad")
-adata = dimensionality.pca_reduction(adata, n_components=30)
+adata = pca_methods.pca_reduction(adata, n_components=30)
 adata = clustering.leiden_clustering(adata, resolution=0.5)  # needs leidenalg and igraph; adds obs["leiden_cluster"]
 markers = clustering.find_marker_genes(adata, groupby="leiden_cluster")
 
@@ -189,7 +189,7 @@ embeddings, loadings, explained_variance = integration.joint_pca(multi, n_compon
 
 | Dependency | Uses | Notes |
 |------------|------|-------|
-| **rna → dna** | Transcription, codon translation | `dna.transcription.transcribe_dna_to_rna()`; the `rna` package does not import `dna`, so combine them in your own code |
+| **rna → dna** | Transcription, codon translation | `dna.expression.transcription.transcribe()`; the `rna` package does not import `dna`, so combine them in your own code |
 | **multiomics → dna/rna** | Data container integration | Uses `from_dna_variants()`, `from_rna_expression()` |
 | **eqtl → gwas + rna** | Expression QTL mapping | Logic in `gwas.finemapping.eqtl` |
 | **spatial → singlecell** | Cell-type mapping | Anchors-based integration |

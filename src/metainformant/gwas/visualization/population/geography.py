@@ -114,7 +114,7 @@ def sample_map(
                 if size_by is not None and size_by in sample_info:
                     entry["size_val"] = float(sample_info[size_by])
                 plotable.append(entry)
-            except (ValueError, TypeError):
+            except ValueError, TypeError:
                 n_skipped += 1
 
         if n_skipped > 0:
@@ -265,7 +265,7 @@ def allele_frequency_map(
                 continue
             try:
                 coord = (float(lat), float(lon))
-            except (ValueError, TypeError):
+            except ValueError, TypeError:
                 continue
             if pop not in pop_samples:
                 pop_samples[pop] = []
@@ -411,7 +411,7 @@ def population_count_map(
                 continue
             try:
                 coord = (float(lat), float(lon))
-            except (ValueError, TypeError):
+            except ValueError, TypeError:
                 continue
             if pop not in pop_coords:
                 pop_coords[pop] = []

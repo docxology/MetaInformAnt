@@ -122,7 +122,7 @@ def genomic_overview(
 
     Raises:
         ValueError: If a value is not shaped as described above. It is checked before its panel is created, so
-            an unusable value no longer leaves an empty panel in the figure.
+            an unusable value never leaves an empty panel in the figure.
     """
     known = {"expression", "pca_data", "pvalues", "log2fc", "gc_content", "quality_scores"}
     if set(data) - known:

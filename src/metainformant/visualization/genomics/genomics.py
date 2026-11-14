@@ -55,8 +55,8 @@ GRCH38_CHROMOSOME_LENGTHS: dict[str, int] = {
 def _chromosome_sort_key(label: Hashable) -> tuple[int, int, str]:
     """Natural genome order for a chromosome label: 1, 2, ..., 10, ..., X, Y, M/MT, then anything else by name.
 
-    A ``chr`` prefix is ignored, so ``"chr10"`` follows ``"chr2"``. Plain string sorting put "10" and "11" before
-    "2" and raised ``TypeError`` for a mix of integer and string labels.
+    A ``chr`` prefix is ignored, so ``"chr10"`` follows ``"chr2"``. Unlike plain string sorting, "10" and "11" come
+    after "2", and a mix of integer and string labels sorts without a ``TypeError``.
     """
     name = str(label).strip()
     bare = name[3:] if name.lower().startswith("chr") else name
@@ -71,8 +71,8 @@ def _chromosome_sort_key(label: Hashable) -> tuple[int, int, str]:
 def _check_pvalues(values: pd.Series, column: str) -> None:
     """Raise ``ValueError`` for a p-value outside [0, 1]; ``-log10`` of one is a fabricated peak or a negative height.
 
-    A p-value below 0 used to be clipped to 1e-300 and drawn at a height of 300, and one above 1 drawn below zero.
-    Missing values (NaN) are not drawn and are not an error.
+    A p-value below 0 is not clipped to 1e-300 and drawn at a height of 300, and one above 1 is not drawn below
+    zero. Missing values (NaN) are not drawn and are not an error.
     """
     invalid = values[(values < 0) | (values > 1)]
     if len(invalid):

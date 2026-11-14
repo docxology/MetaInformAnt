@@ -6,6 +6,7 @@ import io
 import json
 import os
 import stat
+import tomllib
 from collections.abc import Sequence
 from pathlib import Path
 from typing import IO, Any, Iterable, Iterator, Mapping, cast
@@ -190,12 +191,8 @@ def load_toml(path: str | Path) -> Any:
         IOError: If file read fails
     """
     try:
-        import tomllib
-
         with open(path, "rb") as fh:
             return tomllib.load(fh)
-    except ImportError as e:
-        raise ImportError("tomllib is required for TOML support (Python 3.11+).") from e
     except Exception as e:
         raise CoreIOError(f"Failed to read TOML file {path}: {e}") from e
 
@@ -439,7 +436,7 @@ def write_csv(data: Any, path: str | Path, **kwargs: Any) -> None:
             # Try to convert to DataFrame
             df = pd.DataFrame(data)
             df.to_csv(path, **kwargs)
-    except (ImportError, AttributeError):
+    except ImportError, AttributeError:
         # Fallback to native implementation
         if isinstance(data, dict):
             rows = []

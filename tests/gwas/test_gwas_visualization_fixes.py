@@ -334,7 +334,7 @@ def _population_arrays(n_samples: int = 12, seed: int = 4) -> tuple[np.ndarray, 
 
 
 class TestPopulationInputFiles:
-    """PCA / kinship inputs in the formats the package writes (and TSV) used to be skipped with a warning."""
+    """PCA / kinship inputs in the formats the package writes (and TSV) are read, not skipped with a warning."""
 
     def test_pca_tsv_without_header(self, tmp_path):
         pcs, _ = _population_arrays()
@@ -524,7 +524,7 @@ class TestSummaryPanelReceivesPopulationData:
         with_data = self._summary_png(tmp_path / "c", pca_data={"pcs": pcs.tolist()}, kinship_matrix=kinship)
 
         assert without_1 == without_2  # control: rendering is deterministic
-        assert with_data != without_1  # the PCA and kinship panels are no longer "No data available"
+        assert with_data != without_1  # the PCA and kinship panels are not "No data available"
 
     def test_files_change_the_summary_panel_too(self, tmp_path):
         pcs, kinship = _population_arrays()
@@ -740,15 +740,10 @@ class TestGeneTrackHonesty:
 
 
 class TestRecombinationHonesty:
-    RESULTS = [
-        {"CHROM": "chr1", "POS": 1000, "p_value": 1e-8},
-        {"CHROM": "chr1", "POS": 2000, "p_value": 1e-6},
-    ]
-
     def test_without_a_recombination_map_nothing_is_plotted_and_the_result_says_so(self, tmp_path):
         out = tmp_path / "recombination.png"
 
-        result = regional.recombination_rate_plot(self.RESULTS, out, chrom="chr1", start=500, end=2500)
+        result = regional.recombination_rate_plot(out)
 
         assert result["status"] == "skipped"
         assert "recombination" in result["reason"].lower()
@@ -756,9 +751,7 @@ class TestRecombinationHonesty:
         assert not out.exists()
 
     def test_one_of_rates_or_positions_is_not_enough(self, tmp_path):
-        result = regional.recombination_rate_plot(
-            self.RESULTS, tmp_path / "r.png", recombination_rates={"chr1": [1.0, 2.0]}
-        )
+        result = regional.recombination_rate_plot(tmp_path / "r.png", recombination_rates={"chr1": [1.0, 2.0]})
 
         assert result["status"] == "skipped"
         assert "recombination_rates" in result["reason"] and "positions" in result["reason"]
@@ -768,7 +761,6 @@ class TestRecombinationHonesty:
         out = tmp_path / "recombination.png"
 
         result = regional.recombination_rate_plot(
-            self.RESULTS,
             out,
             recombination_rates={"chr1": [1.0, 2.0, 1.5]},
             positions={"chr1": [1000, 2000, 3000]},

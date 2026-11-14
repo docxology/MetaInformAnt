@@ -28,9 +28,9 @@ networks.
 ```mermaid
 graph TD
     subgraph "Networks Module"
-        AG[analysis/graph.py] --> |BiologicalNetwork| NET[Network Construction]
-        AG --> |centrality_measures| ALG[Graph Algorithms]
-        AG --> |network_metrics| MET[Topology Metrics]
+        AG[analysis/graph_core.py] --> |BiologicalNetwork| NET[Network Construction]
+        AGA[analysis/graph_algorithms.py] --> |centrality_measures| ALG[Graph Algorithms]
+        AGA --> |network_metrics| MET[Topology Metrics]
 
         AC[analysis/community.py] --> |louvain_communities| LV[Louvain Detection]
         AC --> |label_propagation| LP[Label Propagation]
@@ -39,8 +39,8 @@ graph TD
 
         IP[interaction/ppi.py] --> |load_ppi_network| PPI[PPI Networks]
 
-        IR[interaction/regulatory.py] --> |GeneRegulatoryNetwork| GRN[Regulatory Networks]
-        IR --> |infer_grn| INF[GRN Inference]
+        IR[interaction/regulatory_core.py] --> |GeneRegulatoryNetwork| GRN[Regulatory Networks]
+        IRA[interaction/regulatory_analysis.py] --> |infer_grn| INF[GRN Inference]
     end
 ```
 
@@ -49,7 +49,8 @@ graph TD
 ### Graph Construction and Analysis
 
 ```python
-from metainformant.networks.analysis.graph import create_network, centrality_measures, network_metrics
+from metainformant.networks.analysis.graph_algorithms import centrality_measures, network_metrics
+from metainformant.networks.analysis.graph_core import create_network
 
 # Build a biological network from an edge list
 G = create_network([("TP53", "MDM2"), ("BRCA1", "TP53")], directed=False)
@@ -65,8 +66,8 @@ metrics = network_metrics(G)
 |----------|--------|-------------|
 | `louvain_communities` | `analysis.community` | Louvain modularity optimization |
 | `label_propagation_communities` | `analysis.community` | Label propagation clustering |
-| `centrality_measures` | `analysis.graph` | Degree, betweenness, closeness centrality |
-| `get_connected_components` | `analysis.graph` | Connected component extraction |
+| `centrality_measures` | `analysis.graph_algorithms` | Degree, betweenness, closeness centrality |
+| `get_connected_components` | `analysis.graph_algorithms` | Connected component extraction |
 
 `detect_communities(graph, method="louvain", random_state=...)` seeds Louvain through python-louvain's own `random_state` and leaves the global random states alone. When the package behind `'leiden'` is missing, it falls back to Louvain with only the options Louvain accepts (Leiden-only options such as `n_iterations` are dropped), or to greedy modularity when python-louvain is missing too.
 
@@ -75,11 +76,11 @@ metrics = network_metrics(G)
 | Function | Module | Description |
 |----------|--------|-------------|
 | `load_ppi_network` | `interaction.ppi` | Load PPI networks (TSV, CSV, JSON node-link, BioPlex, IntAct) |
-| `construct_regulatory_network` | `interaction.regulatory` | Build gene regulatory networks |
-| `infer_grn` | `interaction.regulatory` | Infer GRN from expression data (`'correlation'` or `'mutual_info'`; `random_state` seeds the mutual-information jitter) |
-| `identify_regulatory_hubs` | `interaction.regulatory` | Find hub transcription factors |
-| `analyze_regulatory_motifs` | `interaction.regulatory` | Detect feed-forward loops, cascades |
-| `regulatory_motifs` | `interaction.regulatory` | Feed-forward loops (all three edges, including the direct TF1 -> target edge), auto- and mutual regulation |
+| `construct_regulatory_network` | `interaction.regulatory_core` | Build gene regulatory networks |
+| `infer_grn` | `interaction.regulatory_analysis` | Infer GRN from expression data (`'correlation'` or `'mutual_info'`; `random_state` seeds the mutual-information jitter) |
+| `identify_regulatory_hubs` | `interaction.regulatory_core` | Find hub transcription factors |
+| `analyze_regulatory_motifs` | `interaction.regulatory_core` | Detect feed-forward loops, cascades |
+| `regulatory_motifs` | `interaction.regulatory_analysis` | Feed-forward loops (all three edges, including the direct TF1 -> target edge), auto- and mutual regulation |
 
 ## Submodules
 
@@ -94,7 +95,8 @@ metrics = network_metrics(G)
 ## Quick Start
 
 ```python
-from metainformant.networks.analysis.graph import create_network, add_edges_from_interactions, centrality_measures
+from metainformant.networks.analysis.graph_algorithms import centrality_measures
+from metainformant.networks.analysis.graph_core import create_network, add_edges_from_interactions
 from metainformant.networks.analysis.community import louvain_communities
 from metainformant.networks.analysis.pathway import pathway_enrichment_analysis
 

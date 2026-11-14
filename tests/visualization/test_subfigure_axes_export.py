@@ -2,10 +2,10 @@
 
 ``Axes.figure`` is a :class:`matplotlib.figure.SubFigure` (which has no
 ``savefig``) when the caller passes an axes created through
-``fig.subfigures(...)``. Every ``output_path`` export used to hand that
-SubFigure straight to ``save_figure_deterministic`` and crashed with
-``AttributeError: 'SubFigure' object has no attribute 'savefig'``. The exports
-now resolve the root ``Figure`` first.
+``fig.subfigures(...)``. Every ``output_path`` export resolves the root
+``Figure`` first instead of handing that SubFigure to
+``save_figure_deterministic``, which would fail with
+``AttributeError: 'SubFigure' object has no attribute 'savefig'``.
 
 All tests use real matplotlib Agg figures and real PNG files in ``tmp_path``;
 no test doubles.

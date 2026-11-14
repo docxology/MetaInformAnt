@@ -238,7 +238,7 @@ def test_cli_end_to_end_workflow(tmp_path: Path):
         )
         if result.returncode != 0:
             pytest.skip("metainformant CLI not available in test environment")
-    except (subprocess.TimeoutExpired, FileNotFoundError):
+    except subprocess.TimeoutExpired, FileNotFoundError:
         pytest.skip("metainformant CLI not available in test environment")
 
     # Create sequences file

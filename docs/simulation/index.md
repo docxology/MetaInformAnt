@@ -107,7 +107,7 @@ bottleneck_seqs = simulate_bottleneck_population(
 )
 
 # Simulate natural selection on a genotype matrix (individuals x sites)
-genotypes = np.array(generate_genotype_matrix(n_individuals=100, n_sites=20))
+genotypes = np.array(generate_genotype_matrix(n_individuals=100, n_snps=20))
 fitness_effects = np.tile([0.0, 0.5, 1.0], (20, 1))  # fitness effect of genotypes 0, 1, 2 at each site
 selected = simulate_selection(genotypes, fitness_effects, generations=50, selection_strength=0.1)
 final_frequencies = selected["allele_frequencies"][-1]  # one frequency per site

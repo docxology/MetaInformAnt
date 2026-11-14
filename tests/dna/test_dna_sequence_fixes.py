@@ -63,8 +63,8 @@ class TestFindOrfs:
 
     def test_each_orf_is_reported_once_in_its_own_frame(self):
         # ATG at index 1 is frame +2; its reverse complement TTATTTCATG has an
-        # open ATG at index 7 (frame -2). Scanning unaligned starts used to
-        # report each ORF in all three frames of its strand.
+        # open ATG at index 7 (frame -2). Each ORF is reported once, not in all
+        # three frames of its strand.
         assert find_orfs("CATGAAATAA", min_length=1) == [(1, 10, "+2"), (0, 3, "-2")]
 
     def test_frame_label_is_start_position_modulo_three(self):

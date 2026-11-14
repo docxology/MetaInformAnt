@@ -14,28 +14,28 @@ from scripts.quality.verify_real_implementation_policy import (
     scan_repo,
 )
 
-# Measured 2026-10-26 with the ``monkeypatch-setattr`` rule:
-# 134 rebinding sites across 28 tracked files. These are pre-existing
-# ``monkeypatch.setattr`` calls that replace functions, methods, lambdas or
-# module attributes with test doubles -- a documented violation of
+# Measured 2026-11-13 with the ``monkeypatch-setattr`` rule:
+# 130 rebinding sites across 26 tracked files. These ``monkeypatch.setattr``
+# calls replace functions, methods, lambdas or module attributes with test
+# doubles -- a documented violation of
 # tests/REAL_IMPLEMENTATION_TESTING_POLICY.md ("pytest.MonkeyPatch for
-# function replacement" is prohibited). Mass-migrating them to
+# function replacement" is prohibited). Migrating them to
 # real-implementation tests is deliberate follow-up work, NOT part of the
-# scanner change; until then the scanner must keep REPORTING the debt, and
-# this assertion pins its size so the debt can neither grow nor silently
-# shrink. When a site is migrated to a real implementation, re-measure with
+# scanner; until then the scanner must keep REPORTING the debt, and this
+# assertion pins its size so the debt can neither grow nor silently shrink.
+# When a site is migrated to a real implementation, re-measure with
 # ``python scripts/quality/verify_real_implementation_policy.py`` and lower
 # this number; any other change is a regression.
 #
-# 2026-11-13: raised from 102 to 134 (28 files). The frozen-cohort producer
-# work added 32 sites in seven new RNA test files (test_cohort_scheduling 17,
-# test_cohort_discovery 5, test_quant_reuse_contract_v2 4,
-# test_progress_db_startup_reconcile 3, test_producer_startup_exit_codes 1,
-# test_amalgkit_pin 1, test_campaign_lock 1). They stand in sample workers,
-# discovery and preflight to drive the scheduler, the same pattern as the
-# existing test_rna_streaming_orchestrator debt; migrating them to injected
-# real workers is tracked follow-up work.
-KNOWN_MONKEYPATCH_SETATTR_SITES = 134
+# 100 of the 130 sites are in 11 RNA test files (test_rna_streaming_orchestrator
+# 58, test_cohort_scheduling 17, test_rna_retrieval 6, test_cohort_discovery 5,
+# test_quant_reuse_contract_v2 4, test_progress_db_startup_reconcile 3,
+# test_rna_campaign_preflight 2, test_rna_workflow_error_handling 2,
+# test_producer_startup_exit_codes 1, test_campaign_lock 1,
+# test_rna_workflow_steps 1). They stand in sample workers, discovery and
+# preflight to drive the scheduler; migrating them to injected real workers
+# is tracked follow-up work.
+KNOWN_MONKEYPATCH_SETATTR_SITES = 130
 
 
 @lru_cache(maxsize=1)
@@ -58,11 +58,11 @@ def test_repo_real_implementation_policy_scan_passes() -> None:
 def test_monkeypatch_setattr_debt_is_reported_and_bounded() -> None:
     """The scanner must keep reporting the known monkeypatch.setattr debt.
 
-    134 sites across 28 files rebind callables/attributes via
+    130 sites across 26 files rebind callables/attributes via
     ``monkeypatch.setattr``. Migration to real implementations is tracked
     follow-up work; the scanner reports them so the repository can see the
     debt, and this test documents the exact allowlist size and its rationale
-    (mass migration is out of scope for the scanner change).
+    (mass migration is out of scope for the scanner).
     """
     debt = [v for v in _repo_violations() if v.rule == "monkeypatch-setattr"]
 

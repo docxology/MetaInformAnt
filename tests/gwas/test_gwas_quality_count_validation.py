@@ -99,7 +99,7 @@ def test_ragged_genotype_rows_are_a_value_error() -> None:
 
 
 def test_the_message_is_the_same_with_and_without_min_qual() -> None:
-    """The count check no longer depends on the QUAL filter being enabled."""
+    """The count check does not depend on the QUAL filter being enabled."""
     data = _vcf(GENOTYPES, _variants(VARIANT_IDS[:3]))
 
     with pytest.raises(ValueError, match=r"3 variant records.*4 genotype columns"):

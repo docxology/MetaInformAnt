@@ -138,7 +138,7 @@ def parse_vcf_full(vcf_path: Union[str, Path]) -> Dict[str, Any]:
                             gt_parts = gt_field.split(sep)
                             try:
                                 genotypes[var_idx, s_idx] = sum(int(a) for a in gt_parts if a.isdigit())
-                            except (ValueError, TypeError):
+                            except ValueError, TypeError:
                                 pass
                     var_idx += 1
                 except (ValueError, IndexError) as e:
@@ -250,12 +250,11 @@ def filter_by_missing(genotypes: List[List[int]], missing_threshold: float = 0.1
     return filtered_genotypes, kept_indices
 
 
-def test_hwe(genotypes: List[List[int]], alpha: float = 0.05) -> List[float]:
+def test_hwe(genotypes: List[List[int]]) -> List[float]:
     """Test variants for Hardy-Weinberg equilibrium using chi-square test.
 
     Args:
         genotypes: Genotype matrix (variants x samples)
-        alpha: Significance threshold (unused, kept for API compatibility)
 
     Returns:
         List of p-values for HWE test
@@ -447,7 +446,7 @@ def _coerce_qual(value: Any) -> Optional[float]:
     else:
         try:
             qual = float(value)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             return None
     return None if math.isnan(qual) else qual
 
@@ -472,7 +471,7 @@ def _validated_min_qual(value: Any) -> Optional[float]:
         return None
     try:
         threshold = float(value)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         raise ValueError(f"min_qual must be a number, got {value!r}") from None
     if math.isnan(threshold):
         raise ValueError("min_qual must be a number, got NaN")
@@ -620,7 +619,7 @@ def apply_qc_filters(
     final_indices = [candidate_indices[maf_indices[i]] for i in missing_indices]
 
     # Apply HWE filter
-    hwe_p_values = test_hwe(filtered_genotypes, alpha=min_hwe_p)
+    hwe_p_values = test_hwe(filtered_genotypes)
     hwe_kept = [i for i, p_val in enumerate(hwe_p_values) if p_val >= min_hwe_p]
     final_genotypes = [filtered_genotypes[i] for i in hwe_kept]
     final_indices = [final_indices[i] for i in hwe_kept]

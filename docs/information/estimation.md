@@ -56,10 +56,6 @@ Calculate bootstrap confidence interval for entropy. `random_state` seeds the re
 - `confidence_level`: The confidence level used
 - `n_bootstraps`: Number of bootstrap samples
 
-### `effective_sample_size_correction(entropy, sample_size, alphabet_size) -> float`
-
-Apply an additive Miller-Madow-style correction to a raw entropy estimate (bits): adds (d-1)/(2n * ln 2) and clamps at 0.
-
 ### `panzeri_treves_bias_correction(entropy, sample_size, alphabet_size, response_frequencies=None) -> float`
 
 Apply the Panzeri-Treves (1996) bias correction. More accurate than Miller-Madow for small samples. Accepts optional response-specific frequencies; falls back to uniform assumption.
@@ -126,5 +122,5 @@ No environment variables are read; estimators are configured through their argum
 
 - `metainformant.information.metrics.core.syntactic` -- exact entropy from known distributions
 - `metainformant.information.metrics.advanced.channel` -- channel capacity
-- `metainformant.information.metrics.advanced.geometry` -- information geometry
+- `metainformant.information.metrics.advanced.fisher_rao` and `metainformant.information.metrics.advanced.information_projection` -- information geometry
 - `metainformant.information.metrics.advanced.decomposition` -- multivariate decomposition

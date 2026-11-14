@@ -342,7 +342,7 @@ def _two_group_counts(n_per_group: int, n_taxa: int = 6, seed: int = 0) -> tuple
 
 
 class TestBiomarkerCrossValidationFolds:
-    """cv_folds used to be capped at the number of groups (2 for a two-group comparison)."""
+    """cv_folds is not capped at the number of groups (2 for a two-group comparison)."""
 
     @pytest.fixture(autouse=True)
     def _require_sklearn(self) -> None:

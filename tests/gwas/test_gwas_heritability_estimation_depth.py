@@ -353,29 +353,29 @@ class TestLdscRegressionHelpers:
 
     def test_numpy_and_pure_agree(self) -> None:
         y, ld = self._data()
-        r_np = _ldsc_regression_numpy(y, ld, 100, 5, True)
-        r_pure = _ldsc_regression_pure(y, ld, 100, 5, True)
+        r_np = _ldsc_regression_numpy(y, ld, 5, True)
+        r_pure = _ldsc_regression_pure(y, ld, 5, True)
         assert r_np is not None and r_pure is not None
         for a, b in zip(r_np, r_pure):
             assert a == pytest.approx(b, rel=1e-6)
 
     def test_slope_and_intercept(self) -> None:
         y, ld = self._data()
-        slope, slope_se, intercept, intercept_se = _ldsc_regression_numpy(y, ld, 100, 5, True)
+        slope, slope_se, intercept, intercept_se = _ldsc_regression_numpy(y, ld, 5, True)
         assert slope == pytest.approx(0.5, rel=1e-6)
         assert intercept == pytest.approx(1.0, rel=1e-6)
         assert slope_se >= 0.0 and intercept_se >= 0.0
 
     def test_no_intercept_constraint(self) -> None:
         y, ld = self._data()
-        slope, slope_se, intercept, intercept_se = _ldsc_regression_pure(y, ld, 100, 5, False)
+        slope, slope_se, intercept, intercept_se = _ldsc_regression_pure(y, ld, 5, False)
         assert intercept == 1.0
         assert intercept_se == 0.0
         assert slope_se >= 0.0
 
     def test_singular_returns_none(self) -> None:
         # All identical LD scores -> no information -> None
-        result = _ldsc_regression_numpy([1.0, 2.0, 3.0], [0.0, 0.0, 0.0], 10, 3, True)
+        result = _ldsc_regression_numpy([1.0, 2.0, 3.0], [0.0, 0.0, 0.0], 3, True)
         assert result is None
 
 

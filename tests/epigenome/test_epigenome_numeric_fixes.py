@@ -68,7 +68,7 @@ class TestSummitRefinement:
         refined = peak_summit_refinement(signal, {"start": 0, "end": 10, "summit": 4}, window=5)
 
         assert refined["refined_summit_position"] == pytest.approx(_vertex(1.0, 3.0, 2.0, 4), abs=5e-5)
-        assert refined["refined_summit_position"] > 4  # it used to be 3.8333
+        assert refined["refined_summit_position"] > 4  # not 3.8333
         assert refined["summit"] == 4
 
     def test_a_higher_left_neighbour_pulls_the_summit_left(self) -> None:
@@ -163,7 +163,7 @@ class TestPoissonPValue:
         for peak in peaks:
             assert 0.0 < peak["p_value"] < 1e-17  # below what 1 - cdf can represent (about 1e-16)
             assert peak["score"] == pytest.approx(-math.log10(peak["p_value"]), abs=1e-3)
-            assert peak["score"] < 300.0  # it used to be 300 for both: p was 0.0
+            assert peak["score"] < 300.0  # not 300 for both, as p = 0.0 would give
             assert 0.0 < peak["q_value"] < 1e-16
         assert peaks[1]["p_value"] < peaks[0]["p_value"]
         assert peaks[1]["score"] > peaks[0]["score"] + 5
@@ -239,7 +239,7 @@ print("RESULT" + json.dumps({"depleted": depleted, "enriched": enriched}))
         got = json.loads(line[len("RESULT") :])
 
         assert got["depleted"] == pytest.approx(_exact_enrichment_p(2, 48, 48, 2), rel=1e-9)
-        assert got["depleted"] > 0.99  # it used to be about 2e-6: "enriched"
+        assert got["depleted"] > 0.99  # not about 2e-6, which would read "enriched"
         assert got["enriched"] == pytest.approx(_exact_enrichment_p(48, 2, 2, 48), rel=1e-9)
         assert got["enriched"] < 1e-20
 

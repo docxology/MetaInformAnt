@@ -192,10 +192,9 @@ def classify_orthogroups(
     if bridge_table.empty:
         return pd.DataFrame(columns=["n_species_mapped", "max_copies", "orthology_class"])
 
-    # Vectorized classification. Measured baseline: tests/perf/BASELINES.md
-    # section 2 -- iterrows() + per-cell _parse_ids ran at ~30,500
-    # orthogroups/s on the 150,000 x 27 bridge; counting parts with a single
-    # vectorized pass per column (no Python per-cell loop) keeps the outputs
+    # Vectorized classification: one pass per column, no Python per-cell loop.
+    # tests/perf/BASELINES.md section 2 records the per-cell baseline (~30,500
+    # orthogroups/s on the 150,000 x 27 bridge); the vectorized counts are
     # bit-identical and several times faster (see
     # PROJECT_STATE_REPORT_2026-09-01_R5_PERF.md section 3).
     n_rows = len(bridge_table)
@@ -222,9 +221,8 @@ def classify_orthogroups(
 def _count_cell_parts(cells: pd.Series) -> pd.Series:
     """Count the non-empty comma-separated parts of each cell (vectorized).
 
-    Mirrors the historical ``_parse_ids`` semantics: None/NaN cells and cells
-    equal to "nan" (case-insensitive) count as 0, and whitespace-only parts
-    are not counted.
+    None/NaN cells and cells equal to "nan" (case-insensitive) count as 0,
+    and whitespace-only parts are not counted.
     """
     text = cells.astype(str)
     text = text.mask(cells.isna() | text.str.strip().str.lower().eq("nan"), "")
@@ -238,8 +236,8 @@ def _count_cell_parts(cells: pd.Series) -> pd.Series:
 def _normalized_cell_text(cells: pd.Series) -> pd.Series:
     """Normalize bridge-table cells to stripped text, unmapped cells to "".
 
-    Preserves the historical ``_parse_ids`` semantics: None/NaN cells and the
-    literal string "nan" (case-insensitive) count as unmapped.
+    None/NaN cells and the literal string "nan" (case-insensitive) count as
+    unmapped.
     """
     text = cells.astype(str).str.strip()
     return text.mask(cells.isna() | text.str.lower().eq("nan"), "")

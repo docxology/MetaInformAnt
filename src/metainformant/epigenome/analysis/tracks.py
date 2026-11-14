@@ -297,18 +297,16 @@ def load_bedgraph_track(path: str | Path, name: str = "", description: str = "")
     return track
 
 
-def read_bedgraph(path: str | Path, name: str = "", description: str = "") -> "pd.DataFrame":
+def read_bedgraph(path: str | Path) -> "pd.DataFrame":
     """Read a BEDgraph file and return as DataFrame.
 
     Args:
         path: Path to BEDgraph file
-        name: Track name (ignored)
-        description: Track description (ignored)
 
     Returns:
         DataFrame with columns: chrom, start, end, value
     """
-    track = load_bedgraph_track(path, name, description)
+    track = load_bedgraph_track(path)
     return track.to_dataframe()
 
 
@@ -771,9 +769,7 @@ def compare_tracks(track1: GenomicTrack, track2: GenomicTrack) -> Dict[str, Any]
     The tracks are compared base by base on the chromosomes they share: a feature's value applies to every base it
     covers, and where several features of one track overlap the highest value counts (the convention of
     ``merge_tracks``). ``correlation_coefficient`` is the Pearson correlation of the two tracks' values over the
-    bases that both cover, so it does not depend on how the features are cut or in which order they were added. (It
-    used to pair the first features of the two tracks by list position, whatever their coordinates, which made the
-    number a function of insertion order.)
+    bases that both cover, so it does not depend on how the features are cut or in which order they were added.
 
     Args:
         track1: First GenomicTrack

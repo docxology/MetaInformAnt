@@ -149,8 +149,8 @@ def metropolis_hastings(
     Raises:
         ValueError: If burn_in >= n_samples, burn_in is negative, proposal_scale is not positive, or
             ``log_posterior`` is not finite at ``initial`` or returns NaN or +inf at a proposal (-inf is
-            a legitimate zero density and the proposal is rejected). A NaN used to be accepted as if it
-            were an improvement, silently turning the chain into an unguided random walk.
+            a legitimate zero density and the proposal is rejected). Accepting a NaN as if it were an
+            improvement would silently turn the chain into an unguided random walk.
     """
     if burn_in >= n_samples:
         raise ValueError(f"burn_in ({burn_in}) must be less than n_samples ({n_samples})")

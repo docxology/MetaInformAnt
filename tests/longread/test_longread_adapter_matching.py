@@ -1,19 +1,18 @@
 """Regression tests for adapter detection, trimming and chimeric read splitting.
 
-The default adapter table used to hold two 8 bp entries that match random
-sequence, ``detect_adapters`` stepped through reads in strides of half the adapter
-length, and matching had no indel model. Adapter-free reads lost about 200 bp to
-``trim_adapters`` and were split by ``split_chimeric_reads``, while real adapters
-at unaligned offsets were missed.
+The default adapter table must not hold short entries that match random sequence,
+``detect_adapters`` must not step through reads in strides of half the adapter length,
+and matching needs an indel model. Otherwise adapter-free reads lose about 200 bp to
+``trim_adapters`` and are split by ``split_chimeric_reads``, while real adapters at
+unaligned offsets are missed.
 
-These tests pin the repaired behaviour on seeded random reads and on reads with
+These tests pin that behaviour on seeded random reads and on reads with
 real adapters spliced in at random offsets, and check the false-positive bound
 that justifies the thresholds against an exhaustive count and against random
 sequence. Everything runs on real sequences; there are no mocks.
 
-Two later fixes are pinned at the end of the file. The table entry called ``PacBio_barcoded`` is the
-Illumina Nextera read-1 adapter, so it is ``Illumina_Nextera_read1`` now and the old name still
-resolves, with a ``DeprecationWarning``. And ``ONT_rapid_barcode`` contains ``ONT_LSK109_top``, so a
+Two later fixes are pinned at the end of the file. The Illumina Nextera read-1 adapter is listed as
+``Illumina_Nextera_read1``, not under a PacBio name. And ``ONT_rapid_barcode`` contains ``ONT_LSK109_top``, so a
 longer adapter could take the shorter one's exact site by spending edits on the bases the shorter one
 does not have; overlapping placements are now resolved by edit rate per adapter base, then by the
 adapter bases covered.
@@ -25,7 +24,6 @@ import itertools
 import logging
 import math
 import random
-import warnings
 
 import pytest
 
@@ -440,8 +438,8 @@ BARCODE_TAIL = BARCODE[len(TOP) :]
 NEARLY_BARCODE_TAIL = "AAGGAAAT"
 
 
-class TestRenamedNexteraAdapter:
-    """The Illumina Nextera read-1 sequence was listed as ``PacBio_barcoded``."""
+class TestNexteraAdapter:
+    """The Illumina Nextera read-1 sequence is an Illumina adapter, not a PacBio one."""
 
     def test_the_entry_has_an_honest_name_and_the_same_sequence(self) -> None:
         assert ALL_KNOWN_ADAPTERS["Illumina_Nextera_read1"] == NEXTERA_READ1
@@ -449,9 +447,9 @@ class TestRenamedNexteraAdapter:
         assert "AGATGTGTATAAGAGACAG" in NEXTERA_READ1  # the Tn5 mosaic end of the Nextera adapter
 
     def test_no_table_lists_it_under_the_pacbio_name_or_as_a_pacbio_adapter(self) -> None:
-        assert "PacBio_barcoded" not in list(ALL_KNOWN_ADAPTERS)
-        assert "PacBio_barcoded" not in ALL_KNOWN_ADAPTERS.keys()
-        assert "PacBio_barcoded" not in {**ALL_KNOWN_ADAPTERS}
+        assert [name for name, sequence in ALL_KNOWN_ADAPTERS.items() if sequence == NEXTERA_READ1] == [
+            "Illumina_Nextera_read1"
+        ]
         assert sorted(PACBIO_ADAPTERS) == ["PacBio_SMRTbell"]
         assert (
             len(ALL_KNOWN_ADAPTERS) == len(ONT_ADAPTERS) + len(PACBIO_ADAPTERS) + len(filtering.ILLUMINA_ADAPTERS) == 7
@@ -465,38 +463,6 @@ class TestRenamedNexteraAdapter:
         assert match.adapter_sequence == NEXTERA_READ1
         (trimmed,) = trim_adapters([{"read_id": "r", "sequence": NEXTERA_READ1 + insert}])
         assert trimmed.sequence == insert
-
-    @pytest.mark.parametrize("table", [ALL_KNOWN_ADAPTERS, PACBIO_ADAPTERS], ids=["all-known", "pacbio"])
-    def test_the_old_name_still_resolves_with_a_deprecation_warning(self, table: dict[str, str]) -> None:
-        with pytest.warns(DeprecationWarning, match="Illumina_Nextera_read1"):
-            assert table["PacBio_barcoded"] == NEXTERA_READ1
-        with pytest.warns(DeprecationWarning, match="PacBio_barcoded"):
-            assert table.get("PacBio_barcoded") == NEXTERA_READ1
-        with pytest.warns(DeprecationWarning, match="Illumina_Nextera_read1"):
-            assert "PacBio_barcoded" in table
-        with pytest.warns(DeprecationWarning):
-            assert table.get("PacBio_barcoded", "unused") == NEXTERA_READ1
-
-    def test_current_and_unknown_names_do_not_warn(self) -> None:
-        with warnings.catch_warnings():
-            warnings.simplefilter("error")
-            assert ALL_KNOWN_ADAPTERS["Illumina_Nextera_read1"] == NEXTERA_READ1
-            assert ALL_KNOWN_ADAPTERS["PacBio_SMRTbell"] == PACBIO_ADAPTERS["PacBio_SMRTbell"]
-            assert "Illumina_Nextera_read1" in ALL_KNOWN_ADAPTERS
-            assert "no_such_adapter" not in ALL_KNOWN_ADAPTERS
-            assert ALL_KNOWN_ADAPTERS.get("no_such_adapter") is None
-            assert ALL_KNOWN_ADAPTERS.get("no_such_adapter", "fallback") == "fallback"
-            assert {**ALL_KNOWN_ADAPTERS} == dict(ALL_KNOWN_ADAPTERS)
-            with pytest.raises(KeyError):
-                ALL_KNOWN_ADAPTERS["no_such_adapter"]
-
-    def test_a_real_key_of_the_old_name_wins_over_the_alias(self) -> None:
-        table = filtering._AdapterTable({"PacBio_barcoded": "ACGT" * 5}, renamed=filtering._RENAMED_ADAPTERS)
-        with warnings.catch_warnings():
-            warnings.simplefilter("error")
-            assert table["PacBio_barcoded"] == "ACGT" * 5
-            assert table.get("PacBio_barcoded") == "ACGT" * 5
-            assert "PacBio_barcoded" in table
 
 
 class TestNestedAdapters:
@@ -572,7 +538,7 @@ class TestNestedAdapters:
         (trimmed,) = trim_adapters(
             [{"read_id": "r", "sequence": TOP + NEARLY_BARCODE_TAIL + insert}], self.TABLE, min_identity=0.75
         )
-        assert trimmed.metadata["trimmed_start"] == len(TOP)  # the barcode claim used to cut 34 bases
+        assert trimmed.metadata["trimmed_start"] == len(TOP)  # the barcode claim does not cut 34 bases
         assert trimmed.sequence == NEARLY_BARCODE_TAIL + insert
 
     def test_trim_adapters_trims_only_the_short_adapter_at_the_end(self) -> None:
@@ -584,7 +550,7 @@ class TestNestedAdapters:
         (trimmed,) = trim_adapters(
             [{"read_id": "r", "sequence": insert + prefix + reverse_complement(TOP)}], self.TABLE, min_identity=0.75
         )
-        assert trimmed.metadata["trimmed_end"] == len(TOP)  # the barcode claim used to cut 36 bases
+        assert trimmed.metadata["trimmed_end"] == len(TOP)  # the barcode claim does not cut 36 bases
         assert trimmed.sequence == insert + prefix
 
     def test_trim_adapters_still_trims_the_whole_longer_adapter_when_it_is_exact(self) -> None:

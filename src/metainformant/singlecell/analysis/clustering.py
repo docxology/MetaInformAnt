@@ -66,7 +66,7 @@ try:
     import leidenalg
 
     HAS_LEIDEN = True
-except (ImportError, SyntaxError):
+except ImportError, SyntaxError:
     leidenalg = None
     HAS_LEIDEN = False
 
@@ -184,13 +184,12 @@ def _leiden_labels(
 
 
 def leiden_clustering(
-    data: SingleCellData | Any | None = None,
+    data: SingleCellData | Any,
     resolution: float = 1.0,
     n_neighbors: int = 15,
     random_state: int | None = None,
     use_weights: bool = True,
     *,
-    feature_matrix: Any | None = None,
     allow_kmeans_fallback: bool = False,
 ) -> SingleCellData | np.ndarray:
     """Perform Leiden clustering on single-cell data.
@@ -202,13 +201,12 @@ def leiden_clustering(
 
     Args:
         data: SingleCellData object with preprocessed expression matrix, or a
-            matrix-like object for compatibility callers
+            2-D matrix whose rows are cells (a label array is returned)
         resolution: Resolution parameter for Leiden algorithm
         n_neighbors: Number of neighbors for kNN graph construction
         random_state: Random seed for reproducibility
         use_weights: Weight each edge of the kNN graph by the inverse distance between its two cells (the
             weights are passed to leidenalg) when True; give every edge weight 1 when False. Recorded in ``uns``.
-        feature_matrix: Matrix-style alias for callers that only need labels
         allow_kmeans_fallback: Matrix input only. When the Leiden stack is unavailable, cluster the rows
             with k-means (the number of clusters follows ``resolution``) instead of raising, and emit a
             ``UserWarning`` and a log warning that say so. A label array cannot carry the method, so
@@ -225,14 +223,14 @@ def leiden_clustering(
             was not requested)
         ValueError: If a matrix input is not two-dimensional
     """
-    if feature_matrix is None and isinstance(data, SingleCellData):
+    if isinstance(data, SingleCellData):
         cells: SingleCellData | None = data
         X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
     else:
         cells = None
-        X = _as_dense_matrix(feature_matrix if feature_matrix is not None else data)
+        X = _as_dense_matrix(data)
         if X.ndim != 2:
-            raise ValueError("feature_matrix must be a 2D matrix")
+            raise ValueError("a matrix input must be a 2D matrix")
 
     if _leiden_stack_available():
         logger.info(f"Performing Leiden clustering with resolution={resolution}, n_neighbors={n_neighbors}")
@@ -849,17 +847,10 @@ def compute_cluster_silhouette(
 
 
 def _graph_from_adjacency(adjacency: Any) -> Any:
-    """Build an undirected networkx graph from a weighted adjacency matrix.
-
-    networkx 3.0 removed ``from_scipy_sparse_matrix``/``from_numpy_matrix``
-    in favour of the array-based constructors; fall back to the legacy
-    names so both major networkx lines are supported.
-    """
+    """Build an undirected networkx graph from a weighted adjacency matrix (sparse or dense)."""
     if sparse.issparse(adjacency):
-        builder = getattr(nx, "from_scipy_sparse_array", None) or nx.from_scipy_sparse_matrix
-    else:
-        builder = getattr(nx, "from_numpy_array", None) or nx.from_numpy_matrix
-    return builder(adjacency)
+        return nx.from_scipy_sparse_array(adjacency)
+    return nx.from_numpy_array(adjacency)
 
 
 def _compute_pairwise_distances(X: np.ndarray) -> np.ndarray:

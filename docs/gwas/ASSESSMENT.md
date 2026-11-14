@@ -46,7 +46,7 @@ Data Acquisition:
  calling.py - Variant calling (9.9 KB)
 
 Visualization (NEW):
- visualization.py - Legacy plots (15 KB)
+ visualization.py - Basic plots (15 KB)
  visualization_genome.py - Genome-wide (17 KB) [NEW]
  visualization_statistical.py - Diagnostics (20 KB) [NEW]
  visualization_regional.py - Regional (10 KB) [NEW]

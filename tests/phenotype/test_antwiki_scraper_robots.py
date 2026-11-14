@@ -238,38 +238,19 @@ class TestCrawlDelay:
         assert time.monotonic() - started < 0.9
 
 
-class TestConfigAliases:
-    def test_delay_alias_is_assignable_and_stays_in_sync(self) -> None:
-        config = AntWikiScraperConfig(delay_seconds=1.0)
-        config.delay_seconds = 5.0
-        assert config.delay_between_requests == 5.0
-        config.delay_between_requests = 7.0
-        assert config.delay_seconds == 7.0
-
-    def test_timeout_alias_is_assignable_and_stays_in_sync(self) -> None:
-        config = AntWikiScraperConfig(timeout_seconds=10)
-        config.timeout_seconds = 20
-        assert config.timeout == 20
-        config.timeout = 40
-        assert config.timeout_seconds == 40
-
+class TestConfigSettings:
     def test_assignment_is_validated_and_a_rejected_value_changes_nothing(self) -> None:
         config = AntWikiScraperConfig(delay_seconds=2.0, timeout_seconds=30)
         for bad_delay in (0, -1, 0.05):
             with pytest.raises(ValidationError):
                 config.delay_seconds = bad_delay
-            with pytest.raises(ValidationError):
-                config.delay_between_requests = bad_delay
         for bad_timeout in (0, -5):
             with pytest.raises(ValidationError):
                 config.timeout_seconds = bad_timeout
         assert config.delay_seconds == 2.0
         assert config.timeout_seconds == 30
 
-    def test_constructor_spellings_still_work_and_seconds_wins(self) -> None:
-        assert AntWikiScraperConfig(delay_between_requests=3.0).delay_seconds == 3.0
-        assert AntWikiScraperConfig(delay_seconds=1.5, delay_between_requests=3.0).delay_between_requests == 1.5
-        assert AntWikiScraperConfig(timeout=12).timeout_seconds == 12
+    def test_constructor_validates_the_delay(self) -> None:
         with pytest.raises(ValidationError):
             AntWikiScraperConfig(delay_seconds=0.0)
 
@@ -316,7 +297,7 @@ class TestSpeciesSelection:
         with pytest.raises(NotImplementedError, match="species-index retrieval is not implemented"):
             scraper.scrape_species_list()
         with pytest.raises(NotImplementedError, match="species-index retrieval is not implemented"):
-            scraper.get_species_list(limit=3)
+            scraper.get_species_list()
 
     def test_no_canned_sample_is_ever_returned(self, make_scraper: Factory) -> None:
         scraper = make_scraper()

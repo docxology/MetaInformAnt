@@ -17,9 +17,8 @@ This guide documents concrete examples of multi-agent workflows in METAINFORMANT
 | [3. Multi-Omic Integration](#3-multi-omic-integration) | `multiomics`, `dna`, `rna`, `gwas` | Fan-in aggregation | High |
 | [4. Single-Cell Analysis Pipeline](#4-single-cell-analysis-pipeline) | `singlecell.preprocess`, `singlecell.cluster`, `singlecell.trajectory` | Sequential with quality gates | High |
 | [5. Batch Download + QC](#5-batch-download--qc) | `core.workflow`, `core.io.download` | Sequential downloads, QC in the caller | Low |
-| [6. Cloud VM Orchestration](#6-cloud-vm-orchestration) | `cloud.gcp`, `cloud.docker`, `core.workflow` | Conditional parallel | Medium |
-| [7. Metagenomics Taxonomic Profiling](#7-metagenomics-taxonomic-profiling) | `metagenomics.kraken2`, `metagenomics.bracken`, `metagenomics.report` | Sequential + parallel samples | Medium |
-| [8. Protein Structure + Function](#8-protein-structure--function-integration) | `protein.alphafold`, `protein.uniprot`, `protein.interpro` | Parallel then merge | High |
+| [6. Metagenomics Taxonomic Profiling](#6-metagenomics-taxonomic-profiling) | `metagenomics.kraken2`, `metagenomics.bracken`, `metagenomics.report` | Sequential + parallel samples | Medium |
+| [7. Protein Structure + Function](#7-protein-structure--function-integration) | `protein.alphafold`, `protein.uniprot`, `protein.interpro` | Parallel then merge | High |
 
 ---
 
@@ -39,7 +38,7 @@ This guide documents concrete examples of multi-agent workflows in METAINFORMANT
 flowchart TB
     subgraph Orchestrator[RNA Workflow Manager]
         direction LR
-        W1[WorkflowManager] --> W2[Phase: download]
+        W1[BasePipelineManager subclass] --> W2[Phase: download]
         W2 --> W3[Phase: getfastq]
         W3 --> W4[Phase: quantify]
         W4 --> W5[Phase: analyze]
@@ -76,35 +75,36 @@ flowchart TB
 ### Code Structure
 
 ```python-snippet
-# src/metainformant/rna/engine/workflow.py
+from pathlib import Path
 
-from metainformant.core.engine.workflow_manager import (
-    BasePipelineManager, PipelinePhase, WorkflowManager
-)
+from metainformant.core.engine.workflow_manager import BasePipelineManager, PipelineItem, PipelinePhase
 
-class RNAWorkflowManager(WorkflowManager):
-    """Specialized manager for RNA-seq amalgkit pipeline."""
+
+class RNAPipelineManager(BasePipelineManager):
+    """Sample-oriented manager for an RNA-seq amalgkit pipeline (design sketch)."""
 
     def __init__(self, work_dir: Path, config: dict, max_threads: int = 5):
-        super().__init__(work_dir, config, max_threads)
-        self.phases = [
-            PipelinePhase("Download", self._download_phase, filter_fn=self._not_downloaded),
-            PipelinePhase("GetFastq", self._getfastq_phase, filter_fn=self._downloaded_not_extracted),
-            PipelinePhase("Quantify", self._quantify_phase, filter_fn=self._extracted_not_quantified),
-        ]
-        self._register_samples()
+        super().__init__(
+            phases=[
+                PipelinePhase("Download", self._download_phase, filter_fn=self._not_downloaded),
+                PipelinePhase("GetFastq", self._getfastq_phase, filter_fn=self._downloaded_not_extracted),
+                PipelinePhase("Quantify", self._quantify_phase, filter_fn=self._extracted_not_quantified),
+            ],
+            max_threads=max_threads,
+            config=config,
+        )
+        self.work_dir = work_dir
 
     def _download_phase(self, manager: BasePipelineManager, items: list[PipelineItem]) -> None:
-        # Parallel download via _download_single_sample (uses ThreadPoolExecutor)
-        # Updates manager.samples[sid].stage to DOWNLOADED or FAILED
+        # Parallel downloads through manager.executor; each item ends in mark_done or mark_failed
         # ...
 ```
 
 **Key coordination points**:
 - 32 parallel download workers (I/O bound)
 - Each sample independent → perfect fan-out
-- Metadata (SRA URL, destination path) stored in `item.metadata` and `manager.samples`
-- Progress tracked via file size polling (`_update_download_progress()`)
+- Metadata (SRA URL, destination path) stored in `item.metadata`
+- Progress tracked by the download handler polling file sizes and updating `manager.ui`
 
 **Result**: The workflow records per-sample state and isolates failures; current
 completion must be read from the generated data-root report rather than this
@@ -377,96 +377,7 @@ for name, result in results["downloads"].items():
 
 ---
 
-## 6. Cloud VM Orchestration
-
-**Agents**: `cloud.gcp` (VM lifecycle), `cloud.docker` (container ops), `rna.amalgkit` (pipeline)
-
-**Pattern**: Conditional parallel (spin up VMs → distribute work → collect results)
-
-### Workflow Description
-
-1. **Provision**: Create N GCP VMs based on `max_samples_per_vm`
-2. **Distribute**: Assign sample batches to VMs
-3. **Execute**: Each VM runs RNA merger kit locally
-4. **Collect**: Copy results from VMs to central storage
-5. **Terminate**: Shut down VMs
-
-```python
-class CloudRNAWorkflow(BasePipelineManager):
-    def __init__(self, samples, vm_config):
-        phases = [
-            PipelinePhase("ProvisionVMs", self._provision_vms),
-            PipelinePhase("Distribute", self._distribute_samples),
-            PipelinePhase("ExecuteRemote", self._execute_remote),  # parallel across VMs
-            PipelinePhase("Collect", self._collect_results),
-            PipelinePhase("Terminate", self._terminate_vms),
-        ]
-        super().__init__(phases, max_threads=10)
-        self.samples = samples
-        for s in samples:
-            self.add_item(s, metadata={"vm_id": None})
-
-    def _provision_vms(self, manager, items):
-        # Create one VM per batch of samples
-        batch_size = self.config["samples_per_vm"]
-        vm_count = (len(self.samples) + batch_size - 1) // batch_size
-        vms = []
-        for i in range(vm_count):
-            vm = create_gcp_vm(f"rna-worker-{i}")
-            vms.append(vm)
-            manager.ui.set_footer(f"Provisioned VM {i+1}/{vm_count}")
-        manager.config["vms"] = vms
-        manager.mark_done(items[0])  # single item representing provisioning phase
-
-    def _distribute_samples(self, manager, items):
-        """Assign samples to VMs (round-robin)."""
-        vms = manager.config["vms"]
-        vm_batches = [[] for _ in vms]
-        for i, sample in enumerate(self.samples):
-            vm_batch_id = i % len(vms)
-            vm_batches[vm_batch_id].append(sample)
-
-        for vm, batch in zip(vms, vm_batches):
-            upload_sample_list(vm, batch)
-        manager.mark_done(items[0])
-
-    def _execute_remote(self, manager, items):
-        # Execute RNA pipeline on each VM in parallel
-        vms = manager.config["vms"]
-        futures = {
-            manager.executor.submit(run_remote_workflow, vm): vm
-            for vm in vms
-        }
-        for future in as_completed(futures):
-            vm = futures[future]
-            try:
-                future.result()
-                manager.ui.update(vm.id, status="Completed", color=GREEN)
-            except Exception as exc:
-                manager.ui.update(vm.id, status="Failed", color=RED)
-        manager.mark_done(items[0])
-
-    def _collect_results(self, manager, items):
-        # Download output/ directory from each VM
-        for vm in manager.config["vms"]:
-            download_from_vm(vm, "output/", f"output/vm_{vm.id}/")
-        manager.mark_done(items[0])
-
-    def _terminate_vms(self, manager, items):
-        for vm in manager.config["vms"]:
-            vm.delete()
-        manager.mark_done(items[0])
-```
-
-**Key coordination points**:
-- Single-item phases (`items[0]`) used for infrastructure operations
-- Items representing samples ignored during infrastructure phases (filter_fn not needed since only one item exists)
-- Manager-level config stores VM references across phase boundaries
-- Parallel execution across VMs via executor; TUI shows per-VM progress
-
----
-
-## 7. Metagenomics Taxonomic Profiling
+## 6. Metagenomics Taxonomic Profiling
 
 **Agents**: `metagenomics.kraken2`, `metagenomics.bracken`, `metagenomics.report`
 
@@ -522,7 +433,7 @@ class MetagenomicsWorkflow(BasePipelineManager):
 
 ---
 
-## 8. Protein Structure + Function Integration
+## 7. Protein Structure + Function Integration
 
 **Agents**: `protein.alphafold` (structure prediction), `protein.uniprot` (annotation DB), `protein.interpro` (domain detection)
 

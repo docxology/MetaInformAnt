@@ -102,7 +102,7 @@ def _tracked_files(repo_root: Path) -> set[str] | None:
             check=True,
             timeout=60,
         )
-    except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
+    except OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired:
         return None
     return {p.decode("utf-8", errors="replace") for p in result.stdout.split(b"\0") if p}
 

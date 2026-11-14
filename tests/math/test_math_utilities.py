@@ -1,7 +1,7 @@
 """Tests for math module utility functions.
 
 Tests the utility functions defined in metainformant.math.__init__.py:
-- correlation_coefficient
+- correlation
 - linear_regression
 - fisher_exact_test
 - shannon_entropy
@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 
 from metainformant.math.core.utilities import (
-    correlation_coefficient,
+    correlation,
     covariance,
     fisher_exact_test,
     jensen_shannon_divergence,
@@ -27,27 +27,27 @@ from metainformant.math.core.utilities import (
 
 
 class TestCorrelationCoefficient:
-    """Test correlation_coefficient function."""
+    """Test correlation function."""
 
     def test_perfect_positive_correlation(self):
         """Test perfect positive correlation."""
         x = [1, 2, 3, 4, 5]
         y = [2, 4, 6, 8, 10]  # y = 2x
-        result = correlation_coefficient(x, y)
+        result = correlation(x, y)
         assert abs(result - 1.0) < 1e-10
 
     def test_perfect_negative_correlation(self):
         """Test perfect negative correlation."""
         x = [1, 2, 3, 4, 5]
         y = [10, 8, 6, 4, 2]  # y = 10 - 2x
-        result = correlation_coefficient(x, y)
+        result = correlation(x, y)
         assert abs(result - (-1.0)) < 1e-10
 
     def test_no_correlation(self):
         """Test uncorrelated data."""
         x = [1, 2, 3, 4, 5]
         y = [1, 1, 1, 1, 1]  # constant y
-        result = correlation_coefficient(x, y)
+        result = correlation(x, y)
         assert result == 0.0  # Returns 0.0 for zero variance
 
     def test_mismatched_lengths(self):
@@ -55,25 +55,25 @@ class TestCorrelationCoefficient:
         x = [1, 2, 3]
         y = [1, 2]
         with pytest.raises(ValueError, match="same length"):
-            correlation_coefficient(x, y)
+            correlation(x, y)
 
     def test_insufficient_data(self):
         """Test error with insufficient data points."""
         x = [1]
         y = [1]
         with pytest.raises(ValueError, match="at least 2 elements"):
-            correlation_coefficient(x, y)
+            correlation(x, y)
 
     def test_empty_lists(self):
         """Test error with empty lists."""
         with pytest.raises(ValueError, match="at least 2 elements"):
-            correlation_coefficient([], [])
+            correlation([], [])
 
     def test_known_values(self):
         """Test with known correlation values."""
         x = [1, 2, 3, 4, 5]
         y = [1, 3, 5, 7, 9]  # y = 2x - 1
-        result = correlation_coefficient(x, y)
+        result = correlation(x, y)
         assert abs(result - 1.0) < 1e-10
 
     def test_large_dataset(self):
@@ -81,7 +81,7 @@ class TestCorrelationCoefficient:
         np.random.seed(42)
         x = np.random.normal(0, 1, 1000)
         y = 2 * x + np.random.normal(0, 0.1, 1000)  # strong correlation with noise
-        result = correlation_coefficient(x.tolist(), y.tolist())
+        result = correlation(x.tolist(), y.tolist())
         assert result > 0.9  # Should be highly correlated
 
 

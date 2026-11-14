@@ -653,66 +653,45 @@ rc = monitor_subprocess_file_count(
 ### Custom Download Handler
 
 ```python-snippet
-import time
 from pathlib import Path
+from typing import Any
 
-from metainformant.core.io.download import DownloadHandler, DownloadResult
+from metainformant.core.io.download import DownloadHandler, DownloadResult, get_download_handler
 
-class S3DownloadHandler:
-    """Custom handler for S3 URLs (s3://bucket/key)."""
+
+class MirrorDownloadHandler:
+    """Custom handler for mirror:// URLs that tries each mirror in turn."""
+
+    def __init__(self, mirrors: list[str]) -> None:
+        self.mirrors = [m.rstrip("/") for m in mirrors]
+
+    def _candidates(self, url: str) -> list[str]:
+        relative = url.removeprefix("mirror://").lstrip("/")
+        return [f"{base}/{relative}" for base in self.mirrors]
 
     def get_file_size(self, url: str, *, timeout: int = 60) -> int | None:
-        import boto3
-        parsed = url.replace("s3://", "").split("/", 1)
-        bucket, key = parsed[0], parsed[1]
-        s3 = boto3.client("s3")
-        resp = s3.head_object(Bucket=bucket, Key=key)
-        return resp["ContentLength"]
+        for candidate in self._candidates(url):
+            size = get_download_handler(candidate).get_file_size(candidate, timeout=timeout)
+            if size is not None:
+                return size
+        return None
 
-    def download(
-        self,
-        url: str,
-        dest_path: str | Path,
-        *,
-        heartbeat_interval: int = 5,
-        show_progress: bool = True,
-        **kwargs
-    ) -> DownloadResult:
-        import boto3
-        from botocore.exceptions import ClientError
+    def download(self, url: str, dest_path: str | Path, **kwargs: Any) -> DownloadResult:
+        errors = []
+        for candidate in self._candidates(url):
+            result = get_download_handler(candidate).download(candidate, dest_path, **kwargs)
+            if result.success:
+                return result
+            errors.append(f"{candidate}: {result.error}")
+        return DownloadResult(url=url, dest_path=Path(dest_path), success=False, error="; ".join(errors))
 
-        dest = Path(dest_path)
-        dest.parent.mkdir(parents=True, exist_ok=True)
-
-        parsed = url.replace("s3://", "").split("/", 1)
-        bucket, key = parsed[0], parsed[1]
-
-        s3 = boto3.client("s3")
-        start = time.time()
-        bytes_written = 0
-
-        try:
-            with open(dest, "wb") as fh:
-                s3.download_fileobj(bucket, key, fh)
-            return DownloadResult(
-                url=url,
-                dest_path=dest,
-                success=True,
-                bytes_downloaded=dest.stat().st_size,
-                elapsed_seconds=time.time() - start,
-            )
-        except ClientError as e:
-            return DownloadResult(
-                url=url,
-                dest_path=dest,
-                success=False,
-                error=str(e),
-            )
 
 # get_download_handler() only knows http(s), ftp and file URLs, so call a custom
 # handler directly; it satisfies the DownloadHandler Protocol structurally
-handler: DownloadHandler = S3DownloadHandler()
-result = handler.download("s3://my-bucket/genome.fa.gz", "reference/genome.fa.gz")
+handler: DownloadHandler = MirrorDownloadHandler(
+    ["https://mirror-a.example.org/genomes", "https://mirror-b.example.org/genomes"]
+)
+result = handler.download("mirror://apis_mellifera/genome.fa.gz", "reference/genome.fa.gz", max_retries=1)
 ```
 
 ### Reading Heartbeat Files
@@ -877,9 +856,9 @@ if time.time() - last_update > 300:  # 5 minutes
 
 ### Handle Unsupported Protocols
 
-**Symptom**: `DownloadResult.success=False` with `error="Unsupported protocol/scheme: s3 (url=...)"`. The `ValueError` is caught inside the retry loop, so every attempt fails the same way; pass `max_retries=1` to fail fast.
+**Symptom**: `DownloadResult.success=False` with `error="Unsupported protocol/scheme: sftp (url=...)"`. The `ValueError` is caught inside the retry loop, so every attempt fails the same way; pass `max_retries=1` to fail fast.
 
-**Fix**: Implement custom `DownloadHandler` (see Custom Handler example above) or use specialized library (boto3 for S3, gsutil for GCS).
+**Fix**: Implement a custom `DownloadHandler` (see the Custom Download Handler example above), or fetch the file with the client tool of the service that hosts it.
 
 ### Broken Pipe with Subprocess Monitoring
 

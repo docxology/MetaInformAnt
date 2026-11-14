@@ -15,8 +15,6 @@ work_dir: output/amalgkit/formica_exsecta/work
 log_dir: output/amalgkit/formica_exsecta/logs
 threads: 16
 
-auto_install_amalgkit: true
-
 # Pre-selection filtering rules
 filters:
   require_tissue: false

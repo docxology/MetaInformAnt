@@ -6,19 +6,19 @@
 
 ## Overview
 
-METAINFORMANT is a comprehensive bioinformatics toolkit covering 30 modules across genomics, transcriptomics, proteomics, and systems biology. This quick start demonstrates a typical workflow: generate synthetic DNA data, analyze composition, and visualize the results.
+METAINFORMANT is a comprehensive bioinformatics toolkit covering 29 modules across genomics, transcriptomics, proteomics, and systems biology. This quick start demonstrates a typical workflow: generate synthetic DNA data, analyze composition, and visualize the results.
 
 ---
 
 ## Before You Begin
 
 Ensure you have:
-- **Python 3.11+** installed
+- **Python 3.14+** installed
 - **UV** package manager (`pip install uv` or see [UV_SETUP.md](UV_SETUP.md))
 - Repository cloned: `git clone https://github.com/docxology/metainformant.git`
 - Dependencies installed: `bash scripts/package/setup.sh`
 
-Verify: `uv run python -V` (should be 3.11 or 3.12).
+Verify: `uv run python -V` (should be 3.14 or newer).
 
 ---
 

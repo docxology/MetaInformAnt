@@ -25,7 +25,7 @@ def _as_float(value: Any) -> Optional[float]:
     """``value`` as a finite float, or None when it is absent, NaN, infinite or not a number."""
     try:
         number = float(value)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return None
     return number if math.isfinite(number) else None
 
@@ -61,9 +61,9 @@ def generate_html_report(
 ) -> Path:
     """Generate a self-contained HTML summary report.
 
-    A statistic the summary does not carry is shown as ``NA``: it is not replaced by 0 or 1 (a missing minimum
-    p-value used to read ``1.000e+00``, a missing calibration ratio passed the calibration check, and a missing
-    top-hit field crashed the report). Everything that comes from the data is HTML-escaped.
+    A statistic the summary does not carry is shown as ``NA``: it is not replaced by 0 or 1, so a missing minimum
+    p-value does not read ``1.000e+00``, a missing calibration ratio does not pass the calibration check, and a
+    missing top-hit field does not stop the report. Everything that comes from the data is HTML-escaped.
 
     Args:
         output_dir: Directory to write the report into.
@@ -74,7 +74,7 @@ def generate_html_report(
         gene_annotations: Optional list of gene annotations.
         trait: Trait name for the report header.
         model: GWAS model name.
-        n_samples: Number of samples, shown in the report header (``NA`` when not given; it used to be ignored).
+        n_samples: Number of samples, shown in the report header (``NA`` when not given).
         filename: Output filename (default ``report.html``).
 
     Returns:

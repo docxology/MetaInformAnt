@@ -1,8 +1,8 @@
 """Regression tests for the optional PyTorch dependency of the LSTM/GRU sequence models.
 
-Without PyTorch, ``fit`` used to log a warning, set ``is_fitted = True`` and return, so the model
-looked trained although it never saw the data, and ``predict`` returned a made-up uniform
-distribution. The tests make ``import torch`` fail with ``sys.modules["torch"] = None`` (Python's
+Without PyTorch, ``fit`` must not log a warning, set ``is_fitted = True`` and return, which would
+make the model look trained although it never saw the data, and ``predict`` must not return a
+made-up uniform distribution. The tests make ``import torch`` fail with ``sys.modules["torch"] = None`` (Python's
 documented way to block an import), so they behave the same whether or not PyTorch is installed.
 """
 

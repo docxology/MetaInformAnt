@@ -472,8 +472,8 @@ def analyze_genetic_architecture(
       key name this measures *detected* signal, which grows with sample size, not the number of causal variants.
 
     There is deliberately no heritability. SNP heritability cannot be estimated from p-values alone (it needs
-    effect sizes and sample sizes, or LD scores). An earlier version reported lambda / (lambda + 1) under that
-    name; that is a fixed function of the inflation factor and carries no genetic information.
+    effect sizes and sample sizes, or LD scores); lambda / (lambda + 1) is a fixed function of the inflation factor
+    and carries no genetic information.
 
     Args:
         pop_data: Population GWAS data
@@ -1175,9 +1175,8 @@ def concordance_plot(
             for index, result in enumerate(study_results):
                 snp_id = result.get("ID")
                 if snp_id is None:
-                    # No ID: the variant is its chromosome and position (any spelling of the shared helpers).
-                    # It used to be "None:None" for every record without uppercase CHROM and POS keys, so
-                    # all of them collapsed into one overlapping "SNP".
+                    # No ID: the variant is its chromosome and position (any spelling of the shared helpers),
+                    # so records without uppercase CHROM and POS keys do not collapse into one "None:None" SNP.
                     chromosome, position = record_placement(
                         result, index, plot=f"concordance_plot (study {study_index})"
                     )
@@ -1201,8 +1200,8 @@ def concordance_plot(
             d1 = snp_to_data1[snp]
             d2 = snp_to_data2[snp]
 
-            # A variant without a p-value in either study (a failed test) has no point to draw; it used to be
-            # drawn at -log10 p = 0 for that study, as if the test had run and found nothing.
+            # A variant without a p-value in either study (a failed test) has no point to draw; drawing it at
+            # -log10 p = 0 would look as if the test had run and found nothing.
             p1 = get_p_value(d1)
             p2 = get_p_value(d2)
             if math.isnan(p1) or math.isnan(p2):

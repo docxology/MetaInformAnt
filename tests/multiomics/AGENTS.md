@@ -22,7 +22,7 @@ Files (verified 2026-10-28): __init__.py, test_concordance_median.py, test_multi
   (combined ranks greater than `n - 1`), in both `canonical_correlation` functions, which run one shared core and agree; per-feature
   imputation of missing values.
 - `test_multiomics_methods_hygiene.py` — no global `random.seed`, no NumPy-version-specific calls (AST guards), a
-  private RNG in the pure-Python NMF, the consensus CDF area, and the no-op SNF `alpha` warns.
+  private RNG in the pure-Python NMF, and the consensus CDF area.
 - `test_multiomics_converters_summary.py` — `from_rna_expression` / `from_metabolomics` choose their log transform from
   the observed scale (zeros and gaps do not switch it off); the descriptive summary keeps real feature names.
 - `test_multiomics_survival_oracles.py` — `cox_regression` and `log_rank_test` match statsmodels' `PHReg` (Breslow) and

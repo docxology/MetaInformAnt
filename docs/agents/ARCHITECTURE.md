@@ -6,7 +6,7 @@
 
 ## Executive Summary
 
-METAINFORMANT employs a layered multi-agent architecture enabling 30 specialized bioinformatics modules to operate independently while coordinating through well-defined protocols. The RNA workflow processes the configured 27-species Hymenoptera cohort; the exact sample inventory is data-root dependent. The system provides robust error handling, parallel execution, and real-time visualization.
+METAINFORMANT employs a layered multi-agent architecture enabling 29 specialized bioinformatics modules to operate independently while coordinating through well-defined protocols. The RNA workflow processes the configured 27-species Hymenoptera cohort; the exact sample inventory is data-root dependent. The system provides robust error handling, parallel execution, and real-time visualization.
 
 ## System Context
 
@@ -42,7 +42,7 @@ flowchart TB
             end
         end
 
-        subgraph DomainAgents[Domain Agents - 30 Modules]
+        subgraph DomainAgents[Domain Agents - 29 Modules]
             DNA[DNA Analysis]
             RNA[RNA-seq & amalgkit]
             GWAS[GWAS Pipelines]
@@ -66,7 +66,6 @@ flowchart TB
             SPAT[Spatial Transcriptomics]
             PHARMA[Pharmacogenomics]
             METAB[Metabolomics]
-            CLOUD[Cloud Deployment]
             MENU[Interactive Menu]
         end
 
@@ -237,7 +236,7 @@ def wait_for_data(manager, items):
 
 **Used by**: Long-running monitoring pipelines, data deposition triggers.
 
-**Example modules**: `cloud` (VM provisioning callbacks), `menu` (user-driven navigation).
+**Example modules**: `menu` (user-driven navigation).
 
 ## Communication Channels
 
@@ -283,7 +282,7 @@ data = io.load_json("output/phase_a/sample1.json")
 
 ```mermaid
 sequenceDiagram
-    participant WM as WorkflowManager
+    participant WM as BasePipelineManager
     participant DL as Download Phase
     participant EX as Extract Phase
     participant QN as Quantify Phase
@@ -496,5 +495,4 @@ When adding a new module to the multi-agent ecosystem:
 
 - [core](../core/) — Infrastructure used by all agents
 - [rna](../rna/) — Industrial-scale orchestration example with a historical 10,312-sample target
-- [cloud](../cloud/) — Distributed orchestration on GCP
 - [menu](../menu/) — Interactive workflow discovery & selection

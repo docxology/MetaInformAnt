@@ -34,10 +34,10 @@ flowchart TB
   
   subgraph DimensionalitydimensionalityReduction[Dimensionality Reduction]
     I[select_hvgs]
-    J[compute_pca]
+    J[pca_reduction]
     K[compute_neighbors]
-    L[compute_umap]
-    M[compute_tsne]
+    L[umap_reduction]
+    M[tsne_reduction]
     N[compute_diffusion_map]
   end
   
@@ -80,7 +80,7 @@ flowchart TB
 
 The arrows show a typical order of steps, not enforced dependencies. In practice the functions read these inputs:
 
-- `compute_neighbors` builds the neighbor graph (`data.uns["neighbors"]`) from the PCA coordinates (`data.obsm["X_pca"]`) when `compute_pca` has been run and from `data.X` otherwise.
+- `compute_neighbors` builds the neighbor graph (`data.uns["neighbors"]`) from the PCA coordinates (`data.obsm["X_pca"]`) when `pca_reduction` has been run and from `data.X` otherwise.
 - `compute_diffusion_map` and `compute_diffusion_pseudotime` both work on that graph. Each reuses `data.uns["neighbors"]` when it exists and otherwise builds a graph from `data.X` with its own `n_neighbors` argument; neither reads `data.obsm["X_pca"]` directly, and diffusion pseudotime does not read the diffusion map either.
 - UMAP, t-SNE and the clustering functions are fitted on the expression matrix `data.X` itself, not on the stored PCA coordinates (t-SNE first reduces `data.X` to up to 50 internal principal components when there are more than 5000 cells).
 - `paga_trajectory` needs a cluster column in `data.obs`.
@@ -135,8 +135,8 @@ from metainformant.singlecell.data.preprocessing import (
     normalize_counts,
     scale_data,
 )
-from metainformant.singlecell.analysis.pca_methods import select_hvgs, compute_pca
-from metainformant.singlecell.analysis.nonlinear_methods import compute_umap
+from metainformant.singlecell.analysis.pca_methods import select_hvgs, pca_reduction
+from metainformant.singlecell.analysis.nonlinear_methods import umap_reduction
 from metainformant.singlecell.analysis.clustering import leiden_clustering
 
 # Load data (a CSV with genes as rows and cells as columns, hence transpose=True)
@@ -154,8 +154,8 @@ data = select_hvgs(data, n_top_genes=2000)  # flags data.var['highly_variable'];
 
 # Scaling and dimensionality reduction
 data = scale_data(data)
-data = compute_pca(data, n_components=50)   # stores data.obsm['X_pca']; all genes (use_hvgs=True restricts it to the flagged HVGs)
-data = compute_umap(data, n_components=2)   # stores data.obsm['X_umap']
+data = pca_reduction(data, n_components=50)   # stores data.obsm['X_pca']; all genes (use_hvgs=True restricts it to the flagged HVGs)
+data = umap_reduction(data, n_components=2)   # stores data.obsm['X_umap']
 
 # Clustering (needs the optional networkx, igraph and leidenalg packages of the `singlecell` extra;
 # raises ImportError without them)
@@ -179,7 +179,7 @@ The module reads common single-cell file formats and writes its results back ont
 ## Module Structure
 
 - **[data/preprocessing.py](./preprocessing.md)**: Data loading, QC, normalization, scaling
-- **[analysis/pca_methods.py and analysis/nonlinear_methods.py](./dimensionality.md)**: HVG selection, PCA, UMAP, t-SNE, diffusion maps, neighbor graphs (`analysis/dimensionality.py` re-exports both)
+- **[analysis/pca_methods.py and analysis/nonlinear_methods.py](./dimensionality.md)**: HVG selection, PCA, UMAP, t-SNE, diffusion maps, neighbor graphs
 - **[analysis/clustering.py](./clustering.md)**: Various clustering algorithms and marker identification
 - **[analysis/trajectory.py](./trajectory.md)**: Pseudotime and trajectory inference
 - **[visualization/visualization.py](./visualization.md)**: Plotting functions for scRNA-seq data
@@ -233,7 +233,7 @@ Nine more helpers exist as names but are **not implemented**. They raise `NotImp
 1. **Quality control first**: Always examine QC metrics before filtering
 2. **Appropriate filtering**: Be conservative with filtering thresholds initially
 3. **Normalization strategy**: Consider your downstream analysis when choosing normalization
-4. **HVG selection**: `select_hvgs` only flags genes (`data.var['highly_variable']`); `compute_pca` uses just those genes when you pass `use_hvgs=True`, the neighbor graph (and the diffusion map on it) is built from the PCA coordinates when they exist and so inherits the PCA's gene choice, and the other downstream functions use every gene unless you subset the data yourself
+4. **HVG selection**: `select_hvgs` only flags genes (`data.var['highly_variable']`); `pca_reduction` uses just those genes when you pass `use_hvgs=True`, the neighbor graph (and the diffusion map on it) is built from the PCA coordinates when they exist and so inherits the PCA's gene choice, and the other downstream functions use every gene unless you subset the data yourself
 5. **Parameter tuning**: Clustering and UMAP parameters may need optimization per dataset
 
 ## Examples and Tutorials

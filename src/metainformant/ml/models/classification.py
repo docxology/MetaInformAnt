@@ -123,11 +123,6 @@ class BiologicalClassifier:
         """Whether the model has been fitted."""
         return self._is_fitted
 
-    @property
-    def is_trained(self) -> bool:
-        """Alias for is_fitted."""
-        return self._is_fitted
-
     def fit(self, X: np.ndarray, y: np.ndarray, feature_names: Optional[List[str]] = None) -> BiologicalClassifier:
         """Fit the classifier.
 
@@ -358,7 +353,6 @@ def cross_validate_biological(
     method: str = "rf",
     cv_folds: int = 5,
     random_state: int | None = None,
-    algorithm: str | None = None,
     parallel_jobs: int | None = -1,
     **kwargs: Any,
 ) -> Dict[str, Any]:
@@ -395,11 +389,6 @@ def cross_validate_biological(
     """
     if not HAS_SKLEARN:
         raise ImportError("scikit-learn required for cross-validation")
-
-    # Allow algorithm as alias for method (map full names to short codes)
-    if algorithm is not None:
-        _algo_to_method = {"random_forest": "rf", "gradient_boosting": "gb", "logistic_regression": "lr"}
-        method = _algo_to_method.get(algorithm, algorithm)
 
     # Select classifier. Build each estimator's options once so callers can
     # override defaults without passing duplicate keyword arguments to

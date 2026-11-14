@@ -15,8 +15,7 @@ __all__ = ["CacheError", "DownloadError", "IOError", "InputFileMissingError"]
 class InputFileMissingError(IOError):
     """An expected input file does not exist.
 
-    Replaces the historical ``FileNotFoundError`` alias, which shadowed the
-    builtin exception of the same name.
+    Named so that it does not shadow the builtin ``FileNotFoundError``.
     """
 
     pass

@@ -445,7 +445,7 @@ def test_rows_only_the_operator_can_move_exit_65_with_counts_instead_of_drained(
     ("explicit", "env", "cohort_mode", "expected"),
     [
         (None, None, True, 0.01),  # cohort producer: on by default
-        (None, None, False, 0.0),  # legacy lane: off by default
+        (None, None, False, 0.0),  # non-cohort producer: off by default
         (None, "0", True, 0.0),  # explicit opt-out
         (None, "0.05", False, 0.05),
         (None, "not-a-number", True, 0.01),
@@ -627,7 +627,7 @@ def test_a_produced_cohort_output_gets_a_binding_witness(campaign: Campaign) -> 
     binding = read_reference_binding(sample)
     assert binding is not None and binding["cohort_id"] == campaign.cohort.cohort_id
     assert binding["evidence"] == {"kind": "produced", "verified_by": "reference_manifest"}
-    # Reuse no longer depends on the reference manifest's bytes.
+    # Reuse does not depend on the reference manifest's bytes.
     campaign.data.manifest.write_text(campaign.data.manifest.read_text() + "\n")
     assert context.classify(sample, "SRR101")["status"] == "current"
     assert (sample / REFERENCE_BINDING_FILENAME).is_file()

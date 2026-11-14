@@ -22,7 +22,7 @@ graph TD
         DA --> |integration.py| BI[Batch Correction: BBKNN, MNN]
 
         AN[analysis/] --> |clustering.py| CL[Leiden, Louvain, K-means]
-        AN --> |dimensionality.py| DR[PCA, UMAP, t-SNE]
+        AN --> |pca_methods.py, nonlinear_methods.py| DR[PCA, UMAP, t-SNE]
         AN --> |trajectory.py| TJ[Diffusion Pseudotime]
 
         CT[celltyping/] --> |annotation.py| CA[Cell Type Annotation]

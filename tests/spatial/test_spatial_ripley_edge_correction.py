@@ -1,7 +1,7 @@
 """Ripley's K applies the documented isotropic edge correction for every number of points.
 
-The estimator used to apply no correction at all for 100 points or fewer, and above that a capped ad hoc
-weight that is not Ripley's. The expected values below come from an independent brute force: every ordered
+The correction applies to 100 points or fewer as well, and above that it is Ripley's weight, not a capped ad
+hoc one. The expected values below come from an independent brute force: every ordered
 pair is weighted by 1 / (share of the circle about the first point that lies inside the window), with the
 share found by sampling the circle densely. Real computation only.
 """

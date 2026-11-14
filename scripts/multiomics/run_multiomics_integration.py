@@ -228,7 +228,7 @@ def run_workflow(args):
 
                 layer1, layer2 = omics_data.layer_names[0], omics_data.layer_names[1]
                 X_c, Y_c, X_w, Y_w, correlations = canonical_correlation(
-                    omics_data, layer_pair=(layer1, layer2), n_components=args.n_components, regularization=0.01
+                    omics_data, layers=(layer1, layer2), n_components=args.n_components, regularization=0.01
                 )
 
                 results = {

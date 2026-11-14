@@ -28,7 +28,7 @@ graph TD
         SQ --> |alignment.py| AL[Sequence Alignment]
         SQ --> |proteomes.py| PR[Proteome Downloads]
 
-        FN[function/] --> |prediction.py| FP[Function Prediction]
+        FN[function/] --> |prediction_core.py, prediction_analysis.py| FP[Function Prediction]
         DO[domains/] --> |detection.py| DD[Domain Detection]
     end
 ```

@@ -194,7 +194,7 @@ def test_expression_returned_by_load_visium_can_be_ranked(
     tmp_path: Path, coords: np.ndarray, counts: np.ndarray
 ) -> None:
     dataset = load_visium(_write_visium_run(tmp_path, coords, counts), load_image=False)
-    assert sparse.issparse(dataset.expression)  # this is what the detector used to reject
+    assert sparse.issparse(dataset.expression)  # the detector accepts sparse expression
     assert dataset.expression.shape == (len(coords), len(GENES))
 
     result = detect_spatially_variable_genes(dataset.expression, dataset.coordinates, genes=dataset.gene_names, k=4)

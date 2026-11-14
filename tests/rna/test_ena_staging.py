@@ -85,7 +85,7 @@ def transfer_site(payloads: dict[str, bytes], **settings) -> Iterator[TransferSi
                     self.wfile.write(body[site.slow_bytes :])
                 else:
                     self.wfile.write(body)
-            except (BrokenPipeError, ConnectionResetError):
+            except BrokenPipeError, ConnectionResetError:
                 return
 
         def log_message(self, format: str, *args) -> None:
@@ -333,16 +333,16 @@ def test_interrupted_ssd_transfer_resumes_with_bound_ena_checksum(
         assert not list((tmp_path / "ssd").rglob("*.part"))
 
 
-@pytest.mark.parametrize("case", ["unknown", "capacity", "legacy_partial", "legacy_mate"])
+@pytest.mark.parametrize("case", ["unknown", "capacity", "bulk_partial", "bulk_mate"])
 def test_staging_declines_without_touching_bulk_inputs(tmp_path: Path, case: str) -> None:
     from metainformant.rna.retrieval.ena_staging import download_staged_ena
 
     payload = gzip.compress(b"@r\nACGT\n+\n!!!!\n", mtime=0)
     canonical = tmp_path / "bulk/SRR123"
     canonical.mkdir(parents=True)
-    if case == "legacy_partial":
+    if case == "bulk_partial":
         (canonical / "SRR123.fastq.gz.part").write_bytes(payload[:20])
-    elif case == "legacy_mate":
+    elif case == "bulk_mate":
         (canonical / "SRR123.fastq.gz").write_bytes(payload)
     before = {p.name: (p.read_bytes(), p.stat().st_mtime_ns) for p in canonical.iterdir()}
     with transfer_site({"SRR123.fastq.gz": payload}, unknown_size=case == "unknown") as site:
@@ -479,14 +479,10 @@ def test_native_first_pass_defers_then_ssd_retry_quantifies_and_reuses(
     staging: bool,
 ) -> None:
     from metainformant.rna.engine.acquisition_manifest import sha256_file
-    from metainformant.rna.engine.acquisition_worker import run_manifest
-    from metainformant.rna.engine.durable_quant import (
-        DirectoryStore,
-        lock_quantification,
-        restore_quantification,
-    )
+    from metainformant.rna.engine.durable_quant import lock_quantification, restore_quantification
     from metainformant.rna.engine.progress_db import ProgressDB
     from metainformant.rna.engine.provenance import classify_quantification
+    from metainformant.rna.engine.quant_storage import DirectoryStore
 
     fixture = native_acquisition_factory()
     source = fixture.work / "getfastq/SRR123/SRR123.fastq.gz"
@@ -496,20 +492,6 @@ def test_native_first_pass_defers_then_ssd_retry_quantifies_and_reuses(
     monkeypatch.setenv("AMALGKIT_PIPELINE_VALIDATE_FASTQ_RECORDS", "yes")
     monkeypatch.setenv("AMALGKIT_LOCAL_QUANT_SCRATCH_RESERVE_GB", "0")
     monkeypatch.setenv("AMALGKIT_PIPELINE_DOWNLOAD_FIRST_PASS_SECONDS", "1")
-    monkeypatch.setenv("AMALGKIT_PIPELINE_DEDICATED_RECOVERY", "yes")
-    kwargs = {
-        "manifest_path": fixture.manifest,
-        "data_root": fixture.data,
-        "config_dir": fixture.config_dir,
-        "workers": 2,
-        "threads": 2,
-        "fastq_threads": 1,
-        "compression_threads": 1,
-        "validation_slots": 1,
-        "quant_slots": 1,
-        "fasterq_slots": 1,
-        "max_in_flight": 2,
-    }
     restored = []
 
     def checkpoint(species: str, accession: str) -> None:
@@ -544,13 +526,11 @@ def test_native_first_pass_defers_then_ssd_retry_quantifies_and_reuses(
         )
         restored.append(accession)
 
-    kwargs["on_quantified"] = checkpoint
     with transfer_site({"SRR123.fastq.gz": payload}, slow=True, slow_bytes=10) as site:
         monkeypatch.setenv("AMALGKIT_ENA_API_BASE_URL", f"{site.base}/api")
-        deferred = run_manifest(**kwargs)
-        assert deferred["counts"] == {"deferred_download": 1}
-        assert deferred["results"][0]["status"] == "deferred_download"
-        assert not deferred["results"][0]["fallback_deferred"]
+        deferred = fixture.produce(defer_ncbi_fallback=True)
+        assert deferred["status"] == "deferred_download" and deferred["deferral"] == "first_pass"
+        assert not deferred["quantified"] and not deferred["fallback_deferred"]
         assert not source.exists()
         assert not restored
         database = ProgressDB(fixture.data / "pipeline_progress.db")
@@ -561,13 +541,15 @@ def test_native_first_pass_defers_then_ssd_retry_quantifies_and_reuses(
         site.slow = False
         site.release.set()
         monkeypatch.setenv("AMALGKIT_PIPELINE_DOWNLOAD_FIRST_PASS_SECONDS", "0")
-        completed = run_manifest(**kwargs)
-        assert completed["counts"] == {"quantified": 1, "newly_quantified": 1}
+        completed = fixture.produce(defer_ncbi_fallback=True)
+        assert completed["quantified"] and not completed["skipped"] and completed["error"] is None, completed
+        checkpoint("test_species", "SRR123")
         quant = fixture.work / "quant/SRR123"
         before = {p.name: (p.read_bytes(), p.stat().st_mtime_ns) for p in quant.iterdir() if p.is_file()}
         requests_before = len(site.requests)
-        replay = run_manifest(**kwargs)
-        assert replay["counts"] == {"quantified": 1, "reused": 1}
+        replay = fixture.produce(defer_ncbi_fallback=True)
+        assert replay["quantified"] and replay["skipped"], replay
+        checkpoint("test_species", "SRR123")
         assert len(site.requests) == requests_before
         assert before == {p.name: (p.read_bytes(), p.stat().st_mtime_ns) for p in quant.iterdir() if p.is_file()}
         assert source.read_bytes() == payload
@@ -743,7 +725,7 @@ def test_real_scratch_ledger_refuses_stage_after_another_stage_reserves_capacity
 
 
 @pytest.mark.external_tool
-def test_interrupted_native_worker_releases_lock_retains_ssd_partial_and_resumes(
+def test_interrupted_native_producer_releases_lock_retains_ssd_partial_and_resumes(
     native_acquisition_factory, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     import os
@@ -751,7 +733,7 @@ def test_interrupted_native_worker_releases_lock_retains_ssd_partial_and_resumes
     import subprocess
     import sys
 
-    from metainformant.rna.engine.acquisition_worker import run_manifest
+    from metainformant.rna.engine.campaign_lock import acquire_writer, is_quiescent
 
     fixture = native_acquisition_factory()
     source = fixture.work / "getfastq/SRR123/SRR123.fastq.gz"
@@ -765,25 +747,25 @@ def test_interrupted_native_worker_releases_lock_retains_ssd_partial_and_resumes
     monkeypatch.setenv("AMALGKIT_LOCAL_ENA_SCRATCH_DIR", str(tmp_path / "ssd"))
     monkeypatch.setenv("AMALGKIT_LOCAL_QUANT_SCRATCH_RESERVE_GB", "0")
     monkeypatch.setenv("AMALGKIT_PIPELINE_DOWNLOAD_FIRST_PASS_SECONDS", "0")
-    monkeypatch.setenv("AMALGKIT_PIPELINE_DEDICATED_RECOVERY", "yes")
-    script = tmp_path / "worker.py"
+    script = tmp_path / "producer.py"
     script.write_text(
-        "import sys\nfrom pathlib import Path\nfrom metainformant.rna.engine.acquisition_worker import run_manifest\n"
-        "run_manifest(manifest_path=Path(sys.argv[1]),data_root=Path(sys.argv[2]),config_dir=Path(sys.argv[3]),"
-        "workers=1,threads=2,fastq_threads=1,compression_threads=1,validation_slots=1,quant_slots=1,"
-        "fasterq_slots=1,max_in_flight=1)\n"
+        "import sys\nfrom pathlib import Path\n"
+        "from metainformant.rna.engine.campaign_lock import acquire_writer\n"
+        "from metainformant.rna.engine.streaming_orchestrator import StreamingPipelineOrchestrator\n"
+        "data, config = Path(sys.argv[1]), Path(sys.argv[2])\n"
+        "raw = data / 'test_species/work/getfastq'\n"
+        "with acquire_writer(data, 'producer'):\n"
+        "    producer = StreamingPipelineOrchestrator(\n"
+        "        config.parent, data / 'logs', db_path=data / 'pipeline_progress.db'\n"
+        "    )\n"
+        "    producer.db.init_species('test_species', ['SRR123'])\n"
+        "    producer.process_single_sample('SRR123', 1, raw, config, 'test_species', 1, False)\n"
     )
     with transfer_site({"SRR123.fastq.gz": payload}, slow=True) as site:
         monkeypatch.setenv("AMALGKIT_ENA_API_BASE_URL", f"{site.base}/api")
-        with (tmp_path / "worker.log").open("w") as log:
-            worker = subprocess.Popen(
-                [
-                    sys.executable,
-                    str(script),
-                    str(fixture.manifest),
-                    str(fixture.data),
-                    str(fixture.config_dir),
-                ],
+        with (tmp_path / "producer.log").open("w") as log:
+            child = subprocess.Popen(
+                [sys.executable, str(script), str(fixture.data), str(fixture.config)],
                 stdout=log,
                 stderr=log,
             )
@@ -795,7 +777,7 @@ def test_interrupted_native_worker_releases_lock_retains_ssd_partial_and_resumes
                     if parts and parts[0].stat().st_size > 0:
                         partial = parts[0]
                         break
-                    assert worker.poll() is None, (tmp_path / "worker.log").read_text()
+                    assert child.poll() is None, (tmp_path / "producer.log").read_text()
                     threading.Event().wait(0.01)
                 assert partial is not None
                 rows = [
@@ -807,34 +789,24 @@ def test_interrupted_native_worker_releases_lock_retains_ssd_partial_and_resumes
                         check=True,
                     ).stdout.splitlines()
                 ]
-                curl = [row for row in rows if int(row[1]) == worker.pid and "curl" in Path(row[3].split()[0]).name]
+                curl = [row for row in rows if int(row[1]) == child.pid and "curl" in Path(row[3].split()[0]).name]
                 assert len(curl) == 1 and int(curl[0][0]) == int(curl[0][2])
-                os.kill(worker.pid, signal.SIGINT)
+                os.kill(child.pid, signal.SIGINT)
                 os.killpg(int(curl[0][2]), signal.SIGTERM)
-                assert worker.wait(timeout=15) != 0
+                assert child.wait(timeout=15) != 0
                 retained = partial.read_bytes()
                 assert 0 < len(retained) <= site.slow_bytes
                 assert retained == payload[: len(retained)]
                 assert not source.exists()
             finally:
                 site.release.set()
-                if worker.poll() is None:
-                    worker.kill()
-                    worker.wait(timeout=5)
+                if child.poll() is None:
+                    child.kill()
+                    child.wait(timeout=5)
         site.slow = False
-        recovered = run_manifest(
-            manifest_path=fixture.manifest,
-            data_root=fixture.data,
-            config_dir=fixture.config_dir,
-            workers=1,
-            threads=2,
-            fastq_threads=1,
-            compression_threads=1,
-            validation_slots=1,
-            quant_slots=1,
-            fasterq_slots=1,
-            max_in_flight=1,
-        )
-        assert recovered["counts"] == {"quantified": 1, "newly_quantified": 1}
+        assert is_quiescent(fixture.data)
+        with acquire_writer(fixture.data, "producer"):
+            recovered = fixture.produce()
+        assert recovered["quantified"] and not recovered["skipped"] and recovered["error"] is None, recovered
         assert any(row[2] == f"bytes={len(retained)}-" for row in site.requests)
         assert source.read_bytes() == payload

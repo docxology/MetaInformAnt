@@ -1,4 +1,4 @@
-"""Multi-omic methods keep their randomness private, run on every supported NumPy, and do not advertise a no-op.
+"""Multi-omic methods keep their randomness private, run on every supported NumPy, and validate their arguments.
 
 Regression tests for ``metainformant.multiomics.methods``:
 
@@ -8,7 +8,6 @@ Regression tests for ``metainformant.multiomics.methods``:
 * ``clustering.consensus_clustering`` integrated the consensus CDF with ``np.trapezoid``, which exists only from
   NumPy 2.0 while ``pyproject.toml`` allows ``numpy>=1.24`` (on NumPy 1.x every call raised ``AttributeError``);
   its docstring also promised hierarchical clustering of the consensus matrix, the code runs spectral clustering;
-* ``factorization.similarity_network_fusion`` documented ``alpha`` as the kernel bandwidth although it never used it;
 * ``consensus_clustering`` accepted ``n_resamples=0`` (no resampling, so every pair of samples had consensus 0 and
   every k a perfect PAC of 0.0) and ``k=1`` (one cluster: consensus 1 everywhere, PAC 0.0, always "optimal"), and
   ``multi_omic_clustering`` accepted more clusters than samples (the spectral route returned one cluster per sample
@@ -23,7 +22,6 @@ from __future__ import annotations
 
 import ast
 import random
-import warnings
 from pathlib import Path
 
 import numpy as np
@@ -32,10 +30,7 @@ import pytest
 from metainformant.multiomics import methods as methods_package
 from metainformant.multiomics.methods import clustering
 from metainformant.multiomics.methods.clustering import consensus_clustering, multi_omic_clustering
-from metainformant.multiomics.methods.factorization import (
-    _py_random_matrix,
-    similarity_network_fusion,
-)
+from metainformant.multiomics.methods.factorization import _py_random_matrix
 
 PACKAGE_ROOTS = [
     Path(methods_package.__file__).resolve().parents[1],  # metainformant/multiomics
@@ -61,9 +56,9 @@ class TestRandomnessStaysPrivate:
 
     def test_the_private_generator_draws_what_the_global_seed_42_used_to_draw(self) -> None:
         random.seed(42)
-        legacy = [[random.random() * 0.5 + 0.01 for _ in range(4)] for _ in range(3)]  # the former implementation
+        global_seed_draws = [[random.random() * 0.5 + 0.01 for _ in range(4)] for _ in range(3)]
 
-        assert _py_random_matrix(3, 4, random.Random(42)) == legacy
+        assert _py_random_matrix(3, 4, random.Random(42)) == global_seed_draws
 
     def test_the_values_are_positive_and_below_the_documented_ceiling(self) -> None:
         matrix = _py_random_matrix(20, 20, random.Random(1))
@@ -130,36 +125,8 @@ class TestNumpyVersionCompatibility:
         assert result["cdf_area"][2] == pytest.approx(by_hand, rel=1e-12)
 
 
-class TestSimilarityNetworkFusionAlpha:
-    @staticmethod
-    def _networks() -> list[np.ndarray]:
-        rng = np.random.default_rng(7)
-        networks = []
-        for _ in range(2):
-            points = rng.normal(size=(12, 3))
-            distances = np.linalg.norm(points[:, None] - points[None], axis=2)
-            networks.append(np.exp(-distances))
-        return networks
-
-    def test_the_default_alpha_is_silent(self) -> None:
-        with warnings.catch_warnings(record=True) as caught:
-            warnings.simplefilter("always")
-            similarity_network_fusion(self._networks(), k_neighbors=4, n_iter=3)
-
-        assert [str(w.message) for w in caught if "alpha" in str(w.message)] == []
-
-    def test_another_alpha_says_that_it_does_nothing(self) -> None:
-        networks = self._networks()
-        baseline = similarity_network_fusion(networks, k_neighbors=4, n_iter=3)
-
-        with pytest.warns(UserWarning, match=r"alpha=0\.9 has no effect"):
-            changed = similarity_network_fusion(networks, k_neighbors=4, n_iter=3, alpha=0.9)
-
-        assert changed["fused_network"] == baseline["fused_network"]  # the warning is true
-
-
 class TestClusteringArguments:
-    """Arguments that used to produce a perfect-looking answer from no computation."""
+    """Arguments that must not produce a perfect-looking answer from no computation."""
 
     @staticmethod
     def _two_blobs(n: int = 20) -> np.ndarray:

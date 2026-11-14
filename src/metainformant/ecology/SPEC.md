@@ -11,7 +11,7 @@ Ecology and community analysis module for METAINFORMANT.
 
 ## Data Structures
 
-- **Sub-packages**: analysis, phylogenetic, traits, visualization
+- **Sub-packages**: analysis, phylogenetic, visualization
 - **Key Concepts**: Shannon/Simpson diversity, PCoA/NMDS ordination, CWM, FRic, Rao's Q
 
 ## API Definition

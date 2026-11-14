@@ -328,9 +328,6 @@ def compare_populations(
         "group2_name": group_names[1],
         "group1_stats": group1_stats,
         "group2_stats": group2_stats,
-        # Backward-compatible aliases used by older tests and scripts.
-        "group1": {"n_sequences": len(sequences1), **group1_stats},
-        "group2": {"n_sequences": len(sequences2), **group2_stats},
         "comparison": {},
         "visualizations": [],
         "visualization_errors": [],

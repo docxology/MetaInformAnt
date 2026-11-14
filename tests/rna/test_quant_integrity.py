@@ -7,8 +7,9 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.rna.engine.durable_quant import DirectoryStore, lock_quantification
+from metainformant.rna.engine.durable_quant import lock_quantification
 from metainformant.rna.engine.provenance import write_quant_provenance
+from metainformant.rna.engine.quant_storage import DirectoryStore
 
 
 @pytest.fixture

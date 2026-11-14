@@ -34,7 +34,7 @@ def load_gene2refseq_mapping(
         target_taxon_ids: Set of string taxon IDs to filter for
         duplicate_evidence: Optional list collecting duplicated-evidence records;
             when a protein base maps to several RNA bases, the collision is
-            appended here and the last mapping is kept (historical behaviour).
+            appended here and the last mapping is kept.
 
     Returns:
         Dictionary mapping protein_accession_base -> rna_accession_base.
@@ -97,8 +97,7 @@ def load_orthodb_proteins(
         target_org_prefixes: Set of organism prefixes (e.g., taxonomy IDs mapped to OrthoDB format)
         duplicate_evidence: Optional list collecting duplicated-evidence records;
             when one OrthoDB gene ID maps to several protein accessions, the
-            collision is appended here and the last mapping is kept (historical
-            behaviour).
+            collision is appended here and the last mapping is kept.
 
     Returns:
         Dictionary mapping OrthoDB gene_id -> protein_accession_base.
@@ -514,8 +513,8 @@ def build_orthogroup_bridge(
         expression_tids: Dict mapping species -> (RNA accession -> transcript ID).
         taxon_to_species: Dict mapping dataset taxonomy column names to species titles.
         copy_policy: How multi-transcript orthogroup cells are copied:
-            ``'all-joined'`` (default) joins every mapped transcript, preserving
-            the historical behaviour; ``'first-transcript'`` keeps one
+            ``'all-joined'`` (default) joins every mapped transcript;
+            ``'first-transcript'`` keeps one
             deterministic transcript per cell; ``'one-to-one-only'`` drops and
             records every orthogroup whose cell for any included species holds
             more than one transcript.
@@ -833,8 +832,7 @@ def build_transcript_orthogroup_table(
         expression_tids: Dict mapping species -> (RNA accession -> transcript ID)
         taxon_to_species: Dict mapping dataset taxonomy column names to species titles
         copy_policy: How multi-transcript orthogroup cells are copied; the default
-            ``'all-joined'`` preserves the historical behaviour of joining every
-            mapped transcript with commas.
+            ``'all-joined'`` joins every mapped transcript with commas.
 
     Returns:
         DataFrame with mapped transcript IDs for each species across orthogroups.

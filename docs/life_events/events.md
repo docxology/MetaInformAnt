@@ -62,8 +62,7 @@ The constructor sorts the events by timestamp.
 | Method | Signature | Returns |
 |--------|-----------|---------|
 | `filter_by_domain` | `(domain: str) -> EventSequence` | New sequence with matching domain |
-| `filter_by_time_range` | `(start: datetime, end: datetime) -> EventSequence` | New sequence within range (inclusive) |
-| `filter_by_time` | `(start, end) -> EventSequence` | Same as `filter_by_time_range`; accepts `datetime` or POSIX seconds |
+| `filter_by_time_range` | `(start: datetime \| float, end: datetime \| float) -> EventSequence` | New sequence within range (inclusive); `start` and `end` are `datetime` or POSIX seconds |
 | `get_events_by_type` | `(event_type: str) -> List[Event]` | Events of one type |
 | `to_dataframe` | `() -> pd.DataFrame` | Tabular representation |
 | `get_event_types` | `() -> List[str]` | Unique event types |

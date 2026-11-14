@@ -134,4 +134,4 @@ Environment variable prefix: `INFO_`
 - `metainformant.information.metrics.core.syntactic` -- entropy, MI, conditional MI
 - `metainformant.information.metrics.core.estimation` -- bias-corrected estimation
 - `metainformant.information.metrics.advanced.channel` -- channel capacity
-- `metainformant.information.metrics.advanced.geometry` -- divergence measures, Fisher-Rao
+- `metainformant.information.metrics.advanced.information_projection` and `metainformant.information.metrics.advanced.fisher_rao` -- divergence measures, Fisher-Rao

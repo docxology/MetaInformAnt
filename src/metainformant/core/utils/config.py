@@ -1,23 +1,17 @@
 from __future__ import annotations
 
 import os
+import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping
 
-# Lightweight, optional YAML/TOML support without hard deps
+# Lightweight, optional YAML support without a hard dependency
 yaml: Any  # None when PyYAML is unavailable, so ``yaml is None`` checks stay reachable to the type checker
 try:  # pragma: no cover - optional dependency
     import yaml
 except Exception:  # pragma: no cover - optional
     yaml = None
-
-try:  # pragma: no cover - optional dependency
-    import importlib
-
-    tomllib = importlib.import_module("tomllib")  # Python 3.11+
-except Exception:  # pragma: no cover - optional
-    tomllib = None  # type: ignore
 
 
 @dataclass(frozen=True)
@@ -69,23 +63,6 @@ def load_postgres_config_from_env(prefix: str = "PG") -> PostgresConfig | None:
         port = 5432
 
     return PostgresConfig(host=host, port=port, database=database, user=user, password=password)
-
-
-def load_config_file(config_path: Path) -> dict[str, Any]:
-    """Load configuration from YAML, TOML, or JSON file.
-
-    Delegates to :func:`load_mapping_from_file`, the canonical loader.
-
-    Args:
-        config_path: Path to configuration file
-
-    Returns:
-        Configuration dictionary
-
-    Raises:
-        ValueError: If file format not supported or file cannot be parsed
-    """
-    return load_mapping_from_file(config_path)
 
 
 def get_env_or_default(env_var: str, default: str) -> str:
@@ -147,7 +124,7 @@ def _read_text(path: Path) -> str:
 def load_mapping_from_file(config_path: str | Path) -> dict[str, Any]:
     """Load a structured mapping from YAML, TOML or JSON file.
 
-    - Supports .yaml/.yml (if PyYAML available), .toml (if tomllib available), and .json via stdlib
+    - Supports .yaml/.yml (if PyYAML available), and .toml and .json via stdlib
     - Returns a Python dict; raises ValueError if format unsupported or parsing fails
     """
     p = Path(config_path)
@@ -169,8 +146,6 @@ def load_mapping_from_file(config_path: str | Path) -> dict[str, Any]:
         return _parse_simple_yaml_mapping(text)
 
     if suffix == ".toml":
-        if tomllib is None:
-            raise ValueError("TOML requested but tomllib unavailable. Use Python 3.11+ or use JSON/YAML.")
         return dict(tomllib.loads(text))
 
     if suffix == ".json":

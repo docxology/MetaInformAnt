@@ -85,7 +85,7 @@ def test_event_sequence_filtering():
     assert health_seq.events[0].domain == "health"
 
     # Filter by time
-    recent_seq = sequence.filter_by_time(start_time=datetime(2015, 1, 1), end_time=datetime(2025, 1, 1))
+    recent_seq = sequence.filter_by_time_range(start=datetime(2015, 1, 1), end=datetime(2025, 1, 1))
     assert len(recent_seq.events) == 2
 
 

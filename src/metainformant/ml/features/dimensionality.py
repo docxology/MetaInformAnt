@@ -7,8 +7,7 @@ UMAP/t-SNE) and own the single standardization path (``scale_data`` →
 
 The ``reduce_dimensions_pca`` / ``reduce_dimensions_umap`` /
 ``reduce_dimensions_tsne`` functions are thin delegating wrappers for callers
-that prefer the ``(embedding, components, explained_variance)`` repackaging;
-``standardize`` there is only a deprecated alias of ``scale_data``.
+that prefer the ``(embedding, components, explained_variance)`` repackaging.
 """
 
 from __future__ import annotations
@@ -583,7 +582,6 @@ def reduce_dimensions_pca(
     X: np.ndarray,
     n_components: int | None = None,
     scale_data: bool = True,
-    standardize: bool | None = None,
     **kwargs: Any,
 ) -> tuple:
     """Reduce dimensions using PCA (delegating wrapper for ``pca_reduction``).
@@ -597,7 +595,6 @@ def reduce_dimensions_pca(
         n_components: Number of components to keep
         scale_data: Whether to standardize data before PCA (owned by
             ``pca_reduction``)
-        standardize: Deprecated alias for ``scale_data``; prefer ``scale_data``
         **kwargs: Additional arguments for PCA
 
     Returns:
@@ -605,9 +602,6 @@ def reduce_dimensions_pca(
     """
     if not HAS_SKLEARN:
         raise ImportError("scikit-learn required for PCA")
-
-    if standardize is not None:
-        scale_data = standardize
 
     if n_components is None:
         n_components = min(X.shape[0], X.shape[1], 50)

@@ -35,23 +35,19 @@ def find_open_reading_frames(dna_sequence: str) -> List[Tuple[int, int, str]]:
     return find_orfs(dna_sequence)
 
 
-def predict_transcription_start_sites(dna_sequence: str, window_size: int = 50) -> List[Tuple[int, float]]:
+def predict_transcription_start_sites(dna_sequence: str) -> List[Tuple[int, float]]:
     """Predict transcription start sites using sequence motifs.
 
     Each distinct TATA box occurrence in the sequence is reported exactly
-    once, keyed by its absolute start position. (The previous sliding-window
-    implementation re-detected the same box from every window start and
-    emitted many duplicate entries per box with varying scores.)
+    once, keyed by its absolute start position.
 
     Args:
         dna_sequence: DNA sequence to analyze
-        window_size: Retained for API compatibility; scoring no longer
-            depends on an arbitrary sliding-window offset.
 
     Returns:
         List of tuples (position, score) for potential TSS in ascending
         position order. ``position`` is the absolute box start plus the box
-        length (as before). Scoring rule (deterministic, applied per box):
+        length. Scoring rule (deterministic, applied per box):
         1.0 when the box has at least 20 bp of upstream sequence context
         and at least 10 bp of downstream context after the box end, 0.5
         otherwise. Matches are case-insensitive.

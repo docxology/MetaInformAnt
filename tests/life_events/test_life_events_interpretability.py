@@ -30,7 +30,7 @@ def test_event_importance_permutation():
     embeddings = learn_event_embeddings(sequences, embedding_dim=50, random_state=42)
     predictor.fit(sequences, y, event_embeddings=embeddings)
 
-    importance = event_importance(predictor, sequences, embeddings, method="permutation")
+    importance = event_importance(predictor, sequences, method="permutation")
 
     assert isinstance(importance, dict)
     assert len(importance) > 0
@@ -41,12 +41,11 @@ def test_event_importance_permutation():
 def test_event_importance_not_fitted():
     """Test event importance with unfitted predictor."""
     sequences = [["health:diagnosis"]]
-    embeddings = {"health:diagnosis": np.random.randn(50)}
 
     predictor = EventSequencePredictor()
 
     with pytest.raises(ValueError, match="must be fitted"):
-        event_importance(predictor, sequences, embeddings)
+        event_importance(predictor, sequences)
 
 
 def test_event_importance_empty_sequences():
@@ -58,7 +57,7 @@ def test_event_importance_empty_sequences():
     predictor.fit(sequences, y, event_embeddings=embeddings)
 
     with pytest.raises(ValueError, match="cannot be empty"):
-        event_importance(predictor, [], embeddings)
+        event_importance(predictor, [])
 
 
 def test_event_importance_invalid_method():
@@ -70,7 +69,7 @@ def test_event_importance_invalid_method():
     predictor.fit(sequences, y, event_embeddings=embeddings)
 
     with pytest.raises(ValueError, match="Invalid method"):
-        event_importance(predictor, sequences, embeddings, method="invalid")
+        event_importance(predictor, sequences, method="invalid")
 
 
 def test_temporal_patterns():

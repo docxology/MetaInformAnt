@@ -19,7 +19,7 @@ from metainformant.gwas.analysis.correction import bonferroni_correction, fdr_co
 from metainformant.gwas.analysis.quality import apply_qc_filters, parse_vcf_full
 from metainformant.gwas.analysis.structure import compute_kinship_matrix, compute_pca
 from metainformant.gwas.data.config import load_gwas_config
-from metainformant.gwas.visualization._general_impl import manhattan_plot, qq_plot
+from metainformant.gwas.visualization.general import manhattan_plot, qq_plot
 from metainformant.gwas.workflow.workflow_config import _phenotypes_in_sample_order
 
 
@@ -157,8 +157,8 @@ def run(config_path: str = "config/gwas/gwas_pbarbatus_synthetic.yaml") -> None:
         bonf_result = bonferroni_correction(p_values)
         fdr_result = fdr_correction(p_values)
 
-        print(f'  Bonferroni significant: {bonf_result.get("significant_count", 0)}')
-        print(f'  FDR significant: {fdr_result.get("significant_count", 0)}')
+        print(f'  Bonferroni significant: {bonf_result.get("n_significant", 0)}')
+        print(f'  FDR significant: {fdr_result.get("n_significant", 0)}')
 
         # Save results
         trait_file = results_dir / f"{trait_name}_associations.tsv"

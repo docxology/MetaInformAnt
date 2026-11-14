@@ -18,7 +18,6 @@ from metainformant.networks.analysis.pathway import (
     create_pathway_network,
     find_pathway_modules,
     load_pathway_database,
-    network_enrichment_analysis,
     pathway_activity_score,
     pathway_disease_association,
     pathway_enrichment,
@@ -297,7 +296,7 @@ class TestPathwayEnrichmentFunction:
         assert set(g["overlap_genes"]) == {"G1", "G2", "G3"}
 
     def test_hypergeometric_method(self) -> None:
-        # "hypergeom" used to be accepted only because every method other than "fisher" ran as hypergeometric
+        # "hypergeometric" is a named method; other names besides "fisher" do not fall back to it
         results = pathway_enrichment(["G5", "G6", "G7"], self._network(), method="hypergeometric")
         assert results["oxphos"]["p_value"] < 0.05
 
@@ -322,11 +321,6 @@ class TestPathwayEnrichmentFunction:
     def test_empty_network_returns_empty(self) -> None:
         results = pathway_enrichment(["G1"], PathwayNetwork(name="empty"))
         assert results == {}
-
-    def test_network_enrichment_analysis_alias(self) -> None:
-        direct = pathway_enrichment(["G1", "G2", "G3"], self._network())
-        alias = network_enrichment_analysis(["G1", "G2", "G3"], self._network())
-        assert direct == alias
 
 
 class TestLoadPathwayDatabase:

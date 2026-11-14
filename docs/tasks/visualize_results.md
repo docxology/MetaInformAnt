@@ -94,7 +94,7 @@ ax = plot_phylo_tree(tree, with_labels=True, output_path="phylogeny.pdf")
 
 ```python-snippet
 from metainformant.networks.analysis.community import detect_communities
-from metainformant.networks.analysis.graph import load_network
+from metainformant.networks.analysis.graph_core import load_network
 from metainformant.visualization.genomics.networks import plot_community_network
 
 ppi = load_network("string_ppi.tsv", format="edgelist")
@@ -201,7 +201,7 @@ Community structure: 7 modules (Louvain, resolution=1.0)
 |---------|-------------|-----|
 | `MemoryError` during heatmap with 50k genes | Distance matrix O(n²) for clustering | Subset genes first (`deseq.nsmallest(200, "padj")`) |
 | Manhattan plot x-axis labels overlap | Many small chromosomes or contigs | Pass `figsize=(16, 6)`, or draw on your own axes (`manhattan_plot(results, ax=ax)`) and rotate the labels with `ax.tick_params(axis="x", labelrotation=45)` |
-| Network graph layout takes forever | More than ~10k nodes | Plot a subgraph instead (`metainformant.networks.analysis.graph.create_subgraph(graph, nodes)`), for example the largest communities |
+| Network graph layout takes forever | More than ~10k nodes | Plot a subgraph instead (`metainformant.networks.analysis.graph_core.create_subgraph(graph, nodes)`), for example the largest communities |
 | `ValueError: Missing required columns for PCA plot` | The score table lacks `PC1`, `PC2`, `PC1_variance` or `PC2_variance` | Add the columns as in the PCA example (variance as percentages) |
 | `FileNotFoundError` when saving a GWAS figure | `manhattan_plot`, `qq_plot` and `regional_plot` do not create missing directories | Create the output directory first (`metainformant.core.io.ensure_directory(...)`) |
 | `ImportError: Plotly is required to write the interactive HTML file ...` from an `interactive_*` function in `metainformant.visualization.dashboards.interactive` | Plotly is not installed and `output_path` ends in `.html` or `.htm`; matplotlib cannot write HTML | Install Plotly (`uv sync --extra visualization`), or pass an image path such as `.png` to get the static fallback |

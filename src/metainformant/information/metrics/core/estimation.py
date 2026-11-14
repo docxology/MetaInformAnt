@@ -259,9 +259,7 @@ def kl_divergence_estimator(p: List[Any], q: List[Any], method: str = "plugin", 
 
     The empirical distributions of the two samples are compared: ``sum_x p(x) * log2(p(x) / q(x))`` over the
     outcomes seen in ``p``. The plug-in estimate is biased upwards for small samples, and no bias correction exists
-    for it here: ``method`` accepts only ``"plugin"`` and ``bias_correction=True`` raises. (An earlier version took
-    ``method`` and ``bias_correction=True`` as the defaults, advertised "bias correction" and ignored both: every
-    call returned the plug-in value.)
+    for it here: ``method`` accepts only ``"plugin"`` and ``bias_correction=True`` raises.
 
     Args:
         p: Samples from distribution P
@@ -321,8 +319,7 @@ def bias_correction(entropy: float, sample_size: int, alphabet_size: int) -> flo
     ``(alphabet_size - 1) / (2 * sample_size)`` nats (Miller 1955). This
     helper adds the bit-valued equivalent
     ``(alphabet_size - 1) / (2 * sample_size * ln 2)`` to the supplied
-    estimate. :func:`effective_sample_size_correction` is a
-    backward-compatible alias of this function.
+    estimate.
 
     The correction is unreliable for sample_size <= 1 (no distribution can
     be estimated from a single draw); the entropy is returned unchanged
@@ -432,26 +429,6 @@ def entropy_bootstrap_confidence(
         "confidence_level": confidence_level,
         "n_bootstraps": n_bootstraps,
     }
-
-
-def effective_sample_size_correction(entropy: float, sample_size: int, alphabet_size: int) -> float:
-    """Backward-compatible alias of :func:`bias_correction`.
-
-    Applies the identical additive Miller-Madow first-order correction
-    ``(alphabet_size - 1) / (2 * sample_size * ln 2)`` bits (sample_size <= 1
-    returns the entropy unchanged). The two functions used to carry
-    duplicated implementations; the logic now lives only in
-    :func:`bias_correction`. New code should call that function.
-
-    Args:
-        entropy: Raw entropy estimate (bits)
-        sample_size: Number of samples (n)
-        alphabet_size: Alphabet size (d)
-
-    Returns:
-        Bias-corrected entropy estimate (bits)
-    """
-    return bias_correction(entropy, sample_size, alphabet_size)
 
 
 def _panzeri_treves_support(probabilities: np.ndarray, sample_size: int) -> float:

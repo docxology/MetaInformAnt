@@ -146,8 +146,8 @@ class TestMutationUpdate:
     def test_validation(self):
         with pytest.raises(ValueError, match="between 0 and 1"):
             mutation_update(1.5, 0.01, 0.01)
-        with pytest.raises(ValueError, match="required"):
-            mutation_update(0.5, mutation_rate_forward=0.01)
+        with pytest.raises(TypeError):
+            mutation_update(0.5, mutation_rate_forward=0.01)  # type: ignore[call-arg]
 
 
 class TestSelectionUpdate:

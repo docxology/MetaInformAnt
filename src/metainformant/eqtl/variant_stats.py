@@ -169,12 +169,3 @@ def compute_allele_frequencies(merged_vcf: Path, output_tsv: Path) -> int:
     n_lines = result.stdout.count("\n")
     logger.info(f"Wrote allele frequencies for {n_lines} variants -> {output_tsv}")
     return n_lines
-
-
-def load_real_expression_data_hint() -> str:
-    """Return pointer to the real-expression loader (kept for API symmetry).
-
-    The real-expression loader lives in
-    :func:`metainformant.eqtl.workflow.synthetic.load_real_expression_data`.
-    """
-    return "metainformant.eqtl.workflow.synthetic.load_real_expression_data"

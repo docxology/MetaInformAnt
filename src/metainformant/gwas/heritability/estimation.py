@@ -97,9 +97,9 @@ def estimate_h2_ldsc(
     # Weighted least squares regression: chi2 = intercept + slope * ld_score
     # Weights: 1 / (ld_score^2) to account for heteroscedasticity
     if HAS_NUMPY:
-        result = _ldsc_regression_numpy(chi2_stats, ld_scores, n, m, intercept)
+        result = _ldsc_regression_numpy(chi2_stats, ld_scores, m, intercept)
     else:
-        result = _ldsc_regression_pure(chi2_stats, ld_scores, n, m, intercept)
+        result = _ldsc_regression_pure(chi2_stats, ld_scores, m, intercept)
 
     if result is None:
         return {
@@ -330,9 +330,9 @@ def genetic_correlation(
 
     # Regression of z_product on ld_scores
     if HAS_NUMPY:
-        cross_result = _ldsc_regression_numpy(z_product, ld_scores, int(n_eff), m, True)
+        cross_result = _ldsc_regression_numpy(z_product, ld_scores, m, True)
     else:
-        cross_result = _ldsc_regression_pure(z_product, ld_scores, int(n_eff), m, True)
+        cross_result = _ldsc_regression_pure(z_product, ld_scores, m, True)
 
     if cross_result is None:
         return {"status": "error", "message": "Cross-trait LDSC regression failed"}
@@ -688,7 +688,6 @@ def compute_liability_h2(
 def _ldsc_regression_numpy(
     y_vals: list[float],
     ld_scores: list[float],
-    n_samples: int,
     m_snps: int,
     fit_intercept: bool,
 ) -> Optional[Tuple[float, float, float, float]]:
@@ -697,8 +696,6 @@ def _ldsc_regression_numpy(
     Args:
         y_vals: Dependent variable (chi2 or z-product).
         ld_scores: LD scores (independent variable).
-        n_samples: Not used: the weights below are the simplified ``1 / max(l_j, 1) ** 2``, which do not
-            depend on the sample size.
         m_snps: Number of SNPs.
         fit_intercept: Whether to fit an intercept.
 
@@ -758,7 +755,6 @@ def _ldsc_regression_numpy(
 def _ldsc_regression_pure(
     y_vals: list[float],
     ld_scores: list[float],
-    n_samples: int,
     m_snps: int,
     fit_intercept: bool,
 ) -> Optional[Tuple[float, float, float, float]]:
@@ -767,7 +763,6 @@ def _ldsc_regression_pure(
     Args:
         y_vals: Dependent variable.
         ld_scores: LD scores.
-        n_samples: Not used (the weights do not depend on the sample size).
         m_snps: Number of SNPs.
         fit_intercept: Whether to fit an intercept.
 

@@ -41,7 +41,7 @@ GWAS statistical fine-mapping submodule: Wakefield approximate Bayes factors, cr
 | `compute_bayes_factors` | same arguments | `list[float]` of ABFs capped at `exp(500)`; raises `ValueError` |
 | `log_sum_exp` | `(values)` | `float`; `-inf` for empty input or all `-inf` |
 | `susie_regression` | `(X, y, L=10, max_iter=100, tol=1e-3)` | `status`, `alpha`, `mu`, `sigma2`, `pip`, `credible_sets`, `converged`, `elbo` |
-| `colocalization` | `(z_scores_1, z_scores_2, ld_matrix=None, prior_p1=1e-4, prior_p2=1e-4, prior_p12=1e-5, *, prior_variance_1=None, prior_variance_2=None, standard_errors_1=None, standard_errors_2=None, sample_size_1=None, sample_size_2=None, maf=None, case_fraction_1=None, case_fraction_2=None)` | `status`, `PP_H0` to `PP_H4`, `summary`, `snp_pp_h4`, `bayes_factor_model` |
+| `colocalization` | `(z_scores_1, z_scores_2, prior_p1=1e-4, prior_p2=1e-4, prior_p12=1e-5, *, prior_variance_1=None, prior_variance_2=None, standard_errors_1=None, standard_errors_2=None, sample_size_1=None, sample_size_2=None, maf=None, case_fraction_1=None, case_fraction_2=None)` | `status`, `PP_H0` to `PP_H4`, `summary`, `snp_pp_h4`, `bayes_factor_model` |
 | `colocalization_from_log_bayes_factors` | `(log_bayes_factors_1, log_bayes_factors_2, prior_p1=1e-4, prior_p2=1e-4, prior_p12=1e-5)` | `status`, `PP_H0` to `PP_H4`, `summary`, `snp_pp_h4` |
 | `conditional_analysis` | `(z_scores, ld_matrix, max_signals=10, p_threshold=5e-8)` | `list[dict]` with `index`, `z_score`, `z_conditional`, `p_value`, `signal_number` |
 | `annotate_credible_set` | `(credible_set, annotations=None)` | `status`, `credible_set`, `annotated_snps`, `enrichment`, `n_annotated` |
@@ -52,10 +52,10 @@ GWAS statistical fine-mapping submodule: Wakefield approximate Bayes factors, cr
 
 | Function | Signature | Returns |
 |----------|-----------|---------|
-| `multi_trait_coloc` | `(z_scores, ld_matrix=None, *, prior_variances=None, standard_errors=None, sample_sizes=None, maf=None, case_fractions=None)` | `status`, `pairwise`, `multi_trait_pp_shared`, `n_traits`, `n_variants`, `summary` |
-| `eqtl_coloc` | `(gwas_z, eqtl_z, gene_id, ld_matrix=None, *, gwas_prior_variance=None, eqtl_prior_variance=None, gwas_standard_errors=None, eqtl_standard_errors=None, gwas_sample_size=None, eqtl_sample_size=None, maf=None, gwas_case_fraction=None)` | `status`, `gene_id`, `coloc_result`, `pp_h4`, `is_colocalized`, `lead_variant_gwas`, `lead_variant_eqtl`, `shared_variant`, `interpretation` |
+| `multi_trait_coloc` | `(z_scores, *, prior_variances=None, standard_errors=None, sample_sizes=None, maf=None, case_fractions=None, prior_p1=1e-4, prior_p12=1e-5)` | `status`, `pairwise`, `multi_trait_pp_shared`, `n_traits`, `n_variants`, `summary` |
+| `eqtl_coloc` | `(gwas_z, eqtl_z, gene_id, *, gwas_prior_variance=None, eqtl_prior_variance=None, gwas_standard_errors=None, eqtl_standard_errors=None, gwas_sample_size=None, eqtl_sample_size=None, maf=None, gwas_case_fraction=None)` | `status`, `gene_id`, `coloc_result`, `pp_h4`, `is_colocalized`, `lead_variant_gwas`, `lead_variant_eqtl`, `shared_variant`, `interpretation` |
 | `compute_clpp` | `(pip_1, pip_2)` | `status`, `clpp`, `per_variant_clpp`, `max_clpp_index`, `max_clpp_value`, `is_colocalized`, `n_variants` |
-| `regional_coloc` | `(z_scores_dict, region, ld_matrix=None, *, prior_variances=None, standard_errors=None, sample_sizes=None, maf=None, case_fractions=None)` | `status`, `best_window`, `all_windows`, `n_windows`, `n_failed_windows`, `region` |
+| `regional_coloc` | `(z_scores_dict, region, *, prior_variances=None, standard_errors=None, sample_sizes=None, maf=None, case_fractions=None)` | `status`, `best_window`, `all_windows`, `n_windows`, `n_failed_windows`, `region` |
 
 The per-trait arguments of `multi_trait_coloc` and `regional_coloc` are mappings keyed by trait name; `maf` is shared by all traits. `eqtl_coloc` treats the eQTL trait as quantitative.
 

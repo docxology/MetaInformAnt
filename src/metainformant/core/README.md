@@ -51,7 +51,6 @@ graph TD
 | [`engine/`](engine/) | `BasePipelineManager` with TUI visualization, `PipelineItem`, `Stage` lifecycle |
 | [`execution/`](execution/) | Config-driven workflow execution with `validate_config_file` |
 | [`ui/`](ui/) | `TerminalInterface` for real-time pipeline monitoring |
-| `db.py` | Compatibility re-export of `metainformant.core.data.db` |
 | `ncbi.py` | NCBI contact policy (`resolve_ncbi_contact`, `NCBIContact`) |
 | `sequence.py` | Shared sequence primitives (`reverse_complement`, `validate_dna_sequence`, complement tables) |
 | Runtime output | Discovery caches and generated files belong under repository `output/`, not under `src/metainformant/core/` |
@@ -82,9 +81,7 @@ cfg = config.load_mapping_from_file("config/workflow.yaml")
 cfg = config.apply_env_overrides(cfg, prefix="RNA")
 ```
 
-`metainformant.core.utils.config` and `metainformant.core.io.paths` define the
-canonical implementations of these helpers. The one compatibility shim in
-`core` is `metainformant.core.db`, which re-exports `metainformant.core.data.db`.
+`metainformant.core.utils.config` and `metainformant.core.io.paths` define these helpers.
 
 ### Pipeline Orchestration
 

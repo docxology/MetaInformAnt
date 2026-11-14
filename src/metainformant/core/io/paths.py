@@ -125,7 +125,7 @@ def get_file_size(path: str | Path) -> int:
     """
     try:
         return Path(path).stat().st_size
-    except (OSError, FileNotFoundError):
+    except OSError, FileNotFoundError:
         return 0
 
 
@@ -148,7 +148,7 @@ def get_directory_size(path: str | Path) -> int:
         if file_path.is_file():
             try:
                 total_size += file_path.stat().st_size
-            except (OSError, FileNotFoundError):
+            except OSError, FileNotFoundError:
                 continue
 
     return total_size
@@ -399,7 +399,7 @@ def list_output_structure(repo_root: str | Path) -> dict[str, Any]:
                         continue
                     child_rel = rel_path / child.name
                     node["children"][child.name] = build_structure(child, child_rel)
-            except (OSError, PermissionError):
+            except OSError, PermissionError:
                 pass
         else:
             total_files += 1

@@ -22,7 +22,7 @@ Use `analyze_dna` tasks when working with genomic sequences, variant discovery, 
 
 ```python
 from metainformant.dna.sequence.core import gc_content, read_fasta, reverse_complement
-from metainformant.dna.translation import six_frame_translation, translate_dna
+from metainformant.dna.expression.translation import six_frame_translation, translate_dna
 
 # Read FASTA ({sequence_id: sequence})
 seqs = read_fasta("data/genome.fasta")

@@ -220,8 +220,6 @@ Stages (from `Stage` enum):
 | `DONE` | Completed successfully | Green |
 | `FAILED` | Terminated with error | Red |
 
-**Backward compatibility**: `SampleStage` (RNA-seq specific) extends this with `DOWNLOADING`, `DOWNLOADED`, `EXTRACTING`, `EXTRACTED`, `QUANTIFYING`, `TRUNCATED`, `SKIPPED`.
-
 **Transition rules**:
 - Initial: `PENDING`
 - Handler must call `mark_running()` → `RUNNING` (optional but recommended)

@@ -1,10 +1,9 @@
 """PCoA with honest negative eigenvalues, Kruskal's non-metric MDS, and the ordination plot.
 
-NMDS used to be metric MDS: gradient descent on raw stress between the inter-point distances and
-the dissimilarities themselves (no isotonic step), one random start, with ``1 - stress`` reported as
-"variance explained". PCoA in the plot used power iteration, which returns the eigenvalue of
-largest magnitude, so a large negative eigenvalue of a non-Euclidean distance matrix hijacked an
-axis. Uses real implementations; NumPy, SciPy and scikit-learn are oracles, each guarded with
+NMDS is Kruskal's non-metric MDS with an isotonic step, not metric gradient descent on raw stress from one random
+start with ``1 - stress`` reported as "variance explained". PCoA in the plot does not use power iteration, which
+returns the eigenvalue of largest magnitude and so lets a large negative eigenvalue of a non-Euclidean distance
+matrix hijack an axis. Uses real implementations; NumPy, SciPy and scikit-learn are oracles, each guarded with
 ``pytest.importorskip``.
 """
 

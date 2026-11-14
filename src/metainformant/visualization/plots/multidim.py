@@ -299,7 +299,7 @@ def plot_3d_scatter(
         raise ValueError("A 3D scatter plot needs a 3D axes (create it with projection='3d')")
 
     # ``c`` may name a column of the data (its values colour the points); anything else (a colour, or one value
-    # per point) goes to scatter unchanged. A ``c`` that matched no column used to be dropped.
+    # per point) goes to scatter unchanged; a ``c`` that matches no column is not dropped.
     colors = kwargs.pop("c", None)
     if isinstance(colors, str) and colors in data.columns:
         colors = data[colors]

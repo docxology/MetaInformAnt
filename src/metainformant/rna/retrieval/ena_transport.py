@@ -42,7 +42,7 @@ def ena_request_slot(url: str, *, kind: Literal["file", "metadata"], deadline_at
 
     Waiting consumes the caller's absolute deadline. A lease covers one native
     request, never its retry backoff; separate origins and metadata have their
-    own budgets. Zero keeps the legacy unlimited setting.
+    own budgets. Zero means unlimited.
     """
     limit = _connection_limit(kind)
     if not math.isfinite(deadline_at):

@@ -40,7 +40,7 @@ def _offsets(collection: PathCollection) -> np.ndarray:
 
 
 class TestInformationKeywordOverrides:
-    """``cmap``/``marker``/... used to raise ``TypeError: multiple values for keyword argument``."""
+    """``cmap``/``marker``/... override the defaults without ``TypeError: multiple values for keyword argument``."""
 
     def test_mutual_information_matrix_honours_cmap(self):
         ax = plot_mutual_information_matrix(np.eye(3), cmap="magma")
@@ -107,7 +107,7 @@ class TestInformationKeywordOverrides:
 
 
 class TestTimeSeriesKeywordOverrides:
-    """``color``/``alpha``/``linestyle`` used to collide with the hard-coded defaults."""
+    """``color``/``alpha``/``linestyle`` override the defaults instead of colliding with them."""
 
     @staticmethod
     def _series():
@@ -212,7 +212,7 @@ class TestSankeyLinks:
 
 
 class TestCircularManhattanStyling:
-    """``s=`` and ``alpha=`` used to be popped inside the chromosome loop, so only chromosome 1 got them."""
+    """``s=`` and ``alpha=`` apply to every chromosome, not only to chromosome 1."""
 
     @staticmethod
     def _frame():

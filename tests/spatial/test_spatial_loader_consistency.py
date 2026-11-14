@@ -1,8 +1,8 @@
 """Loader consistency: Visium never returns mismatched outputs; MERFISH reads tab-separated files.
 
-- ``load_visium`` used to return the unfiltered expression matrix next to empty coordinates and barcodes when
-  no barcode had a tissue position.
-- ``load_merfish`` found ``cell_metadata.tsv`` but parsed it as comma-separated, which always failed.
+- ``load_visium`` does not return the unfiltered expression matrix next to empty coordinates and barcodes when
+  no barcode has a tissue position.
+- ``load_merfish`` parses ``cell_metadata.tsv`` as tab-separated.
 
 Real files on disk and real loaders only.
 """

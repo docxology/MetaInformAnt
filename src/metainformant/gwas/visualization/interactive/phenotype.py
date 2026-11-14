@@ -336,7 +336,6 @@ def genotype_phenotype_boxplot(
     phenotypes: List[float],
     variant_id: str = "Variant",
     output_file: Optional[Union[str, Path]] = None,
-    metadata: Optional[Dict] = None,
 ) -> Dict[str, Any]:
     """Create a box/violin plot of phenotype values by genotype class.
 
@@ -349,7 +348,6 @@ def genotype_phenotype_boxplot(
         phenotypes: List of numeric phenotype values.
         variant_id: Identifier for the variant being plotted.
         output_file: Optional path to save the plot image.
-        metadata: Not used; accepted for API compatibility.
 
     Returns:
         Dictionary with status, group statistics, F-test results, and output path.
@@ -671,7 +669,6 @@ def top_hits_genotype_phenotype(
                 phenotypes=phenotypes,
                 variant_id=f"{variant_id} (p={p_val:.2e})",
                 output_file=out_file,
-                metadata=result,
             )
 
             if box_result["status"] == "success":

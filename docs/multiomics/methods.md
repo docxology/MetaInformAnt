@@ -79,13 +79,12 @@ def similarity_network_fusion(
     networks: list[list[list[float]]] | list[Any],
     k_neighbors: int = 20,
     n_iter: int = 20,
-    alpha: float = 0.5,
 ) -> dict[str, Any]
 ```
 
 Fuses >= 2 similarity networks via iterative diffusion. Returns
 `fused_network`, `cluster_labels` (from spectral clustering), and
-`silhouette_score`. Requires numpy. The compatibility argument `alpha` does not scale the supplied similarity matrices; values other than 0.5 warn that it has no effect.
+`silhouette_score`. Requires numpy. The similarity matrices are used as given (no heat-kernel bandwidth is applied).
 
 ### canonical_correlation
 

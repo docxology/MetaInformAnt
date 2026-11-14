@@ -4,8 +4,6 @@
 Functionality for pipelines.
 
 ## 📦 Contents
-- BeeWAS compatibility wrappers now forward to the canonical
-  `projects/apis_gwas/beewas/` package.
 - `[run_analysis.py](run_analysis.py)`
 - `[run_genome_scale_gwas.py](run_genome_scale_gwas.py)`
 - `[run_pbarbatus_analysis.py](run_pbarbatus_analysis.py)`
@@ -25,5 +23,4 @@ Import module:
 from metainformant.pipelines import ...
 ```
 
-BeeWAS project commands should be run from `projects/apis_gwas`; the wrappers in
-this directory are transitional import/CLI compatibility shims.
+BeeWAS commands live in the `projects/apis_gwas` submodule (`beewas/` package) and run from there.

@@ -49,7 +49,7 @@ VCF_TEXT = (
 
 
 def test_parse_vcf_reads_gzip_compressed_files(tmp_path: Path) -> None:
-    """A ``.vcf.gz`` used to raise ``UnicodeDecodeError`` (parse_vcf_full has always read it)."""
+    """A ``.vcf.gz`` is read as parse_vcf_full reads it, without ``UnicodeDecodeError``."""
     plain = tmp_path / "calls.vcf"
     plain.write_text(VCF_TEXT)
     compressed = tmp_path / "calls.vcf.gz"

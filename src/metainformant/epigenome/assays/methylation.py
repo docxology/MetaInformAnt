@@ -86,7 +86,7 @@ def load_methylation_bedgraph(
     fraction (0-1) or as a percentage (0-100); ``level_scale`` says which. The default ``"auto"`` reads the file as
     percentages when any level in it is above 1 (a warning is logged) and as fractions otherwise. A line whose
     level is outside the range of the scale (negative, above 1 for fractions, above 100 for percentages, or not a
-    number) is skipped with a warning that names the line; it no longer aborts the whole load.
+    number) is skipped with a warning that names the line; the rest of the file still loads.
 
     Args:
         path: Path to BEDgraph file
@@ -159,8 +159,8 @@ def load_methylation_bedgraph(
             # BEDgraph format typically uses the start position
             # BEDgraph carries a level, not read counts. Estimate
             # counts at a fixed 100-read precision so the level survives
-            # the count round trip (int truncation at total_reads=1
-            # previously collapsed any level > 0.5 to 0.0).
+            # the count round trip (at total_reads=1, int truncation would
+            # collapse any level > 0.5 to 0.0).
             total_reads = max(min_coverage, 100)
             methylated_reads = int(round(fraction * total_reads))
 
@@ -360,7 +360,7 @@ def find_differentially_methylated_regions(
     condition and unmethylated in the other are tested rather than discarded. Runs of consecutive significant
     positions that change in the same direction (all more methylated in condition 1, or all less) and have at least
     ``min_sites`` positions become regions; a run that switches direction is cut where it switches, because a region
-    mixing hyper- and hypomethylated sites has no single ``direction`` (it used to be labelled by its first site).
+    mixing hyper- and hypomethylated sites has no single ``direction``.
 
     Args:
         site_data1: Methylation data for condition 1

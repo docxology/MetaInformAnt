@@ -46,7 +46,7 @@ uv pip install -e .          # metainformant is not published on PyPI; install t
 
 ## Core public API
 
-The package `__init__` files expose submodules (plus `predict_metabolizer`), so import
+The package `__init__` files expose submodules (plus `predict_metabolizer_status`), so import
 functions from the module that defines them.
 
 ```python
@@ -57,7 +57,7 @@ from metainformant.pharmacogenomics.annotations.cpic import (
     lookup_drug_gene,           # (drug, gene) → guideline dict, or None
     get_dosing_recommendation,  # (drug, phenotype) → recommendation dict, or None
 )
-from metainformant.pharmacogenomics import predict_metabolizer   # {"diplotype": "*1/*4"} + gene → dict
+from metainformant.pharmacogenomics import predict_metabolizer_status   # {"diplotype": "*1/*4"} + gene → dict
 
 from metainformant.pharmacogenomics.clinical.reporting import (
     generate_clinical_report,   # (patient_data, genotypes, drugs=None) → report dict
@@ -68,7 +68,7 @@ from metainformant.pharmacogenomics.clinical.pathogenicity import classify_varia
 from metainformant.pharmacogenomics.annotations import cpic, pharmgkb
 ```
 
-`predict_metabolizer` takes a genotype dict holding a `diplotype` string or two `alleles`, and returns a dict with a lowercase phenotype token: `poor`, `intermediate`, `normal`, `rapid`, `ultrarapid` or `indeterminate`. It shares the allele table and phenotype rules with `classify_phenotype`; both report an unknown allele in `unknown_alleles`, with an indeterminate phenotype and `activity_score=None`. `predict_metabolizer` accepts custom activity values through `activity_scores=`. The activity table covers 10 genes, but CYP1A2 has no supported CPIC phenotype definition and can only be scored; phenotype APIs raise `ValueError` for it and other unsupported genes.
+`predict_metabolizer_status` takes a genotype dict holding a `diplotype` string or two `alleles`, and returns a dict with a lowercase phenotype token: `poor`, `intermediate`, `normal`, `rapid`, `ultrarapid` or `indeterminate`. It shares the allele table and phenotype rules with `classify_phenotype`; both report an unknown allele in `unknown_alleles`, with an indeterminate phenotype and `activity_score=None`. `predict_metabolizer_status` accepts custom activity values through `activity_scores=`. The activity table covers 10 genes, but CYP1A2 has no supported CPIC phenotype definition and can only be scored; phenotype APIs raise `ValueError` for it and other unsupported genes.
 
 ## Typical single-patient flow
 

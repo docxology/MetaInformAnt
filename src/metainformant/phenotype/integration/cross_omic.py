@@ -347,9 +347,9 @@ def phenotype_environment_interaction(
     For each variant the phenotype is regressed on an intercept, the genotype, the environment and their
     product, ``y ~ 1 + g + e + g*e``, and the interaction is the coefficient of the product, tested with
     Student's t on ``n - 4`` degrees of freedom. Main effects of the genotype or the environment alone
-    therefore do not register as interaction. (Correlating the product with the phenotype, which this function
-    used to report as the interaction test, is significant whenever the genotype or the environment has a main
-    effect, because the product is correlated with both.)
+    therefore do not register as interaction. (Correlating the product with the phenotype is no interaction test:
+    it is significant whenever the genotype or the environment has a main effect, because the product is
+    correlated with both.)
 
     Args:
         phenotypes: Dict mapping sample_id to phenotype value.

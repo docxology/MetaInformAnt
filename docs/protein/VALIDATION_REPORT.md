@@ -320,9 +320,8 @@ CONCLUSION
 ================================================================================
 
 The protein analysis documentation is largely accurate with strong alignment
-between docs and implementation. The previously critical
-`get_uniprot_annotations` gap has been resolved by extracting GO and keyword
-annotations in `fetch_uniprot_record`.
+between docs and implementation. The `get_uniprot_annotations` gap is resolved:
+`fetch_uniprot_record` extracts GO and keyword annotations.
 
 Secondary issues are minor documentation gaps and optional dependency claims.
 No major architectural deviations were found.

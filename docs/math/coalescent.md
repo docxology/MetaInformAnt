@@ -31,8 +31,7 @@ Functions
 - expected_total_branch_length(n, Ne): E[L] = 4Ne H_{n−1}
 - expected_coalescent_waiting_times(n, Ne): list of E[T_k] = 4Ne/(k(k−1)) for k=n..2
 - expected_pairwise_diversity(Ne, μ): π ≈ 4Neμ (per site)
-- expected_pairwise_diversity_from_theta(θ): E[π] = θ (per site)
-- watterson_theta(S, n, sequence_length=None): θ_W = S/(a1) or per-site with length
+- watterson_theta(S, n, sequence_length=1): θ_W = S/(a1 · sequence_length); per site when a sequence length is passed
 - expected_segregating_sites(n, θ, sequence_length=None): E[S] = a1 θ (or ×L)
 - expected_sfs_counts(n, θ, sequence_length=None): E[X_i] = θ/i (or θL/i)
 - tajima_constants(n): a1,a2,b1,b2,c1,c2,e1,e2
@@ -50,7 +49,7 @@ from metainformant.math.population_genetics.coalescent import (
 tmrca = expected_time_to_mrca(10, 1_000.0)
 L = expected_total_branch_length(10, 1_000.0)
 sfs = expected_sfs_counts(10, theta=0.01)
-theta_hat = watterson_theta(num_segregating_sites=123, sample_size=20, sequence_length=10_000)
+theta_hat = watterson_theta(123, 20, sequence_length=10_000)
 E_S = expected_segregating_sites(20, theta=0.005, sequence_length=10_000)
 ```
 

@@ -196,8 +196,8 @@ def _timed_queries(n_intervals: int, n_queries: int = 1_000) -> float:
 def test_query_cost_does_not_grow_with_the_number_of_intervals() -> None:
     """Ten times as many intervals must not make queries an order of magnitude slower.
 
-    Scanning every interval before the query end made the cost linear in the index size, and worse than
-    linear once the intervals no longer fit in the CPU cache: the ratio below was about 70 then. With the
+    Scanning every interval before the query end would make the cost linear in the index size, and worse
+    than linear once the intervals do not fit in the CPU cache (a ratio of about 70 below). With the
     tree a query visits O(log n + hits) nodes; the ratio stays between 1 and about 5 (it is not 1 because a
     larger index is also slower to reach in memory), so the bound is loose on purpose. Both sizes are timed
     here, so the comparison does not depend on the machine's speed.

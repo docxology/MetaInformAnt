@@ -422,11 +422,11 @@ def test_event_sequences_and_token_lists_are_equivalent(cohort):
     np.testing.assert_array_equal(from_tokens.predict(probes), from_events.predict(as_event_sequences(probes)))
 
 
-def test_the_cox_fit_is_deterministic_and_ignores_random_state(cohort):
+def test_the_cox_fit_is_deterministic(cohort):
     sequences, times, died = cohort
 
-    first = SurvivalPredictor(method="cox", random_state=1).fit(sequences, times, died)
-    second = SurvivalPredictor(method="cox", random_state=2).fit(sequences, times, died)
+    first = SurvivalPredictor(method="cox").fit(sequences, times, died)
+    second = SurvivalPredictor(method="cox").fit(sequences, times, died)
 
     assert first.coefficients == second.coefficients
 
@@ -451,7 +451,7 @@ def test_kaplan_meier_matches_the_package_reference_implementation():
     sequences, times, died = simulate(300, seed=2, censoring_rate=0.08, rounding=True)
     reference = kaplan_meier_estimator(list(times), [int(flag) for flag in died])
 
-    model = SurvivalPredictor(method="kaplan_meier").fit(sequences, times, died)
+    model = SurvivalPredictor(method="baseline").fit(sequences, times, died)
 
     grid = np.array(reference["time_points"])
     np.testing.assert_allclose(

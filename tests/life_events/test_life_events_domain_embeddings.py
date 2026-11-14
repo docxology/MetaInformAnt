@@ -1,9 +1,8 @@
 """Regression tests for ``biological_embedding('domain')``.
 
-The domain embeddings added ``np.random.normal`` noise from NumPy's global, unseeded generator, so two
-calls on the same sequences returned different vectors, nothing could be reproduced with a seed, and
-the result changed from one process to the next. The variation is now drawn per domain from a seeded
-generator (``random_state``, ``seed`` as an alias, a fixed default seed otherwise).
+The variation around each domain's centre is drawn per domain from a seeded generator (``random_state``,
+a fixed default seed otherwise), so repeated calls and separate processes return the same vectors and
+different seeds give different variations.
 """
 
 from __future__ import annotations
@@ -88,11 +87,6 @@ def test_random_state_selects_the_variation():
     assert same(seeded, again)
     assert not same(seeded, other)
     assert not same(seeded, default)
-
-
-def test_seed_is_an_alias_for_random_state():
-    assert same(domain_embeddings("career", random_state=9), domain_embeddings("career", seed=9))
-    assert same(domain_embeddings("career", random_state=9, seed=1), domain_embeddings("career", random_state=9))
 
 
 def test_the_default_is_a_fixed_seed_that_is_reported_in_the_result():

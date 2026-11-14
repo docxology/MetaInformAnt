@@ -21,8 +21,6 @@ Command-line helpers for Package workflows. Scripts should remain thin wrappers 
 - [uv_quality.sh](uv_quality.sh)
 - [validate_build.sh](validate_build.sh)
 - [verify.sh](verify.sh)
-- [verify_test_deps.sh](verify_test_deps.sh)
-- [verify_uv_setup.sh](verify_uv_setup.sh)
 
 ## Usage
 ```bash

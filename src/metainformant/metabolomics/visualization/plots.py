@@ -56,9 +56,8 @@ def volcano_plot_data(
         List of VolcanoPoint for plotting.
 
     Raises:
-        ValueError: If the names and the two arrays differ in length, or a p-value lies outside [0, 1].
-            Such a value used to be clipped silently into range, so a negative p-value was plotted as
-            the most significant metabolite.
+        ValueError: If the names and the two arrays differ in length, or a p-value lies outside [0, 1]
+            (clipping it into range would plot a negative p-value as the most significant metabolite).
     """
     p_array = np.asarray(p_values, dtype=float)
     fc_array = np.asarray(log2_fold_changes, dtype=float)
@@ -107,7 +106,7 @@ def pca_metabolomics(
 
     Raises:
         ValueError: If ``n_components`` is outside 1..min(n_samples, n_metabolites) (fewer components than
-            requested used to be returned silently, so the shapes did not match the documentation) or the
+            requested are never returned silently) or the
             data contain NaN or infinite values (impute them first, for example with
             :func:`~metainformant.metabolomics.analysis.identification.missing_value_imputation`).
     """
@@ -307,7 +306,7 @@ def prepare_spectrum_plot(
     Raises:
         ValueError: If ``ppm_tolerance`` is not a finite number >= 0 (it is checked even when no
             ``annotation_db`` is given, and for an empty spectrum), ``top_n`` is not a positive integer
-            (``top_n=0`` used to return every peak and a negative one silently dropped the weakest), or the
+            (``0`` or a negative value is refused rather than read as "every peak"), or the
             two arrays are not 1D arrays of the same length.
     """
     ppm_tolerance = _nonnegative_ppm_tolerance(ppm_tolerance)

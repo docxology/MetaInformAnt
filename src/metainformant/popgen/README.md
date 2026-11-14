@@ -7,7 +7,7 @@ Population genetics analysis: sequence summary statistics, neutrality tests, two
 The `popgen` module holds the reusable methods behind the population
 genetics workflow. Scripts under `scripts/popgen/` are thin orchestrators
 that import from here. Simulation generators live in
-`metainformant.simulation.models.popgen` and are re-exported for convenience.
+`metainformant.simulation.models.popgen`; the workflow imports them from there.
 
 The sequence scenarios of the synthetic-dataset workflow (neutral, high and low
 diversity, bottleneck, expansion) are neutral coalescent samples from

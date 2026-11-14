@@ -40,7 +40,6 @@ Modules:
 - metabolomics: Metabolite identification and pathway analysis
 - metagenomics: Microbiome and metagenomic analysis
 - pharmacogenomics: Clinical pharmacogenomic variant analysis
-- cloud: Cloud deployment helpers
 - mcp: MCP stdio JSON-RPC 2.0 server and schema-validated tool registry
 - menu: Interactive discovery and navigation
 """
@@ -54,9 +53,8 @@ __version__ = "0.4.0"  # Breaking API and reproducibility contract release
 __author__ = "MetaInformAnt Development Team"
 __license__ = "Apache License 2.0"
 
-# Lazy loading or explicit imports only.
-# Top-level imports of heavy submodules are removed to prevent circular dependencies
-# and reduce startup time.
+# Lazy loading or explicit imports only. The package does not import heavy submodules
+# at top level, which avoids circular dependencies and keeps startup fast.
 #
 # Users should import submodules directly:
 #   from metainformant import rna
@@ -66,11 +64,11 @@ __all__ = [
     "__version__",
     "__author__",
     "__license__",
-    "cloud",
     "core",
     "dna",
     "ecology",
     "epigenome",
+    "eqtl",
     "gwas",
     "information",
     "life_events",
@@ -86,6 +84,7 @@ __all__ = [
     "ontology",
     "pharmacogenomics",
     "phenotype",
+    "popgen",
     "protein",
     "quality",
     "rna",

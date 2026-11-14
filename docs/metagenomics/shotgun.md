@@ -66,7 +66,7 @@ Compute 256-dimensional TNF profile (alphabetical order, AAAA to TTTT) counting 
 
 Refines bins on their marker gene completeness and contamination. `marker_genes` is required whenever `bins` is not empty (`ValueError` otherwise, since without annotations there is nothing to refine on; an empty `bins` returns `[]`). It runs `assess_bin_quality` and drops bins below `completeness_threshold`. Bins whose contamination exceeds `contamination_threshold` are handled by size: a one-contig bin is dropped, a two-contig bin is kept unchanged, and a larger bin is split in two by TNF k-means. The sub-bins are assessed with the same `marker_genes` and `marker_set` and kept when their completeness reaches `completeness_threshold` (their contamination is not checked again). Retained bins are renamed `refined_bin_0000`, `refined_bin_0001`, and so on. Merging of small bins is not implemented.
 
-#### `assess_bin_quality(bins, contigs=None, marker_genes=None, marker_set=None) -> List[GenomeBin]`
+#### `assess_bin_quality(bins, *, marker_genes=None, marker_set=None) -> List[GenomeBin]`
 
 Computes CheckM-style quality from single-copy marker gene annotations. It updates the bins in place and returns them. For a flat set of `M` expected markers:
 
@@ -75,7 +75,7 @@ Computes CheckM-style quality from single-copy marker gene annotations. It updat
 - `quality_score` = completeness - 5 * contamination (the Parks et al. convention); it is negative for a heavily contaminated bin.
 - `marker_counts` holds the copy number of every expected marker found in the bin.
 
-`marker_genes` maps a contig ID to the marker names found on that contig; a name listed twice counts as two copies, and a contig that is not in the mapping carries no markers (a warning is logged when `marker_genes` is not empty but none of its contig IDs occurs in the bins, which usually means the contig names differ). The annotations must come from a real marker search of the contigs, for example HMMER with TIGRFAM or Pfam marker profiles; this function does not search sequences, and `contigs` is accepted but unused. The expected markers `M` are `marker_set` if given and otherwise `BACTERIAL_SINGLE_COPY_MARKERS`; pass the set that matches the names in your annotations (for example a lineage-specific CheckM or BUSCO set), because annotation names outside the expected set are ignored. An empty `marker_set` raises `ValueError`.
+`marker_genes` maps a contig ID to the marker names found on that contig; a name listed twice counts as two copies, and a contig that is not in the mapping carries no markers (a warning is logged when `marker_genes` is not empty but none of its contig IDs occurs in the bins, which usually means the contig names differ). The annotations must come from a real marker search of the contigs, for example HMMER with TIGRFAM or Pfam marker profiles; this function does not search sequences. The expected markers `M` are `marker_set` if given and otherwise `BACTERIAL_SINGLE_COPY_MARKERS`; pass the set that matches the names in your annotations (for example a lineage-specific CheckM or BUSCO set), because annotation names outside the expected set are ignored. An empty `marker_set` raises `ValueError`.
 
 Without `marker_genes`, `completeness`, `contamination` and `quality_score` are set to `None` for every bin and `marker_counts` is emptied; the values are never estimated from genome size or sequence composition.
 

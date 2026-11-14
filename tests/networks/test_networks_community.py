@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 
 from metainformant.networks.analysis.community import community_metrics, detect_communities, modularity
-from metainformant.networks.analysis.graph import BiologicalNetwork, create_network
+from metainformant.networks.analysis.graph_core import BiologicalNetwork, create_network
 
 
 class TestCommunityDetection:

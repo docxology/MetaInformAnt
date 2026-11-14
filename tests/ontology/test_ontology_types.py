@@ -211,7 +211,6 @@ class TestFactories:
             synonyms=["bp"],
             extra_key="extra",
         )
-        assert term.id == "GO:0008150"
         assert term.term_id == "GO:0008150"
         assert term.synonyms == ["bp"]
         assert term.metadata == {"extra_key": "extra"}

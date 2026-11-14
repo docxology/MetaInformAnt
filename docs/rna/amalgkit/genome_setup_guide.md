@@ -1,8 +1,6 @@
 # Genome Setup Quick Guide
 
-This checkout has no command-line wrapper for genome preparation. The former
-`scripts/rna/setup_genome.py` was retired because the package function it
-wrapped no longer honours its dry-run, skip and k-mer options. Call
+This checkout has no command-line wrapper for genome preparation. Call
 `metainformant.rna.amalgkit.genome_prep` directly; see
 [genome_preparation.md](genome_preparation.md) for the full contract.
 

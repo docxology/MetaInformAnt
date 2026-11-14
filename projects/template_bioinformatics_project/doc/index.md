@@ -52,7 +52,7 @@ template_bioinformatics_project/
 | Tool | Version | Purpose |
 | :--- | :--- | :--- |
 | `uv` | ≥ 0.4 | Python environment and dependency management |
-| Python | ≥ 3.11 | Runtime |
+| Python | ≥ 3.14 | Runtime |
 | `metainformant` | latest | Core library (when delegating beyond stdlib) |
 
 Install `uv`:

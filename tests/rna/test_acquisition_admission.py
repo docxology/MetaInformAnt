@@ -51,7 +51,7 @@ def test_acquisition_admission_prevents_file_queue_consuming_transfer_budget(
                 self.send_header("Content-Length", str(len(body)))
                 self.end_headers()
                 self.wfile.write(body)
-            except (BrokenPipeError, ConnectionResetError):
+            except BrokenPipeError, ConnectionResetError:
                 # The disabled-admission control deliberately expires native curl.
                 return
 

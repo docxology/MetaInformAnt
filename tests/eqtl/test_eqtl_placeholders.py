@@ -131,7 +131,7 @@ class TestHisat2Command:
         assert variant_calling.hisat2_command(files, INDEX) == BASE + ["-1", "SRR1_1.fastq.gz", "-2", "SRR1_2.fastq.gz"]
 
     def test_a_pair_plus_the_unpaired_reads_uses_all_three_files(self) -> None:
-        """Sorted as the downloader returns them, the unpaired file comes first: it used to be the only one used."""
+        """Sorted as the downloader returns them, the unpaired file comes first; the pair is used as well."""
         files = sorted([Path("SRR1_2.fastq.gz"), Path("SRR1.fastq.gz"), Path("SRR1_1.fastq.gz")])
         assert files[0].name == "SRR1.fastq.gz"
 
@@ -191,7 +191,7 @@ def test_a_single_vcf_is_copied_into_a_destination_directory_that_does_not_exist
     with pytest.raises((FileNotFoundError, subprocess.CalledProcessError)):
         variant_calling.merge_vcfs([source], destination)
 
-    assert destination.read_bytes() == b"not a real vcf"  # it used to fail on the missing directory before copying
+    assert destination.read_bytes() == b"not a real vcf"  # the missing directory is created before copying
     assert shutil.which("bcftools") is None or destination.parent.is_dir()
 
 

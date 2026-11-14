@@ -163,10 +163,10 @@ class TestCsvMetadata:
 
 
 class TestCsvLayout:
-    """Header and line handling that used to misalign samples silently."""
+    """Header and line handling that must not misalign samples silently."""
 
     def test_a_header_with_an_empty_first_cell_keeps_every_sample(self, tmp_path: Path) -> None:
-        # R's write.table emits such a header; stripping the whole text used to eat the leading tab and drop S1
+        # R's write.table emits such a header; stripping the whole text would eat the leading tab and drop S1
         path = tmp_path / "r_style.tsv"
         path.write_text("\tS1\tS2\nA\t1\t2\n")
 
@@ -250,7 +250,7 @@ class TestMgfPeakLines:
         assert spectrum.mz_array.tolist() == [100.0]
 
     def test_a_block_that_is_never_closed_is_an_error_not_a_dropped_spectrum(self, tmp_path: Path) -> None:
-        # it used to be dropped without a word; see test_metabolomics_mgf_truncation.py for the full contract
+        # it is not dropped without a word; see test_metabolomics_mgf_truncation.py for the full contract
         path = tmp_path / "truncated.mgf"
         path.write_text(_mgf("100.0 1") + "BEGIN IONS\n200.0 2\n")
 

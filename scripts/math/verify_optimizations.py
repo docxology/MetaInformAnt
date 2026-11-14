@@ -50,10 +50,10 @@ def verify_coalescent_optimization():
 
     # Test watterson_theta with small and large n
     # Note: s must be <= L
-    theta_small = coalescent.watterson_theta(n_sequences=10, n_segregating_sites=5, sequence_length=10)
+    theta_small = coalescent.watterson_theta(5, 10, sequence_length=10)
     logger.info(f"Theta (n=10, s=5, L=10): {theta_small}")
 
-    theta_large = coalescent.watterson_theta(n_sequences=1000, n_segregating_sites=50, sequence_length=100)
+    theta_large = coalescent.watterson_theta(50, 1000, sequence_length=100)
     logger.info(f"Theta (n=1000, s=50, L=100): {theta_large}")
 
     if theta_small <= 0 or theta_large <= 0:

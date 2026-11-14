@@ -22,7 +22,6 @@ import pytest
 
 from metainformant.information.metrics.core.estimation import (
     bias_correction,
-    effective_sample_size_correction,
     entropy_estimator,
     entropy_rate_estimator,
     kl_divergence_estimator,
@@ -194,31 +193,20 @@ class TestBiasCorrectionHelpers:
         expected = 2.0 + (4 - 1) / (2 * 100 * math.log(2))
         assert bias_correction(2.0, sample_size=100, alphabet_size=4) == pytest.approx(expected, abs=1e-12)
 
-    def test_effective_sample_size_correction_is_additive(self) -> None:
-        # The correction is additive Miller-Madow: entropy + (d-1)/(2n * ln 2) bits.
-        expected = 2.0 + (4 - 1) / (2 * 100 * math.log(2))
-        assert effective_sample_size_correction(2.0, sample_size=100, alphabet_size=4) == pytest.approx(
-            expected, abs=1e-12
-        )
-
-    def test_effective_sample_size_identity_at_one(self) -> None:
-        assert effective_sample_size_correction(3.7, sample_size=1, alphabet_size=4) == 3.7
+    def test_bias_correction_identity_at_one(self) -> None:
+        assert bias_correction(3.7, sample_size=1, alphabet_size=4) == 3.7
 
     def test_panzeri_treves_uniform_fallback_is_miller_madow(self) -> None:
         # With the uniform fallback every alphabet response is observed, so
         # the PT(1996) support estimate R = alphabet_size = 4 and the PT
-        # correction reduces to Miller-Madow. The previous implementation
-        # SUBTRACTED an ad-hoc term (bounded test only); the real PT
-        # correction is ADDED.
+        # correction reduces to Miller-Madow. The PT correction is ADDED.
         expected = 1.0 + (4 - 1) / (2 * 50 * math.log(2))
         out = panzeri_treves_bias_correction(1.0, sample_size=50, alphabet_size=4)
         assert out == pytest.approx(expected, abs=1e-12)
 
     def test_panzeri_treves_explicit_frequencies_all_observed(self) -> None:
         # freq [10,20,30,40], n=100, alphabet 4: all responses observed =>
-        # R = 4, PT = Miller-Madow on the full alphabet (pinned exactly;
-        # previously only structural bounds were tested because the formula
-        # differed from its docstring).
+        # R = 4, PT = Miller-Madow on the full alphabet (pinned exactly).
         freq = np.array([10.0, 20.0, 30.0, 40.0])
         expected = 2.0 + (4 - 1) / (2 * 100 * math.log(2))
         out = panzeri_treves_bias_correction(2.0, 100, 4, response_frequencies=freq)
@@ -241,13 +229,6 @@ class TestBiasCorrectionHelpers:
             panzeri_treves_bias_correction(1.0, 100, 10, response_frequencies=np.array([90.0, 9.0]))
         with pytest.raises(ValueError, match="cannot be negative"):
             panzeri_treves_bias_correction(1.0, 100, 10, response_frequencies=np.array([50.0, -1.0, 51.0]))
-
-    def test_effective_sample_size_correction_is_bias_correction_alias(self) -> None:
-        # The two public helpers were duplicated implementations of the same
-        # Miller-Madow formula; the logic now lives in bias_correction and the
-        # second name is a documented alias.
-        for n, d in ((100, 4), (37, 9), (2, 2)):
-            assert effective_sample_size_correction(1.7, n, d) == bias_correction(1.7, n, d)
 
     def test_panzeri_treves_identity_at_small_sample(self) -> None:
         # sample_size <= 1 must return the entropy unchanged.

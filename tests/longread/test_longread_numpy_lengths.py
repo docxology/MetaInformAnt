@@ -136,7 +136,7 @@ class TestFloatLengths:
             read_length_stats(np.array([1000.0, np.nan, 3000.0]))
 
     def test_a_fractional_dict_length_is_not_truncated(self) -> None:
-        # int(1500.7) used to count this read as 1500 bp
+        # int(1500.7) would count this read as 1500 bp
         with pytest.raises(ValueError, match="whole number"):
             read_length_stats([{"length": 1500.7}])
 

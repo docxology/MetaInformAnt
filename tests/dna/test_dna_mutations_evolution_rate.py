@@ -85,7 +85,7 @@ class TestMutationCountFollowsTheRate:
         assert len(set(_substitutions_per_generation(lineage))) > 5
 
     def test_rate_zero_changes_nothing(self) -> None:
-        """Exactly one mutation per generation, whatever the rate, used to change the sequence even at rate 0."""
+        """Rate 0 leaves the sequence unchanged; there is no fixed one mutation per generation whatever the rate."""
         lineage = simulate_sequence_evolution("ACGTACGT", 25, 0.0, rng=random.Random(1))
         assert lineage == ["ACGTACGT"] * 26
 
@@ -210,12 +210,12 @@ class TestDivergenceAndClassification:
 
     @pytest.mark.parametrize("references", [[], ["ATCGAAA", "TCG"]])
     def test_no_comparable_reference_is_an_error_not_perfect_conservation(self, references: list[str]) -> None:
-        """No reference used to give ``conservation = 1.0`` (empty list) or ``0.0`` (other lengths) out of thin air."""
+        """No reference gives no ``conservation = 1.0`` (empty list) or ``0.0`` (other lengths) out of thin air."""
         with pytest.raises(ValueError, match="same length"):
             detect_selection_signatures("ATCG", references)
 
     def test_ambiguous_bases_have_no_substitution_type(self) -> None:
-        """An N used to count as a transversion, and a codon with an N as 'synonymous' (X == X)."""
+        """An N does not count as a transversion, nor a codon with an N as 'synonymous' (X == X)."""
         result = classify_mutations("ATGNAA", "ATGCAC")
         assert result["total"] == 2
         assert result["ambiguous"] == 1  # N -> C
@@ -241,7 +241,7 @@ class TestDivergenceAndClassification:
         }
 
     def test_ti_tv_ratio_is_undefined_without_mutations(self) -> None:
-        """0 transitions over 0 transversions used to be reported as an infinite ratio."""
+        """0 transitions over 0 transversions is an undefined ratio, not an infinite one."""
         assert math.isnan(analyze_mutation_spectrum("ATCGATCG", "ATCGATCG")["ti_tv_ratio"])
 
     def test_ti_tv_ratio_is_infinite_with_transitions_only(self) -> None:

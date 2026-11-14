@@ -53,7 +53,7 @@ from metainformant.visualization import plots
 - **Core utilities**: Use `metainformant.core.io`, `metainformant.core.utils.config`, and `metainformant.core.utils.logging`
 - **Output**: All results go to `output/` directory
 - **Configuration**: YAML configs with environment variable overrides
-- **Type hints**: Python 3.11+ with comprehensive typing
+- **Type hints**: Python 3.14+ with comprehensive typing
 
 ## Related
 

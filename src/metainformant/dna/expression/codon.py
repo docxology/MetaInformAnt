@@ -380,16 +380,14 @@ def optimize_codons(sequence: str, target_usage: Dict[str, float]) -> str:
     return "".join(optimized_sequence)
 
 
-def calculate_enc(sequence: str, reference_usage: Optional[Dict[str, float]] = None) -> float:
+def calculate_enc(sequence: str) -> float:
     """Calculate Effective Number of Codons (ENC).
 
     ENC measures codon usage bias, with lower values indicating stronger bias.
 
     Args:
-        sequence: DNA sequence
-        reference_usage: Retained for API compatibility only; NOT used.
-            The ENC F values are always computed from the input sequence's
-            own codon frequencies.
+        sequence: DNA sequence. The ENC F values are computed from its own codon
+            frequencies.
 
     Returns:
         ENC value computed from the input sequence. Lower values indicate
@@ -407,8 +405,7 @@ def calculate_enc(sequence: str, reference_usage: Optional[Dict[str, float]] = N
     if not codon_freq:
         return 61.0  # Maximum ENC (no bias)
 
-    # Group codons by amino acid (always from the input sequence's own
-    # codon frequencies; reference_usage is accepted but unused)
+    # Group codons by amino acid, from the input sequence's own codon frequencies
     aa_groups: dict[str, dict[str, float]] = {}
     for codon, freq in codon_freq.items():
         if codon in GENETIC_CODE:

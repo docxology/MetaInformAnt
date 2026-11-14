@@ -55,12 +55,11 @@ from typing import Any
 
 from metainformant.core.utils.hash import sha256_bytes
 from metainformant.core.utils.logging import get_logger
+from metainformant.rna.engine.campaign_lock import CampaignLockBusy, acquire_writer
 from metainformant.rna.engine.cohort import (
     CohortError,
-    DataRootBusy,
     FrozenCohort,
     ReferenceCheck,
-    data_root_maintenance_lock,
     load_frozen_cohort,
     select_cohort_species,
     verify_cohort_configs,
@@ -380,7 +379,7 @@ def judge_sample(
                 and not (sample_dir / RESTORED_INPUTS_DIR / name).is_symlink()
                 for name in RESTORED_INPUT_FILES
             )
-        except (OSError, ValueError, KeyError, TypeError):
+        except OSError, ValueError, KeyError, TypeError:
             restored = False
     return SourceVerdict(
         True,
@@ -403,7 +402,7 @@ def _contract_file_names(sample_dir: Path) -> list[str]:
 
     try:
         sidecar = json.loads((sample_dir / QUANT_PROVENANCE_FILENAME).read_bytes())
-    except (OSError, ValueError):
+    except OSError, ValueError:
         return []
     names = [QUANT_PROVENANCE_FILENAME]
     quant_name = sidecar.get("quantification_file") if isinstance(sidecar, dict) else None
@@ -476,7 +475,7 @@ def _index_bytes_proven(verdict: SourceVerdict) -> bool:
 def _abundance_sha(sample_dir: Path) -> str | None:
     try:
         sidecar = json.loads((sample_dir / QUANT_PROVENANCE_FILENAME).read_bytes())
-    except (OSError, ValueError):
+    except OSError, ValueError:
         return None
     return sidecar.get("quantification_file_sha256") if isinstance(sidecar, dict) else None
 
@@ -840,7 +839,7 @@ def _clean_stale_staging(quant_dir: Path) -> list[str]:
     for candidate in candidates:
         try:
             marker = json.loads((candidate / STAGING_MARKER).read_bytes())
-        except (OSError, ValueError):
+        except OSError, ValueError:
             continue
         if isinstance(marker, dict) and marker.get("schema") == STAGING_SCHEMA:
             shutil.rmtree(candidate)
@@ -953,19 +952,19 @@ def execute_imports(
     adopt_db: Path | None = None,
     workers: int = 4,
 ) -> tuple[ImportPlan, Path, dict[str, Any]]:
-    """Plan and import under the data-root maintenance lock; return the plan, manifest and summary.
+    """Plan and import under the campaign writer lock; return the plan, manifest and summary.
 
     Each ``import`` decision is re-checked at copy time; a destination that
     appeared in the meantime is recorded as ``exists_different`` and left
     alone. With ``adopt_db``, imported runs are marked ``quantified`` in that
     progress database in one transaction per species (no producer can be
-    running: the maintenance lock is the producer's writer lock).
+    running: the import holds the producer's writer lock).
     """
 
     root = Path(destination)
     species = None if species is None else tuple(species)
     summary: dict[str, Any] = {"imported": 0, "failed": 0, "stale_staging_removed": [], "adopted": 0}
-    with data_root_maintenance_lock(root, purpose="import"):
+    with acquire_writer(root, "import"):
         # A killed import leaves its staging directory (a full copy of the sample) behind: remove every one in the
         # selected species now, whether or not this run imports into that quantification directory again.
         cleaned: set[Path] = set()
@@ -1112,7 +1111,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(format_counts(plan))
         print(json.dumps({"manifest": str(args.manifest)}))
         return 0
-    except (CohortError, DataRootBusy, ValueError, OSError) as error:
+    except (CohortError, CampaignLockBusy, ValueError, OSError) as error:
         print(f"error: {error}", file=sys.stderr)
         return 2
 

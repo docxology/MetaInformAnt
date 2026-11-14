@@ -11,4 +11,3 @@ Task-oriented quick-reference guides for common bioinformatics workflows.
 ## Integration Points
 - Core infrastructure (`metainformant.core`)
 - All domain modules (DNA, RNA, GWAS, etc.)
-- Cloud deployment (`metainformant.cloud`)

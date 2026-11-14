@@ -79,7 +79,7 @@ marked pending.
 | RNA configuration validation | passed | 27 species configurations; Amalgkit 0.16.60 |
 | Mypy ratchet | passed with budget | 169 errors in 41 files, within the documented budget of 171; package is not type-clean |
 | Internal link validation | passed | 3,269 links checked, 0 broken |
-| Disposable Python 3.11/3.12 wheel installs | not run in this pass | Hosted matrix and package smoke coverage remain release evidence to refresh |
+| Disposable Python 3.14/3.15 wheel installs | not run in this pass | Hosted matrix and package smoke coverage remain release evidence to refresh |
 | Hosted PR checks after latest push | pending | New checks were in progress when this record was prepared |
 | Live campaign completion | blocked | Active producer and unresolved acquisition state; no interruption performed |
 
@@ -103,7 +103,7 @@ scientific completion, or publication readiness.
 
 1. Recheck the hosted PR matrix after the latest parent push and investigate any
    newly failing lane from its fresh logs.
-2. Run clean-wheel installation and Python 3.11/3.12 smoke tests in disposable
+2. Run clean-wheel installation and Python 3.14/3.15 smoke tests in disposable
    environments; retain exact revisions and artifact hashes.
 3. Reconcile and publish only intended BeeWAS changes through its nested PR;
    update the parent gitlink only after remote reachability is verified.

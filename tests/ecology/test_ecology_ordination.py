@@ -802,7 +802,7 @@ class TestNriNti:
     def test_nri_nti_single_taxon(self, simple_tree: dict) -> None:
         """A community with <2 taxa has no pairwise distance to standardise: NRI and NTI are undefined (nan).
 
-        They used to be reported as 0.0 with p = 1.0, i.e. as a measured "no clustering" (see
+        Reporting them as 0.0 with p = 1.0 would claim a measured "no clustering" (see
         ``test_ecology_r4_fixes.py``).
         """
         result = nri_nti(simple_tree, [["A"]], n_randomizations=49)

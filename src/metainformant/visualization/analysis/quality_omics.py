@@ -81,8 +81,8 @@ def _require_sections(data: Dict[str, Any], label: str, recognised: Dict[str, Tu
     keys" (an empty tuple, any dict), ``None`` means any payload is accepted.
 
     Raises:
-        ValueError: If no recognised section is present, or a payload lacks the keys its panel is drawn from. Such
-            a section used to be skipped and left an empty panel.
+        ValueError: If no recognised section is present, or a payload lacks the keys its panel is drawn from (such
+            a section is not skipped to leave an empty panel).
     """
     sections = [name for name in recognised if name in data]
     if not sections:

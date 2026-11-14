@@ -18,7 +18,6 @@ from metainformant.core.io import paths
 from metainformant.core.utils.logging import setup_logger
 from metainformant.life_events.analysis.interpretability import event_importance
 from metainformant.life_events.core.utils import convert_sequences_to_tokens, load_sequences_from_json
-from metainformant.life_events.models.embeddings import learn_event_embeddings
 from metainformant.life_events.models.predictor import EventSequencePredictor
 from metainformant.life_events.visualization.statistical import plot_prediction_importance
 
@@ -87,19 +86,11 @@ def main():
 
     sequences_tokens = convert_sequences_to_tokens(sequences)
 
-    # Get embeddings
-    if predictor.embeddings:
-        embeddings = predictor.embeddings
-    else:
-        logger.info("Learning embeddings for interpretation...")
-        embeddings = learn_event_embeddings(sequences_tokens, embedding_dim=100)
-
     logger.info("Computing event importance...")
     try:
         importance = event_importance(
             predictor,
             sequences_tokens,
-            embeddings,
             method=args.method,
         )
     except ValueError as e:

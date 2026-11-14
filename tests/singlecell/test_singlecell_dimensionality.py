@@ -23,18 +23,20 @@ except ImportError:
 pytestmark = pytest.mark.skipif(not SCIPY_AVAILABLE, reason="scipy not available")
 
 from metainformant.core.utils.errors import ValidationError
-from metainformant.singlecell.analysis.dimensionality import (
+from metainformant.singlecell.analysis.nonlinear_methods import (
     SKLEARN_AVAILABLE,
     compute_diffusion_map,
     compute_dimensionality_metrics,
     compute_neighbors,
-    compute_pca,
-    compute_tsne,
-    compute_umap,
     diffusion_map_reduction,
+    mds_reduction,
+    tsne_reduction,
+    umap_reduction,
+)
+from metainformant.singlecell.analysis.pca_methods import (
     factor_analysis_reduction,
     ica_reduction,
-    mds_reduction,
+    pca_reduction,
     select_hvgs,
 )
 from metainformant.singlecell.data.preprocessing import SingleCellData, log_transform, normalize_counts, scale_data
@@ -76,7 +78,7 @@ class TestHVGSelection:
 
     def test_select_hvgs_seurat_method(self):
         """Test Seurat method for HVG selection."""
-        data = select_hvgs(self.test_data, n_top_genes=50, method="seurat")
+        data = select_hvgs(self.test_data, n_top_genes=50, flavor="seurat")
 
         # Check that HVG information is added
         assert "highly_variable" in data.var.columns
@@ -99,7 +101,7 @@ class TestHVGSelection:
 
     def test_select_hvgs_variance_method(self):
         """Test simple variance-based HVG selection."""
-        data = select_hvgs(self.test_data, n_top_genes=30, method="variance")
+        data = select_hvgs(self.test_data, n_top_genes=30, flavor="variance")
 
         n_hvgs = data.var["highly_variable"].sum()
         assert n_hvgs == 30
@@ -113,7 +115,7 @@ class TestHVGSelection:
 
     def test_select_hvgs_cell_ranger_method(self):
         """Test Cell Ranger method for HVG selection."""
-        data = select_hvgs(self.test_data, n_top_genes=40, method="cell_ranger")
+        data = select_hvgs(self.test_data, n_top_genes=40, flavor="cell_ranger")
 
         assert "highly_variable" in data.var.columns
         n_hvgs = data.var["highly_variable"].sum()
@@ -122,7 +124,7 @@ class TestHVGSelection:
     def test_select_hvgs_invalid_method(self):
         """Test that invalid method raises error."""
         with pytest.raises(ValueError, match="Unknown HVG selection method"):
-            select_hvgs(self.test_data, method="invalid_method")
+            select_hvgs(self.test_data, flavor="invalid_method")
 
 
 @pytest.mark.skipif(not SKLEARN_AVAILABLE, reason="sklearn not available")
@@ -162,9 +164,9 @@ class TestPCA:
         # Select HVGs
         self.test_data = select_hvgs(self.test_data, n_top_genes=50)
 
-    def test_compute_pca_basic(self):
+    def test_pca_reduction_basic(self):
         """Test basic PCA computation."""
-        data = compute_pca(self.test_data, n_components=20)
+        data = pca_reduction(self.test_data, n_components=20)
 
         # Check that PCA results are stored
         assert "X_pca" in data.obsm
@@ -177,48 +179,48 @@ class TestPCA:
 
         # Check PCA metadata
         pca_info = data.uns["pca"]
-        assert "variance_ratio" in pca_info
-        assert "variance" in pca_info
-        assert len(pca_info["variance_ratio"]) == 20
+        assert "explained_variance_ratio" in pca_info
+        assert "cumulative_explained_variance" in pca_info
+        assert len(pca_info["explained_variance_ratio"]) == 20
 
         # Variance ratios should sum to less than 1 and be decreasing
-        var_ratios = np.array(pca_info["variance_ratio"])
+        var_ratios = np.array(pca_info["explained_variance_ratio"])
         assert np.all(var_ratios > 0)
         assert np.all(np.diff(var_ratios) <= 0)  # Decreasing
         assert np.sum(var_ratios) <= 1.0
 
-    def test_compute_pca_with_hvgs(self):
+    def test_pca_reduction_with_hvgs(self):
         """Test PCA computation using HVGs."""
-        data = compute_pca(self.test_data, n_components=15, use_hvgs=True)
+        data = pca_reduction(self.test_data, n_components=15, use_hvgs=True)
 
         assert "X_pca" in data.obsm
         assert data.obsm["X_pca"].shape[1] == 15
         assert data.uns["pca"]["use_hvgs"] is True
 
-    def test_compute_pca_without_hvgs(self):
+    def test_pca_reduction_without_hvgs(self):
         """Test PCA computation using all genes."""
-        data = compute_pca(self.test_data, n_components=10, use_hvgs=False)
+        data = pca_reduction(self.test_data, n_components=10, use_hvgs=False)
 
         assert "X_pca" in data.obsm
         assert data.obsm["X_pca"].shape[1] == 10
         assert data.uns["pca"]["use_hvgs"] is False
 
-    def test_compute_pca_too_many_components(self):
+    def test_pca_reduction_too_many_components(self):
         """Test PCA with more components than possible."""
         # Request more components than samples-1
-        data = compute_pca(self.test_data, n_components=200)
+        data = pca_reduction(self.test_data, n_components=200)
 
         # Should automatically adjust to maximum possible
         actual_components = data.obsm["X_pca"].shape[1]
         assert actual_components < 200
         assert actual_components <= min(150 - 1, 100)  # min(n_samples-1, n_features)
 
-    def test_compute_pca_requires_sklearn(self):
+    def test_pca_reduction_requires_sklearn(self):
         """Test that PCA raises ImportError when sklearn is not available."""
         # This test verifies the error handling, but sklearn is available in test environment
         # The actual error would occur if sklearn were missing
         # We verify the check exists in the code by ensuring it doesn't fail when sklearn is available
-        data = compute_pca(self.test_data, n_components=10)
+        data = pca_reduction(self.test_data, n_components=10)
         assert "X_pca" in data.obsm
         # If sklearn were missing, this would raise ImportError before reaching here
 
@@ -243,7 +245,7 @@ def _align_signs(reference: np.ndarray, candidate: np.ndarray) -> np.ndarray:
 
 @pytest.mark.skipif(not SKLEARN_AVAILABLE, reason="sklearn not available")
 class TestPCAHighlyVariableGenes:
-    """compute_pca(use_hvgs=True) must analyse only the genes flagged highly variable."""
+    """pca_reduction(use_hvgs=True) must analyse only the genes flagged highly variable."""
 
     N_CELLS = 120
     N_GENES = 60
@@ -273,7 +275,7 @@ class TestPCAHighlyVariableGenes:
 
     def test_loadings_involve_only_hvgs(self):
         k = 5
-        result = compute_pca(self.data, n_components=k, random_state=0, use_hvgs=True)
+        result = pca_reduction(self.data, n_components=k, random_state=0, use_hvgs=True)
 
         loadings = result.varm["PCs"]
         assert loadings.shape == (self.N_GENES, k)  # one row per gene, as for an all-gene PCA
@@ -288,7 +290,7 @@ class TestPCAHighlyVariableGenes:
 
     def test_hvg_pca_matches_independent_svd_of_the_hvg_submatrix(self):
         k = 5
-        result = compute_pca(self.data, n_components=k, random_state=0, use_hvgs=True)
+        result = pca_reduction(self.data, n_components=k, random_state=0, use_hvgs=True)
 
         scores, loadings, ratio = _svd_pca_oracle(self.x[:, self.hvg], k)
         np.testing.assert_allclose(_align_signs(scores, result.obsm["X_pca"]), scores, atol=1e-6)
@@ -297,8 +299,8 @@ class TestPCAHighlyVariableGenes:
         np.testing.assert_allclose(result.uns["pca"]["explained_variance_ratio"], ratio, atol=1e-8)
 
     def test_hvg_restriction_changes_the_embedding(self):
-        with_hvgs = compute_pca(self.data, n_components=3, random_state=0, use_hvgs=True)
-        all_genes = compute_pca(self.data, n_components=3, random_state=0, use_hvgs=False)
+        with_hvgs = pca_reduction(self.data, n_components=3, random_state=0, use_hvgs=True)
+        all_genes = pca_reduction(self.data, n_components=3, random_state=0, use_hvgs=False)
 
         # An annotation present in var must not influence an analysis that did not ask for it.
         assert all_genes.uns["pca"]["use_hvgs"] is False
@@ -309,7 +311,7 @@ class TestPCAHighlyVariableGenes:
         assert not np.allclose(aligned[:, 0], all_genes.obsm["X_pca"][:, 0], atol=1e-3)
 
     def test_component_count_is_limited_by_the_number_of_hvgs(self):
-        result = compute_pca(self.data, n_components=50, random_state=0, use_hvgs=True)
+        result = pca_reduction(self.data, n_components=50, random_state=0, use_hvgs=True)
 
         assert result.obsm["X_pca"].shape == (self.N_CELLS, self.N_HVG)
         assert result.varm["PCs"].shape == (self.N_GENES, self.N_HVG)
@@ -318,28 +320,28 @@ class TestPCAHighlyVariableGenes:
         bare = SingleCellData(self.x.copy())
 
         with pytest.raises(ValueError, match="highly_variable"):
-            compute_pca(bare, n_components=3, use_hvgs=True)
+            pca_reduction(bare, n_components=3, use_hvgs=True)
         # Without the flag the same object analyses every gene as before.
-        assert "X_pca" in compute_pca(bare, n_components=3, use_hvgs=False).obsm
+        assert "X_pca" in pca_reduction(bare, n_components=3, use_hvgs=False).obsm
 
     def test_use_hvgs_with_no_flagged_gene_raises(self):
         data = self.data.copy()
         data.var["highly_variable"] = False
 
         with pytest.raises(ValueError, match="no genes"):
-            compute_pca(data, n_components=3, use_hvgs=True)
+            pca_reduction(data, n_components=3, use_hvgs=True)
 
     def test_use_hvgs_rejects_a_non_boolean_annotation(self):
         data = self.data.copy()
         data.var["highly_variable"] = ["maybe"] * self.N_GENES
 
         with pytest.raises(ValueError, match="highly_variable"):
-            compute_pca(data, n_components=3, use_hvgs=True)
+            pca_reduction(data, n_components=3, use_hvgs=True)
 
     def test_sparse_matrix_with_hvgs_matches_dense(self):
-        dense = compute_pca(self.data, n_components=4, random_state=0, use_hvgs=True)
+        dense = pca_reduction(self.data, n_components=4, random_state=0, use_hvgs=True)
         sparse_data = SingleCellData(sparse.csr_matrix(self.x), var=self.data.var.copy())
-        from_sparse = compute_pca(sparse_data, n_components=4, random_state=0, use_hvgs=True)
+        from_sparse = pca_reduction(sparse_data, n_components=4, random_state=0, use_hvgs=True)
 
         np.testing.assert_allclose(
             _align_signs(dense.obsm["X_pca"], from_sparse.obsm["X_pca"]), dense.obsm["X_pca"], atol=1e-8
@@ -455,10 +457,10 @@ class TestUMAP:
         self.test_data = compute_neighbors(self.test_data, n_neighbors=15)
 
     @pytest.mark.slow
-    def test_compute_umap_basic(self):
+    def test_umap_reduction_basic(self):
         """Test basic UMAP computation."""
         try:
-            data = compute_umap(self.test_data, n_components=2, n_epochs=50)
+            data = umap_reduction(self.test_data, n_components=2, n_epochs=50)
 
             # Check that UMAP coordinates are stored
             assert "X_umap" in data.obsm
@@ -473,21 +475,21 @@ class TestUMAP:
         except ImportError:
             pytest.skip("UMAP package not available")
 
-    def test_compute_umap_different_dimensions(self):
+    def test_umap_reduction_different_dimensions(self):
         """Test UMAP with different output dimensions."""
         try:
             # 3D UMAP
-            data = compute_umap(self.test_data, n_components=3, n_epochs=50)
+            data = umap_reduction(self.test_data, n_components=3, n_epochs=50)
             assert data.obsm["X_umap"].shape == (80, 3)
 
             # 1D UMAP
-            data = compute_umap(self.test_data, n_components=1, n_epochs=50)
+            data = umap_reduction(self.test_data, n_components=1, n_epochs=50)
             assert data.obsm["X_umap"].shape == (80, 1)
 
         except ImportError:
             pytest.skip("UMAP package not available")
 
-    def test_compute_umap_without_neighbors(self):
+    def test_umap_reduction_without_neighbors(self):
         """Test UMAP computation when neighbors aren't precomputed."""
         data = self.test_data.copy()
         if "neighbors" in data.uns:
@@ -495,7 +497,7 @@ class TestUMAP:
 
         try:
             # Should compute neighbors automatically
-            data = compute_umap(data, n_components=2, n_epochs=50)
+            data = umap_reduction(data, n_components=2, n_epochs=50)
             assert "X_umap" in data.obsm
             assert "neighbors" in data.uns  # Should be computed automatically
 
@@ -526,9 +528,9 @@ class TestTSNE:
         self.test_data.obsm["X_pca"] = pca_coords
 
     @pytest.mark.slow
-    def test_compute_tsne_basic(self):
+    def test_tsne_reduction_basic(self):
         """Test basic t-SNE computation."""
-        data = compute_tsne(self.test_data, n_components=2, n_iter=250)
+        data = tsne_reduction(self.test_data, n_components=2, max_iter=250)
 
         # Check that t-SNE coordinates are stored
         assert "X_tsne" in data.obsm
@@ -538,24 +540,24 @@ class TestTSNE:
         # Check parameters
         tsne_params = data.uns["tsne"]["params"]
         assert tsne_params["n_components"] == 2
-        assert tsne_params["n_iter"] == 250
+        assert tsne_params["max_iter"] == 250
 
     @pytest.mark.slow
-    def test_compute_tsne_different_perplexity(self):
+    def test_tsne_reduction_different_perplexity(self):
         """Test t-SNE with different perplexity values."""
         # Test with different perplexity
-        data = compute_tsne(self.test_data, perplexity=15.0, n_iter=250)
+        data = tsne_reduction(self.test_data, perplexity=15.0, max_iter=250)
         assert "X_tsne" in data.obsm
         assert data.uns["tsne"]["params"]["perplexity"] == 15.0
 
     @pytest.mark.slow
-    def test_compute_tsne_perplexity_adjustment(self):
+    def test_tsne_reduction_perplexity_adjustment(self):
         """Test that perplexity is adjusted for small datasets."""
         # Create very small dataset
         small_data = SingleCellData(np.random.normal(0, 1, (20, 10)))
 
         # Large perplexity should be automatically reduced
-        data = compute_tsne(small_data, perplexity=50.0, n_iter=100)
+        data = tsne_reduction(small_data, perplexity=50.0, max_iter=100)
 
         # Should have been automatically adjusted
         actual_perplexity = data.uns["tsne"]["params"]["perplexity"]
@@ -650,11 +652,11 @@ class TestIntegrationWorkflow:
 
         # Dimensionality reduction pipeline
         # 1. Select HVGs
-        data = select_hvgs(data, n_top_genes=100, method="seurat")
+        data = select_hvgs(data, n_top_genes=100, flavor="seurat")
         assert data.var["highly_variable"].sum() <= 100
 
         # 2. Compute PCA
-        data = compute_pca(data, n_components=30, use_hvgs=True)
+        data = pca_reduction(data, n_components=30, use_hvgs=True)
         assert "X_pca" in data.obsm
         assert data.obsm["X_pca"].shape == (200, 30)
 
@@ -664,11 +666,11 @@ class TestIntegrationWorkflow:
 
         # 4. Compute embeddings
         try:
-            data = compute_umap(data, n_components=2, n_epochs=50)
+            data = umap_reduction(data, n_components=2, n_epochs=50)
             assert "X_umap" in data.obsm
         except ImportError:
             # UMAP not available, use t-SNE
-            data = compute_tsne(data, n_components=2, n_iter=250)
+            data = tsne_reduction(data, n_components=2, max_iter=250)
             assert "X_tsne" in data.obsm
 
         # 5. Compute diffusion map for trajectory analysis
@@ -693,11 +695,11 @@ class TestEdgeCases:
         data = SingleCellData(X)
 
         # Should handle small dataset gracefully
-        data = compute_pca(data, n_components=3)
+        data = pca_reduction(data, n_components=3)
         assert data.obsm["X_pca"].shape[1] <= 4  # Should be limited by n_samples-1
 
         # t-SNE should adjust perplexity
-        data = compute_tsne(data, perplexity=10, n_iter=100)
+        data = tsne_reduction(data, perplexity=10, max_iter=100)
         actual_perplexity = data.uns["tsne"]["params"]["perplexity"]
         assert actual_perplexity < 10
 
@@ -709,7 +711,7 @@ class TestEdgeCases:
         # PCA should handle single cell (though not very meaningful)
         with pytest.raises((ValueError, np.linalg.LinAlgError, ValidationError)):
             # Should fail gracefully for single sample
-            compute_pca(data, n_components=5)
+            pca_reduction(data, n_components=5)
 
     def test_zero_variance_genes(self):
         """Test handling of zero-variance genes."""
@@ -731,7 +733,7 @@ class TestEdgeCases:
         assert not np.any(np.isinf(data.X))
 
         # PCA should still work
-        data = compute_pca(data, n_components=10)
+        data = pca_reduction(data, n_components=10)
         assert "X_pca" in data.obsm
 
 
@@ -776,8 +778,8 @@ class TestIcaAndFactorAnalysis:
 @pytest.mark.skipif(not SKLEARN_AVAILABLE, reason="sklearn not available")
 class TestMDSReduction:
     def test_preserves_pairwise_distances(self):
-        """Regression: the precomputed distance matrix used to be passed to
-        MDS as a raw feature matrix, distorting the embedding. Metric MDS on
+        """Regression: the precomputed distance matrix reaches MDS as
+        dissimilarities, not as a raw feature matrix that distorts the embedding. Metric MDS on
         dissimilarities from a nearly-2D configuration must recover them
         almost exactly (near-zero stress)."""
         rng = np.random.RandomState(0)
@@ -805,7 +807,7 @@ class TestMDSReduction:
 class TestDiffusionMapReduction:
     def test_adds_dc_coordinates(self):
         X = np.random.RandomState(0).normal(0, 1, (40, 8))
-        result = diffusion_map_reduction(SingleCellData(X), n_components=3, n_neighbors=5)
+        result = diffusion_map_reduction(SingleCellData(X), n_components=3)
         assert "DC1" in result.obs.columns
         assert "DC3" in result.obs.columns
         info = result.uns["diffusion_map"]
@@ -817,7 +819,7 @@ class TestDiffusionMapReduction:
         with pytest.raises(ValidationError):
             diffusion_map_reduction(data, n_components=1)
         with pytest.raises(ValidationError):
-            diffusion_map_reduction(data, n_neighbors=2)
+            diffusion_map_reduction(data, alpha=1.5)
 
 
 @pytest.mark.skipif(not SKLEARN_AVAILABLE, reason="sklearn not available")

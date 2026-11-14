@@ -1,8 +1,8 @@
 """Spatial plots put the right coordinate column on each axis.
 
 ``SpatialDataset.coordinates`` (Visium) is ``[row, col]`` but the Xenium and MERFISH loaders return
-``[x, y]``; every plot used to treat column 0 as the vertical axis, so Xenium and MERFISH tissue
-came out transposed. The tests read the positions matplotlib actually drew. Real matplotlib (Agg) only.
+``[x, y]``; a plot that treats column 0 as the vertical axis would draw Xenium and MERFISH tissue
+transposed. The tests read the positions matplotlib actually drew. Real matplotlib (Agg) only.
 """
 
 from __future__ import annotations
@@ -133,7 +133,7 @@ class TestDatasetDrivenPlots:
 
         np.testing.assert_allclose(_drawn_points(fig), _sorted_rows(COORDS[:, ::-1]))
 
-    def test_a_bare_array_keeps_the_legacy_row_col_reading(self, tmp_path: Path) -> None:
+    def test_a_bare_array_defaults_to_the_row_col_reading(self, tmp_path: Path) -> None:
         fig = plot_cell_type_map(COORDS, np.array(NAMES), tmp_path / "bare.png")
 
         np.testing.assert_allclose(_drawn_points(fig), _sorted_rows(COORDS[:, ::-1]))

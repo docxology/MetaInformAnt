@@ -336,7 +336,6 @@ def filter_cells(
     min_genes: int | None = None,
     max_genes: int | None = None,
     max_pct_mt: float | None = None,
-    max_mito_percent: float | None = None,  # Alias for max_pct_mt
 ) -> SingleCellData:
     """Filter cells based on QC metrics.
 
@@ -347,7 +346,6 @@ def filter_cells(
         min_genes: Minimum number of genes per cell
         max_genes: Maximum number of genes per cell
         max_pct_mt: Maximum mitochondrial percentage
-        max_mito_percent: Alias for max_pct_mt (deprecated)
 
     Returns:
         Filtered SingleCellData. The per-gene QC columns already present in ``var`` (``n_cells``,
@@ -370,10 +368,6 @@ def filter_cells(
     validation.validate_type(data, SingleCellData, "data")
 
     logger.info("Filtering cells based on QC metrics")
-
-    # Handle alias
-    if max_mito_percent is not None and max_pct_mt is None:
-        max_pct_mt = max_mito_percent
 
     # Check if QC metrics are available
     if "total_counts" not in data.obs.columns:
@@ -548,7 +542,6 @@ def normalize_counts(
     data: SingleCellData,
     target_sum: float | None = None,
     method: str = "total_count",
-    normalize_method: str | None = None,  # Deprecated alias
 ) -> SingleCellData:
     """Normalize gene expression counts.
 
@@ -556,11 +549,10 @@ def normalize_counts(
         data: SingleCellData object
         target_sum: Target sum for normalization (default: median total counts)
         method: Normalization method ("total_count", "median", "size_factors")
-        normalize_method: Deprecated alias for method
 
     Returns:
         Normalized SingleCellData. ``uns["normalization"]["size_factors"]`` holds one divisor per cell
-        for every method (the library size for "total_count"/"total" and "median", the median-of-ratios
+        for every method (the library size for "total_count" and "median", the median-of-ratios
         size factor for "size_factors"), so ``X_normalized == X / size_factors[:, None] * target_sum``
         whichever method was used. Cells whose size factor is zero are set to zero.
 
@@ -570,11 +562,7 @@ def normalize_counts(
     """
     validation.validate_type(data, SingleCellData, "data")
 
-    # Handle deprecated alias
-    if normalize_method is not None:
-        method = normalize_method
-
-    valid_methods = ["total_count", "total", "median", "size_factors"]
+    valid_methods = ["total_count", "median", "size_factors"]
     if method not in valid_methods:
         raise ValueError(f"Unknown normalization method: {method}. Valid methods: {valid_methods}")
 
@@ -588,7 +576,7 @@ def normalize_counts(
 
     # Every method yields one divisor per cell (size_factors) and a target scale (target_sum);
     # the normalized matrix is X / size_factors * target_sum.
-    if method in ["total_count", "total"]:
+    if method == "total_count":
         # Library size normalization
         lib_sizes = np.sum(X, axis=1)
 

@@ -6,7 +6,7 @@ Quick-start guide for running RNA-seq analysis workflows with METAINFORMANT's am
 
 Before running workflows:
 
-1. **Python environment**: Python 3.11+ with `uv` package manager
+1. **Python environment**: Python 3.14+ with `uv` package manager
 2. **Amalgkit CLI**: install the pinned project environment and verify `amalgkit --help`
 3. **Reference assets**: transcriptome FASTA and kallisto index (see [genome_setup_guide.md](genome_setup_guide.md))
 4. **External data root**: choose a mounted root with sufficient free space

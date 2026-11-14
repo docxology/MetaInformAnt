@@ -132,7 +132,7 @@ def test_to_ascii_of_a_bootstrapped_tree_is_the_text_of_the_plain_tree() -> None
 
 @pytest.mark.parametrize("method", ["NJ", "UPGMA", "ml", "", "neighbor_joining"])
 def test_bootstrap_support_refuses_an_unknown_method(method: str) -> None:
-    """Anything but "nj" used to build UPGMA replicates without a word."""
+    """Anything but "nj" raises instead of building UPGMA replicates without a word."""
     tree = neighbor_joining_tree(FIVE_SEQUENCES)
 
     with pytest.raises(ValueError, match="nj"):

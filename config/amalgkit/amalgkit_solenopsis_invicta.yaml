@@ -15,8 +15,6 @@ work_dir: output/amalgkit/solenopsis_invicta/work
 log_dir: output/amalgkit/solenopsis_invicta/logs
 threads: 16
 
-auto_install_amalgkit: true
-
 # Pre-selection filtering rules
 filters:
   require_tissue: false

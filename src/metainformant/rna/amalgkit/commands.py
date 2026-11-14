@@ -445,7 +445,6 @@ YES_NO_CLI_OPTIONS: dict[str, frozenset[str]] = {
 # warning, because it is either a typo or an option this build does not have.
 METAINFORMANT_ONLY_STEP_KEYS = frozenset(
     {
-        "auto_install_amalgkit",
         "extra_params",
         "filters",
         "genome",

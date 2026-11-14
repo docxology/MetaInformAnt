@@ -2,10 +2,10 @@
 
 Everything is real files written under a pytest ``tmp_path``: a frozen
 acquisition snapshot (``snapshot.json`` + ``manifest.jsonl`` +
-``inventory.json`` + ``inputs/``) exactly as the completion-inventory freeze
-lays it out, and data roots with configuration, kallisto index bytes, a
-reference manifest and quantification outputs written by the production
-``write_quant_provenance``.
+``inventory.json`` + ``inputs/``) in the layout ``acquisition_manifest.load_snapshot``
+and the cohort builder read, and data roots with configuration, kallisto index
+bytes, a reference manifest and quantification outputs written by the
+production ``write_quant_provenance``.
 """
 
 from __future__ import annotations
@@ -65,7 +65,7 @@ def build_frozen_source(
     index_bytes: bytes = INDEX_BYTES,
     batch_override: dict[str, int] | None = None,
 ) -> FrozenSource:
-    """Write a one-species frozen acquisition snapshot like ``completion_inventory.freeze_inventory``."""
+    """Write a one-species frozen acquisition snapshot in the layout of a committed cohort source."""
 
     table = root / "inputs" / SPECIES / "work" / "metadata" / "metadata_selected.tsv"
     index = root / "inputs" / SPECIES / "work" / "index" / INDEX_NAME

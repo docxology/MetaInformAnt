@@ -163,7 +163,7 @@ def test_gwas_workflow_genome_download(tmp_path: Path) -> None:
             "https://api.ncbi.nlm.nih.gov/datasets/v2/genome/accession/GCF_000001405.40/download",
             timeout=10,
         )
-    except (requests.RequestException, requests.Timeout):
+    except requests.RequestException, requests.Timeout:
         pass
 
     work_dir = tmp_path / "gwas_genome"
@@ -202,7 +202,7 @@ def test_gwas_workflow_invalid_config(tmp_path: Path) -> None:
     try:
         load_gwas_config(config_file)
         assert False, "Should have raised an error"
-    except (ValueError, FileNotFoundError, Exception):
+    except ValueError, FileNotFoundError, Exception:
         # Accept any parsing error (YAML scanner error, etc.)
         pass  # Expected
 

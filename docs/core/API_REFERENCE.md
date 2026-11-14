@@ -5,18 +5,19 @@
 This inventory is generated from the canonical public symbols under
 `src/metainformant/core/`. It is intentionally concise:
 topic guides contain behavioral guidance, examples, and caveats.
-Compatibility facades are excluded from the inventory and remain
-supported through the import paths described in [index.md](index.md).
+Package `__init__.py` re-exports are documented through their implementation modules;
+see [index.md](index.md) for the package layout.
 
-**Public symbols:** 247
-**Canonical modules:** 31
+**Public symbols:** 285
+**Canonical modules:** 34
 
 ## Module index
 
 | Module | Public symbols |
 | --- | ---: |
+| [metainformant.core.data.db](#metainformantcoredatadb) | 13 |
 | [metainformant.core.data.validation](#metainformantcoredatavalidation) | 11 |
-| [metainformant.core.engine.workflow_manager](#metainformantcoreengineworkflow_manager) | 15 |
+| [metainformant.core.engine.workflow_manager](#metainformantcoreengineworkflow_manager) | 9 |
 | [metainformant.core.execution.discovery](#metainformantcoreexecutiondiscovery) | 13 |
 | [metainformant.core.execution.parallel](#metainformantcoreexecutionparallel) | 8 |
 | [metainformant.core.execution.workflow](#metainformantcoreexecutionworkflow) | 12 |
@@ -30,11 +31,13 @@ supported through the import paths described in [index.md](index.md).
 | [metainformant.core.io.download_robust](#metainformantcoreiodownload_robust) | 3 |
 | [metainformant.core.io.errors](#metainformantcoreioerrors) | 1 |
 | [metainformant.core.io.io](#metainformantcoreioio) | 24 |
+| [metainformant.core.io.paths](#metainformantcoreiopaths) | 22 |
 | [metainformant.core.io.verification](#metainformantcoreioverification) | 4 |
 | [metainformant.core.ncbi](#metainformantcorencbi) | 3 |
 | [metainformant.core.sequence](#metainformantcoresequence) | 2 |
 | [metainformant.core.ui.tui](#metainformantcoreuitui) | 9 |
 | [metainformant.core.utils.batches](#metainformantcoreutilsbatches) | 4 |
+| [metainformant.core.utils.config](#metainformantcoreutilsconfig) | 10 |
 | [metainformant.core.utils.errors](#metainformantcoreutilserrors) | 16 |
 | [metainformant.core.utils.hash](#metainformantcoreutilshash) | 8 |
 | [metainformant.core.utils.logging](#metainformantcoreutilslogging) | 5 |
@@ -43,9 +46,27 @@ supported through the import paths described in [index.md](index.md).
 | [metainformant.core.utils.progress](#metainformantcoreutilsprogress) | 3 |
 | [metainformant.core.utils.seeds](#metainformantcoreutilsseeds) | 1 |
 | [metainformant.core.utils.symbols](#metainformantcoreutilssymbols) | 9 |
-| [metainformant.core.utils.text](#metainformantcoreutilstext) | 12 |
+| [metainformant.core.utils.text](#metainformantcoreutilstext) | 11 |
 | [metainformant.core.utils.timing](#metainformantcoreutilstiming) | 6 |
 | [metainformant.core.utils.watchdog](#metainformantcoreutilswatchdog) | 4 |
+
+## metainformant.core.data.db
+
+| Symbol | Kind | Signature | Summary |
+| --- | --- | --- | --- |
+| `PostgresConnection` | class | `(host: str = 'localhost', port: int = 5432, database: str = 'metainformant', user: str = 'postgres', password: str = '', min_connections: int = 1, max_connections: int = 10)` | PostgreSQL database connection wrapper with connection pooling. |
+| `PostgresConnection.bulk_insert` | method | `(conn: psycopg2.extensions.connection, table: str, columns: List[str], data: List[Tuple], batch_size: int = 1000) -> int` | Bulk insert data into table. |
+| `PostgresConnection.close` | method | `() -> None` | Close connection pool. |
+| `PostgresConnection.connect` | method | `() -> psycopg2.extensions.connection` | Get connection from pool. |
+| `PostgresConnection.create_table` | method | `(conn: psycopg2.extensions.connection, table_name: str, schema: Dict[str, str], indexes: Optional[List[str]] = None, if_not_exists: bool = True) -> None` | Create database table. |
+| `PostgresConnection.execute_query` | method | `(conn: psycopg2.extensions.connection, query: str, params: Tuple = (), fetch: bool = True) -> List[Dict[str, Any]]` | Execute SQL query. |
+| `PostgresConnection.execute_transaction` | method | `(conn: psycopg2.extensions.connection, queries: List[Tuple[str, Tuple]]) -> List[List[Dict[str, Any]]]` | Execute multiple queries in a transaction. |
+| `PostgresConnection.release_connection` | method | `(conn: psycopg2.extensions.connection) -> None` | Release connection back to pool. |
+| `PostgresConnection.table_exists` | method | `(conn: psycopg2.extensions.connection, table_name: str) -> bool` | Check if table exists. |
+| `build_postgres_url` | function | `(host: str, port: int, database: str, user: str, password: str) -> str` | Build PostgreSQL connection URL. |
+| `get_connection` | function | `(host: str = 'localhost', port: int = 5432, database: str = 'metainformant', user: str = 'postgres', password: str = '', **kwargs: Any) -> Iterator[PostgresConnection]` | Context manager for PostgreSQL connections. |
+| `get_db_client` | function | `(host: str = 'localhost', port: int = 5432, database: str = 'metainformant', user: str = 'postgres', password: str = '', **kwargs: Any) -> PostgresConnection` | Get database client instance. |
+| `sanitize_connection_params` | function | `(params: Dict[str, Any]) -> Dict[str, Any]` | Sanitize database connection parameters to prevent SQL injection. |
 
 ## metainformant.core.data.validation
 
@@ -75,13 +96,7 @@ supported through the import paths described in [index.md](index.md).
 | `BasePipelineManager.run` | method | `() -> Dict[str, bool]` | Execute all phases sequentially. |
 | `PipelineItem` | class | `()` | A single work item flowing through the pipeline. |
 | `PipelinePhase` | class | `()` | Describes a single phase in a multi-phase pipeline. |
-| `SampleStage` | class | `()` | Stages a sample goes through in the RNA-seq workflow. |
-| `SampleState` | class | `()` | Tracks a sample's state through the RNA-seq workflow. |
 | `Stage` | class | `()` | Minimal lifecycle stages for any pipeline item. |
-| `WorkflowManager` | class | `(config_path: Path, max_threads: int = 5, run_amalgkit: AmalgkitRunner \| None = None) -> None` | RNA-seq workflow manager (download -> getfastq -> quant) with TUI. |
-| `WorkflowManager.add_sample` | method | `(sample_id: str, sra_url: str, dest_path: Path) -> None` | Add a sample to track through the workflow. |
-| `WorkflowManager.run` | method | `() -> Dict[str, bool]` | Execute the full RNA-seq workflow. |
-| `WorkflowManager.run_amalgkit` | method | `(step: str, params: Dict[str, Any]) -> Any` | Run an injected amalgkit step. |
 
 ## metainformant.core.execution.discovery
 
@@ -277,6 +292,33 @@ supported through the import paths described in [index.md](index.md).
 | `write_parquet` | function | `(df: Any, path: str \| Path, **kwargs: Any) -> None` | Write DataFrame to Parquet file. |
 | `write_tsv` | function | `(data: Iterable[Sequence[Any]], path: str \| Path) -> None` | Write TSV file. |
 
+## metainformant.core.io.paths
+
+| Symbol | Kind | Signature | Summary |
+| --- | --- | --- | --- |
+| `change_extension` | function | `(path: str, new_extension: str) -> Path` | Change file extension. |
+| `create_temp_file` | function | `(suffix: str = '', prefix: str = 'tmp', directory: str \| Path \| None = None) -> Path` | Create a unique temporary file path that does not contain user data. |
+| `discover_output_patterns` | function | `(module_name: str) -> dict[str, Any]` | Get output directory patterns for a module. |
+| `ensure_directory` | function | `(path: str \| Path) -> Path` | Create directory and any missing parent directories. |
+| `expand_and_resolve` | function | `(path: str \| Path) -> Path` | Expand user (~) and resolve to absolute path without requiring existence. |
+| `find_files_by_extension` | function | `(directory: str \| Path, extension: str) -> list[Path]` | Find all files with a specific extension in a directory. |
+| `find_output_locations` | function | `(repo_root: str \| Path, pattern: str \| None = None) -> list[Path]` | Find existing output directories. |
+| `get_cache_dir` | function | `() -> Path` | Get cache directory. |
+| `get_data_dir` | function | `() -> Path` | Get data directory. |
+| `get_directory_size` | function | `(path: str \| Path) -> int` | Get total size of all files in a directory. |
+| `get_file_extension` | function | `(filename: str) -> str` | Get file extension from filename. |
+| `get_file_size` | function | `(path: str \| Path) -> int` | Get file size in bytes. |
+| `get_logs_dir` | function | `() -> Path` | Get logs directory. |
+| `get_module_output_base` | function | `(module_name: str) -> str` | Get default output base for module. |
+| `get_project_root` | function | `() -> Path` | Get the project root directory. |
+| `get_temp_dir` | function | `() -> Path` | Get temp directory. |
+| `is_safe_path` | function | `(path: str) -> bool` | Check if path is safe (no path traversal attempts). |
+| `is_within` | function | `(path: str \| Path, parent: str \| Path) -> bool` | Return True if path is inside parent directory (after resolving). |
+| `list_output_structure` | function | `(repo_root: str \| Path) -> dict[str, Any]` | Map entire output directory structure. |
+| `prepare_file_path` | function | `(file_path: Path) -> None` | Ensure parent directories exist for a file path. |
+| `resolve_path` | function | `(path: str \| Path) -> Path` | Resolve path to absolute. |
+| `sanitize_filename` | function | `(filename: str) -> str` | Sanitize filename for safe filesystem use. |
+
 ## metainformant.core.io.verification
 
 | Symbol | Kind | Signature | Summary |
@@ -323,6 +365,21 @@ supported through the import paths described in [index.md](index.md).
 | `frame_memory_mb` | function | `(frame: pd.DataFrame) -> float` | Return the deep memory footprint of ''frame'' in MiB. |
 | `frame_memory_report` | function | `(frame: pd.DataFrame) -> dict[str, Any]` | Build a descriptive memory report for a frame. |
 | `iter_frame_chunks` | function | `(frame: pd.DataFrame, rows_per_chunk: int = DEFAULT_CHUNK_ROWS) -> Iterator[pd.DataFrame]` | Lazily yield row-block views of ''frame'' without copying it. |
+
+## metainformant.core.utils.config
+
+| Symbol | Kind | Signature | Summary |
+| --- | --- | --- | --- |
+| `PostgresConfig` | class | `()` | PostgreSQL database configuration. |
+| `apply_env_overrides` | function | `(config: Mapping[str, Any], *, prefix: str = 'AMALGKIT') -> dict[str, Any]` | Apply simple environment overrides to a shallow config mapping. |
+| `coerce_config_types` | function | `(config: dict[str, Any], type_map: dict[str, type]) -> dict[str, Any]` | Coerce configuration values to specified types. |
+| `discover_config_files` | function | `(repo_root: str \| Path, domain: str \| None = None) -> list[dict[str, Any]]` | Discover all config files matching patterns. |
+| `get_config_schema` | function | `(config_path: str \| Path) -> dict[str, Any]` | Extract schema/structure from config file. |
+| `get_env_or_default` | function | `(env_var: str, default: str) -> str` | Get environment variable value or default. |
+| `load_mapping_from_file` | function | `(config_path: str \| Path) -> dict[str, Any]` | Load a structured mapping from YAML, TOML or JSON file. |
+| `load_postgres_config_from_env` | function | `(prefix: str = 'PG') -> PostgresConfig \| None` | Load PostgreSQL configuration from environment variables. |
+| `load_typed_env` | function | `(*, prefix: str, keys: Mapping[str, type]) -> dict[str, Any]` | Load a mapping of env vars with types. |
+| `merge_configs` | function | `(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]` | Deep merge two configuration dictionaries. |
 
 ## metainformant.core.utils.errors
 
@@ -417,7 +474,6 @@ supported through the import paths described in [index.md](index.md).
 | Symbol | Kind | Signature | Summary |
 | --- | --- | --- | --- |
 | `clean_sequence_id` | function | `(sequence_id: str) -> str` | Clean sequence ID to extract main identifier. |
-| `clean_whitespace` | function | `(text: str) -> str` | Clean excessive whitespace from text. |
 | `count_words` | function | `(text: str) -> int` | Count words in text after normalization. |
 | `extract_email_addresses` | function | `(text: str) -> list[str]` | Extract email addresses from text. |
 | `extract_numbers` | function | `(text: str) -> list[float]` | Extract all numeric values from text. |

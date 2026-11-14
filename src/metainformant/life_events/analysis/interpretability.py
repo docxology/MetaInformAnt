@@ -7,7 +7,6 @@ including feature attribution, attention weights, and temporal pattern analysis.
 from __future__ import annotations
 
 import math
-import warnings
 from types import SimpleNamespace
 from typing import Any, Dict, List, Optional
 
@@ -22,9 +21,7 @@ logger = logging.get_logger(__name__)
 _MAX_EXACT_EVENTS_LIMIT = 20
 
 
-def attention_weights(
-    model: Any, sequences: List[List[str]], embeddings: Optional[Dict[str, np.ndarray]] = None
-) -> Dict[str, Any]:
+def attention_weights(model: Any, sequences: List[List[str]]) -> Dict[str, Any]:
     """Extract attention weights from a model.
 
     Returns real weights only when the model provides them:
@@ -32,17 +29,15 @@ def attention_weights(
     * a model with a ``transformer`` or ``attention`` attribute and a ``get_attention_weights(sequences)``
       method: that method's output, for the given sequences;
     * a fitted scikit-learn model with ``feature_importances_`` or ``coef_``: those global, per-feature values
-      (one vector for the model, not one per sequence; ``sequences`` and ``embeddings`` are not used for them).
+      (one vector for the model, not one per sequence; ``sequences`` is not used for them).
 
     Anything else, including a transformer whose layers merely exist (their attention is computed inside the
     forward pass and is not available from the module), is reported as ``supported: False`` with an empty
-    ``attention_weights`` list. (A list of the string ``"attention_layer_present"`` per encoder layer used to be
-    returned as the weights, flagged supported.)
+    ``attention_weights`` list.
 
     Args:
         model: Trained prediction model (sklearn, torch, or custom)
         sequences: List of event sequences (passed to ``get_attention_weights``)
-        embeddings: Unused; accepted for backward compatibility
 
     Returns:
         Dictionary with attention weight information
@@ -91,7 +86,6 @@ def attention_weights(
 def event_importance(
     predictor_or_sequences: Any,
     sequences: Optional[List[Any]] = None,
-    embeddings: Optional[Dict[str, np.ndarray]] = None,
     method: str = "frequency",
     normalize: bool = True,
     **kwargs: Any,
@@ -106,8 +100,6 @@ def event_importance(
     Args:
         predictor_or_sequences: A fitted predictor, or the sequences when no predictor is used
         sequences: The sequences to score when a predictor is given
-        embeddings: Accepted for backward compatibility; importance depends on the predictor's
-            outputs only, so embedding norms never break ties
         method: ``"frequency"`` or ``"permutation"``
         normalize: Scale scores so the largest is 1
         **kwargs: Ignored
@@ -497,9 +489,8 @@ def _sampled_shapley_values(predictor: Any, tokens: List[str], n_samples: int, r
 def shapley_values(
     predictor: Any,
     sequence: Any,
-    background_sequences: Optional[List[Any]] = None,
-    n_samples: int = 100,
     *,
+    n_samples: int = 100,
     random_state: Optional[int] = None,
     max_exact_events: int = 10,
 ) -> Dict[str, float]:
@@ -526,11 +517,6 @@ def shapley_values(
     Args:
         predictor: Fitted model with ``predict(list_of_sequences)``, called on lists of event tokens
         sequence: The sequence to explain: an EventSequence or a list of event tokens
-        background_sequences: Deprecated and ignored. Absent events are removed rather than replaced
-            by values drawn from a background dataset, so no background distribution enters the value
-            function; a background has no canonical meaning for sequences of different lengths. A
-            non-empty value emits a ``DeprecationWarning``. The argument is kept only so existing
-            positional calls keep working and will be removed.
         n_samples: Number of random permutations when the sequence has more than
             ``max_exact_events`` events
         random_state: Seed for the permutation sampling
@@ -552,13 +538,6 @@ def shapley_values(
         raise ValueError("Predictor must be fitted before computing Shapley values")
     if not callable(getattr(predictor, "predict", None)):
         raise TypeError("predictor must provide a predict() method")
-    if background_sequences:
-        warnings.warn(
-            "shapley_values ignores background_sequences: absent events are removed from the sequence, not "
-            "replaced by background values. The argument is deprecated and will be removed; stop passing it.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
 
     items = list(sequence.events) if hasattr(sequence, "events") else list(sequence)
     tokens = _sequence_to_tokens(SimpleNamespace(events=items) if items and hasattr(items[0], "event_type") else items)

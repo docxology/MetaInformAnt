@@ -48,7 +48,7 @@ High‑level map of the module's documentation.
 ## Module API summary
 
 ```python-snippet
-from metainformant.pharmacogenomics import predict_metabolizer
+from metainformant.pharmacogenomics import predict_metabolizer_status
 from metainformant.pharmacogenomics.alleles.star_allele import call_star_alleles
 from metainformant.pharmacogenomics.alleles.diplotype import determine_diplotype
 from metainformant.pharmacogenomics.alleles.phenotype import classify_phenotype

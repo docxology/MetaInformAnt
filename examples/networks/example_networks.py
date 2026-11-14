@@ -15,7 +15,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from metainformant.core import io
-from metainformant.networks.analysis.graph import centrality_measures, create_network
+from metainformant.networks.analysis.graph_algorithms import centrality_measures
+from metainformant.networks.analysis.graph_core import create_network
 
 
 def main():
@@ -55,9 +56,8 @@ def main():
         "centrality_measures": centrality,
     }
 
-    print(
-        f"Network: {analysis_results['network_stats']['nodes']} nodes, {analysis_results['network_stats']['edges']} edges"
-    )
+    stats = analysis_results["network_stats"]
+    print(f"Network: {stats['nodes']} nodes, {stats['edges']} edges")
 
     # Save results
     results_file = output_dir / "network_analysis.json"

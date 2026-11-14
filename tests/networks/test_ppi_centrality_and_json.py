@@ -21,7 +21,7 @@ from pathlib import Path
 import networkx as nx
 import pytest
 
-from metainformant.networks.interaction._ppi_impl import (
+from metainformant.networks.interaction.ppi import (
     ProteinNetwork,
     load_ppi_network,
     ppi_network_analysis,
@@ -107,8 +107,8 @@ def test_protein_network_from_file_reads_json(tmp_path: Path) -> None:
     assert network.metadata["format"] == "json"
 
 
-def test_json_with_the_legacy_links_key_loads(tmp_path: Path) -> None:
-    path = tmp_path / "legacy.json"
+def test_json_with_the_links_key_loads(tmp_path: Path) -> None:
+    path = tmp_path / "links_key.json"
     path.write_text(
         json.dumps(
             {
@@ -151,7 +151,7 @@ def test_malformed_json_is_rejected_with_a_value_error(tmp_path: Path, payload: 
 
 def test_from_file_docstring_only_lists_formats_the_loader_accepts(tmp_path: Path) -> None:
     match = re.search(r"format: File format \(([^)]*)\)", ProteinNetwork.from_file.__doc__ or "")
-    assert match, "ProteinNetwork.from_file no longer documents its formats in the expected form"
+    assert match, "ProteinNetwork.from_file does not document its formats in the expected form"
     advertised = re.findall(r"'(\w+)'", match.group(1))
     assert "json" in advertised
 

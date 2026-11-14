@@ -269,7 +269,7 @@ def test_plot_phylo_tree_gives_every_internal_node_the_mean_row_of_its_children(
 def test_every_tree_plot_draws_a_builder_tree(
     plot: str, builder: str, nj: Dict[str, Any], upgma: Dict[str, Any]
 ) -> None:
-    """All of the single-tree plots used to raise ``AttributeError: 'NoneType' object has no attribute 'items'``."""
+    """No single-tree plot raises ``AttributeError: 'NoneType' object has no attribute 'items'``."""
     tree = nj if builder == "nj" else upgma
     draw = getattr(trees, plot)
 
@@ -618,7 +618,7 @@ def test_tree_annotation_plot_colours_and_labels_annotated_nodes(nj: Dict[str, A
     colours = {name: tuple(np.round(rgba, 3)) for name, rgba in zip(names, ax.collections[0].get_facecolor())}
     assert colours["Apis"] == (0.827, 0.184, 0.184, 1.0)  # the annotated colour
     assert colours["Eciton"] == colours["Bombus"] == (0.8, 0.8, 0.8, 1.0)  # the node_color keyword, not a collision
-    # the label sits just right of its node, offset by a fraction of the tree's width (0.1 data units used to be fixed)
+    # the label sits just right of its node, offset by a fraction of the tree's width (not a fixed 0.1 data units)
     offset = texts["honeybee"][0] - texts["Apis"][0]
     width = max(x for x, _ in texts.values()) - min(x for x, _ in texts.values())
     assert 0 < offset < 0.1 * width

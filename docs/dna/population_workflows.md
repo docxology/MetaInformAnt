@@ -151,10 +151,7 @@ sequences = ["AAAA", "AAAT", "AATT"]
 stats = calculate_summary_statistics(sequences=sequences)
 
 # Use math module for more advanced calculations
-theta_w = watterson_theta(
-    num_segregating_sites=stats["segregating_sites"],
-    sample_size=stats["sample_size"]
-)
+theta_w = watterson_theta(stats["segregating_sites"], stats["sample_size"])
 
 # Full Tajima's D with variance (for publication-quality analysis)
 tajima_d_full = tajimas_D(

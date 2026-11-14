@@ -205,19 +205,6 @@ class TestNCBIGeneAnnotation:
         assert len(result) == 1
         assert "nearby_genes" in result[0]
 
-    def test_backwards_compat_ensembl_wrapper(self):
-        """The Ensembl wrapper should delegate to NCBI and return a list."""
-        from metainformant.gwas.analysis.gene_annotation_api import (
-            annotate_top_hits_ensembl,
-        )
-
-        alignment_hits = [
-            {"snp": "rs1", "chrom": "CM009934.2", "pos": 1000000, "p_value": 0.001},
-        ]
-        result = annotate_top_hits_ensembl(alignment_hits, species="apis_mellifera", top_n=1)
-        assert isinstance(result, list)
-        assert len(result) == 1
-
 
 # ---------------------------------------------------------------------------
 # HPO API — map_phenotype_to_hpo, fetch_hpo_term

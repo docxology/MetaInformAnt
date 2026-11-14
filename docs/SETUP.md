@@ -1,6 +1,6 @@
 # Setup
 
-Environment management uses `uv` with Python 3.11+.
+Environment management uses `uv` with Python 3.14+.
 
 ## Quick Setup
 
@@ -56,7 +56,7 @@ Examples respect this policy by defaulting to `output/` when writing files.
 External tools
 
 - RNA: `amalgkit` (installed automatically by default setup script, via uv)
-- Optional MSA: `muscle` or `clustalo` in PATH (MUSCLE shim installed automatically if not found)
+- Optional MSA: `muscle` or `clustalo` in PATH (the setup script reports whether a real MUSCLE binary is on PATH; install MUSCLE v5 with Homebrew or bioconda)
 - Optional NCBI Datasets: `ncbi-datasets-pylib` is a dependency; verify availability in runtime
 
 Next steps

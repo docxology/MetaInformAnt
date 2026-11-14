@@ -464,7 +464,7 @@ def test_the_bonds_carry_what_was_measured_and_nothing_invented() -> None:
 
     assert len(bonds) == 1 and set(bonds[0]) == {"donor_atom", "acceptor_atom", "distance"}
     assert bonds[0]["distance"] == 3.0 and isinstance(bonds[0]["distance"], float)
-    with pytest.raises(TypeError):  # the angle that was documented but never tested is no parameter any more
+    with pytest.raises(TypeError):  # identify_hydrogen_bonds takes no angle parameter
         identify_hydrogen_bonds(atoms, coordinates_of(atoms), 3.5, 120.0)  # type: ignore[call-arg]
     with pytest.raises(TypeError):
         identify_hydrogen_bonds(atoms, coordinates_of(atoms), angle_threshold=120.0)  # type: ignore[call-arg]

@@ -26,7 +26,7 @@ from metainformant.life_events.models.predictor import EventSequencePredictor
 predictor = EventSequencePredictor(
     model_type="embedding",   # "embedding" or "simple"
     embedding_dim=100,
-    random_seed=42,
+    random_state=42,
 )
 predictor.fit(sequences, outcomes, task="classification")
 predictions = predictor.predict(test_sequences)
@@ -129,12 +129,12 @@ log_hazard_ratios = surv.coefficients               # {"domain:event_type": coef
 |----------|-------|
 | `"cox"` (default) | Cox proportional hazards: Newton-Raphson with step halving on the Breslow partial likelihood (tied times share a risk set); baseline hazard by Breslow's estimator |
 | `"exponential"` | Exponential proportional hazards model (constant hazard), fitted by maximum likelihood |
-| `"baseline"` (alias `"kaplan_meier"`) | Kaplan-Meier estimate, the same for every sequence |
+| `"baseline"` | Kaplan-Meier estimate, the same for every sequence |
 
 - `predict` returns the restricted mean survival time: the area under each sequence's survival function up to the longest follow-up time in the training data. `predict_survival_function` returns `S(t | x)` for the requested times; the Cox and Kaplan-Meier estimates are step functions that stay constant after the last event time.
 - `penalizer` (default 0.1) is a ridge penalty on the Cox and exponential coefficients; 0 gives the unpenalised maximum-likelihood fit. `max_iter` (default 50) and `tol` (default 1e-9) control Newton-Raphson; a fit that does not converge emits a `RuntimeWarning`.
 - `coefficients` (log hazard ratio per additional occurrence of each token) and `standard_errors` are empty for `"baseline"`.
-- `embedding_dim` and `random_state` are accepted for compatibility and have no effect: the fits use event counts and are deterministic.
+- The fits use event counts and are deterministic. Any other keyword argument is ignored with a logged warning.
 - `fit` raises `ValueError` for empty input, inputs of different lengths, negative or non-finite times, an `event_occurred` that is not boolean or 0/1, or data without any event. An unknown `method` raises `ValueError` at construction, and `predict` raises `ValueError` before the model is fitted.
 
 For a stand-alone Cox fit on covariate vectors, see `cox_ph_model` in [Survival](survival.md).
@@ -165,15 +165,15 @@ embeddings = learn_event_embeddings(sequences, embedding_dim=100, window_size=5,
 | `min_count` | `1` | Events with fewer occurrences are dropped before training and are not returned |
 | `epochs` | `5` | Passes over the sequences |
 | `negative` | `5` | Negative samples per positive example |
-| `learning_rate` (alias `alpha`) | `0.025` | Initial learning rate, decaying linearly to `min_learning_rate` (alias `min_alpha`, default `1e-4`) |
+| `learning_rate` | `0.025` | Initial learning rate, decaying linearly to `min_learning_rate` (default `1e-4`) |
 | `ns_exponent` | `0.75` | Exponent of the noise distribution used for negative sampling |
 | `cbow_mean` | `True` | CBOW only: average rather than sum the context vectors |
 | `combine` | `"sum"` | `"sum"` returns each event's input vector plus its output (context) vector; `"input"` returns the plain input vectors |
-| `random_state` (alias `seed`) | `None` | Seed; identical seeds give identical embeddings |
+| `random_state` | `None` | Seed; identical seeds give identical embeddings |
 
-The keyword options (`negative`, `learning_rate`, `min_learning_rate`, `ns_exponent`, `cbow_mean`, `combine`, and the aliases) go through `**kwargs`; any other keyword is ignored with a logged warning. `ValueError` is raised for empty input, a non-positive `embedding_dim`, `window_size`, or `epochs`, `negative` below 1, a non-positive `learning_rate`, a negative `min_learning_rate`, an unknown `method` or `combine`, and when no event reaches `min_count`.
+The keyword options (`negative`, `learning_rate`, `min_learning_rate`, `ns_exponent`, `cbow_mean`, `combine`) go through `**kwargs`; any other keyword is ignored with a logged warning. `ValueError` is raised for empty input, a non-positive `embedding_dim`, `window_size`, or `epochs`, `negative` below 1, a non-positive `learning_rate`, a negative `min_learning_rate`, an unknown `method` or `combine`, and when no event reaches `min_count`.
 
-`biological_embedding` returns a dictionary with the vectors under `"embeddings"`. The `"domain"` embeddings contain a small random variation around each domain's centre that is reproducible: it is drawn from `random_state` (alias `seed`) and from a fixed default seed when none is given. The `"event_type"` embeddings involve no randomness.
+`biological_embedding` returns a dictionary with the vectors under `"embeddings"`. The `"domain"` embeddings contain a small random variation around each domain's centre that is reproducible: it is drawn from `random_state` and from a fixed default seed when none is given. The `"event_type"` embeddings involve no randomness.
 
 The `"temporal"` embeddings work for any `EventSequence` and involve no randomness either. Sequences with at least two events are grouped by their first three event types, the intervals between consecutive events (in days; datetime timestamps are converted, numeric timestamps are subtracted as given) of a group are pooled, and the group's vector holds their mean, standard deviation, minimum, maximum, count and median, zero padded to `embedding_dim` (default 30) and scaled so that its largest absolute entry is 1. The result's `"embeddings"` are keyed by the string of the three-type tuple. Because the vector holds six statistics, an `embedding_dim` below 6 raises `ValueError`.
 
@@ -193,7 +193,7 @@ outcomes = [1 if len(s) > 15 else 0 for s in tokens]    # 1 when a person has mo
 train, test = tokens[:400], tokens[400:]
 embeddings = learn_event_embeddings(train, embedding_dim=64, random_state=0)
 
-model = EventSequencePredictor(model_type="embedding", embedding_dim=64, random_seed=0)
+model = EventSequencePredictor(model_type="embedding", embedding_dim=64, random_state=0)
 model.fit(train, outcomes[:400], task="classification", event_embeddings=embeddings)
 predictions = model.predict(test)
 

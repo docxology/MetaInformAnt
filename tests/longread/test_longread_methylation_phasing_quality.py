@@ -1,6 +1,6 @@
 """Round-4 test-depth tests for longread methylation, phasing, and quality/workflow.
 
-Covers previously untested public APIs:
+Covers these public APIs:
 - methylation.calling: call_methylation_from_signal, aggregate_methylation,
   detect_dmrs, methylation_pattern_analysis, compute_methylation_stats
 - phasing.haplotyping: phase_reads, build_phase_blocks, compute_switch_errors,

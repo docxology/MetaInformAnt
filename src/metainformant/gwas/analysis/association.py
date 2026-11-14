@@ -71,7 +71,7 @@ def association_test_linear(
             gt_value = float(genotypes[i])
             ph_value = float(phenotypes[i])
             covariate_values = [float(cov[i]) for cov in covariates] if covariates else []
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             continue
         if not math.isfinite(gt_value) or gt_value < 0:
             continue
@@ -209,7 +209,7 @@ def association_test_logistic(
         try:
             gt_value = float(genotypes[i])
             covariate_values = [float(covariate[i]) for covariate in covariate_rows]
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             continue
         if not math.isfinite(gt_value) or gt_value < 0:
             continue

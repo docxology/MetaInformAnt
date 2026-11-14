@@ -86,6 +86,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reports a stale core API reference.
 
 ### Changed
+- Python 3.14 is the support floor: `requires-python = ">=3.14"`, classifiers
+  3.14 and 3.15, black/ruff/mypy targets 3.14, a repository `.python-version`
+  (3.14) and a `python:3.14-slim` Docker base. CI runs every lane on 3.14 and
+  the fast lane, the build and the release wheel smoke also on 3.15 (the full
+  extras do not install on 3.15 yet: `ray` has no cp315 wheels). `uv.lock` was
+  re-locked without upgrades; only packages that Python < 3.12 resolutions or
+  the removed `aws` extra needed left it. Code uses the PEP 758
+  `except A, B:` form black writes for py314.
+- `campaign_lock` recognizes one writer per data root, the kernel flock
+  `<root>/.campaign.flock`; `writer_status` reports only that flock.
+- `StreamingPipelineOrchestrator.process_single_sample` runs acquisition and
+  quantification as one unit.
 - Amalgkit is pinned to 0.16.108 at upstream commit
   `1d1566638abe32e79ee262193bb88769c3482e76` (upstream tags only x.y.0
   releases). `pyproject.toml`, `uv.lock` and the runtime constants carry the
@@ -239,6 +251,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     residue. Quality metrics raise for unsupported data types.
 
 ### Removed
+- Retired campaign lanes, so the frozen-cohort streaming producer started by
+  `projects/hymenoptera_amalgkit/scripts/run_full_campaign.sh` is the only one:
+  - the AWS EC2/spot-fleet lane: `rna.engine` `aws_completion`, `aws_fleet`,
+    `aws_inputs`, `aws_resources`, `acquisition_aws_policy`,
+    `acquisition_pricing`, `acquisition_allocation`, `acquisition_estimates`,
+    `acquisition_scheduling`, `source_resolution`, `legacy_quant_recovery`,
+    `campaign_status` (with its CLI and I/O), `quant_storage.S3Store`,
+    `scripts/rna/aws_acquisition_startup.sh`, `scripts/rna/hymenoptera_status.py`
+    and the `aws` optional extra (boto3; boto3-stubs in `dev`);
+  - the manifest acquisition worker: `acquisition_cli`, `acquisition_worker`
+    (and CLI), `acquisition_frontier`, `acquisition_lanes`, `acquisition_sample`,
+    `acquisition_references`, `acquisition_prerequisites`,
+    `acquisition_snapshot`, `completion_inventory`, `campaign_observation*`,
+    `rna.integration`, `rna.amalgkit.acquisition`, `scripts/rna/acquisition.py`,
+    `acquisition_worker.py`, `observe_acquisition.py`, the
+    `AMALGKIT_PROGRESS_DB_PATH` and `AMALGKIT_LOCAL_SIZE_OVERLAY_*` settings, and
+    `docs/rna/GENERIC_ACQUISITION.md` and `LOCAL_PROCESSING_RATE.md`. The cohort
+    loader (`acquisition_manifest`) and `acquisition_order` remain;
+  - the GCP lane: `metainformant.cloud`, `scripts/cloud/`, `docs/cloud/`,
+    `docs/tasks/deploy_cloud.md`, `tests/cloud/`, and `gcloud` in
+    `scripts/package/setup.sh` and `verify_dependencies.py`;
+  - the shell launchers' directory locks (`results/.full_campaign.lock`,
+    `.finalization.lock`) and the worker's `.acquisition.lock` in
+    `campaign_lock`, cohort install, import, reclamation, the RNA scripts and
+    the MCP amalgkit monitor; the `auto_install_amalgkit` setting.
+- Compatibility layers, with every in-repo caller migrated:
+  - re-export facades: `core.db`, `core.engine.workflow_manager`'s RNA layer
+    (`WorkflowManager`, `SampleStage`, `SampleState`, `AmalgkitRunner`),
+    `dna.transcription`, `dna.translation`, `dna.phylogeny.tree`,
+    `dna.annotation.gene_prediction`, `dna.io.fasta`,
+    `dna.population.visualization`, `math.popgen`,
+    `information.metrics.advanced.geometry`, `gwas.workflow.workflow`,
+    `gwas.visualization.population.population`,
+    `longread.workflow.orchestrator`, `networks.analysis.graph`,
+    `networks.interaction.regulatory`, `networks.interaction._ppi_impl` (now
+    `ppi`), `singlecell.analysis.dimensionality`,
+    `protein.function.prediction` and the `ontology.query` function re-exports;
+  - aliases and legacy parameters across gwas, dna, math, information, ml,
+    metagenomics, multiomics, phenotype, life_events, longread, networks,
+    singlecell, protein, spatial, simulation, epigenome, eqtl, ontology and
+    pharmacogenomics: one name per parameter, no unused "accepted for
+    compatibility" arguments, no tuple return modes, no DeprecationWarning
+    shims (for example `return_dict=False` and `pvalues=` in gwas correction,
+    `MultiOmicsData`/`integrate_omics_data` per-layer keywords,
+    `canonical_correlation(layer_pair=)`, `cv_folds=` in ml validation,
+    `random_seed`/`seed` in life_events, the jc69/kimura_2p/tajima_nei distance
+    aliases, `load_config_file`, `ensure_cli_available(auto_install=)` and
+    `download_sra_samples(sort_by_size=, use_fallback=)`);
+  - `check_core_doc_consistency.py`, `scripts/package/verify_uv_setup.sh`,
+    `verify_test_deps.sh`, `scripts/rna/install_r_deps.R` and the BeeWAS
+    wrappers in `scripts/gwas/pipelines` (the code lives in `projects/apis_gwas`).
+- Completed plans and dated audit snapshots about removed code (`Plans/`,
+  `docs/DOCUMENTATION_IMPROVEMENT_PLAN.md`, `docs/tasks/VALIDATION_REPORT.md`,
+  `docs/ml/BROKEN_EXAMPLES.md`, the dated AWS checkpoints in `docs/rna` and
+  eight historical documentation reports). Docs and docstrings describe the
+  current API in the present tense.
 - Runtime installation of Amalgkit. `ensure_cli_available` and
   `ensure_required_amalgkit` never run `uv pip install`; a missing or different
   build fails with the hint `uv sync --frozen --extra rna`.

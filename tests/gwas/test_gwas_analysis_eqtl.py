@@ -238,7 +238,7 @@ def test_variants_and_transcripts_without_a_position_are_not_tested(data: tuple[
 
 
 def test_a_window_without_positions_is_an_error_not_a_silent_no_op(data: tuple[pd.DataFrame, pd.DataFrame]) -> None:
-    """The defect itself: cis_window used to be accepted and ignored, returning the full all-vs-all table."""
+    """cis_window without positions raises instead of being ignored with the full all-vs-all table returned."""
     genotypes, expression = data
 
     with pytest.raises(ValueError, match="cis_window needs variant_positions and gene_positions"):

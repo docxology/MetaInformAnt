@@ -256,7 +256,7 @@ class TestMissingValueImputation:
         )
         result = missing_value_imputation(data, method="knn")
         # Row 0 missing value at col 2 should be imputed from neighbors
-        assert result[0, 2] > 0  # no longer zero
+        assert result[0, 2] > 0  # imputed, not zero
         assert np.isfinite(result[0, 2])
 
     def test_unknown_method_raises(self) -> None:

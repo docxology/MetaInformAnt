@@ -4,7 +4,7 @@ Recorded, reproducible baselines for the campaign-scale benchmark scripts.
 All runs use **synthetic data only** (deterministic seeds, see each script)
 on the local checkout; never benchmark against the live campaign data root.
 
-Environment for the baselines below: macOS (arm64), Python 3.12 via `uv`,
+Environment for the baselines below: macOS (arm64) via `uv`,
 pandas 2.x / numpy 1.x, external-drive checkout under live campaign I/O
 (2026-09-01). Absolute times are machine- and load-dependent — treat them as
 order-of-magnitude references; the **CONSISTENCY: OK** line is the portable

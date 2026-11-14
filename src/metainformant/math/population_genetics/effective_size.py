@@ -13,7 +13,7 @@ from metainformant.core.utils import logging
 logger = logging.get_logger(__name__)
 
 
-def effective_size_sex_ratio(male_size: float, female_size: float, sex_ratio: float = 0.5) -> float:
+def effective_size_sex_ratio(male_size: float, female_size: float) -> float:
     """Calculate effective population size for unequal numbers of breeding males and females.
 
     Wright's (1931) formula Ne = 4 * Nm * Nf / (Nm + Nf). The sex ratio of the breeders is already
@@ -24,21 +24,15 @@ def effective_size_sex_ratio(male_size: float, female_size: float, sex_ratio: fl
     Args:
         male_size: Number of breeding males (Nm)
         female_size: Number of breeding females (Nf)
-        sex_ratio: Proportion of the population that is male, strictly between 0 and 1 (default
-            0.5). Accepted and validated for compatibility, but it does not enter the formula:
-            the breeding sex ratio is already given by ``male_size`` and ``female_size``, so every
-            value returns the same Ne
 
     Returns:
         Effective population size
 
     Raises:
-        ValueError: If a population size is not positive or ``sex_ratio`` is not strictly between 0 and 1
+        ValueError: If a population size is not positive
     """
     if male_size <= 0 or female_size <= 0:
         raise ValueError("Population sizes must be positive")
-    if not (0 < sex_ratio < 1):
-        raise ValueError("Sex ratio must be between 0 and 1")
 
     return 4 * male_size * female_size / (male_size + female_size)
 

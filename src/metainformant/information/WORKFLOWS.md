@@ -205,9 +205,9 @@ h = differential_entropy(samples, method="histogram", bins=20)
 
 3. **Compare with Estimation Methods**
 ```python
-from metainformant.information.metrics.core.continuous import entropy_estimation
-h_hist = entropy_estimation(samples, method="histogram")
-h_knn = entropy_estimation(samples, method="knn")
+from metainformant.information.metrics.core.continuous import differential_entropy
+h_hist = differential_entropy(samples, method="histogram")
+h_knn = differential_entropy(samples, method="knn")
 print(f"Histogram: {h_hist:.3f}, k-NN: {h_knn:.3f}")
 ```
 

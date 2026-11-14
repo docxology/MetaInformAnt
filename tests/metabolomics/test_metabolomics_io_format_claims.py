@@ -1,8 +1,8 @@
 """The metabolomics I/O module must not claim file formats it cannot read.
 
-The module docstring of ``metainformant.metabolomics.io.formats`` used to promise "limited readers for mzML and
-mzXML formats", but the module only reads CSV intensity tables and MGF spectra. These tests pin the set of readers
-and writers that exist and check that the docstring says the same thing, so the two cannot drift apart again.
+The module ``metainformant.metabolomics.io.formats`` reads CSV intensity tables and MGF spectra only, and its
+docstring must not promise readers for mzML or mzXML. These tests pin the set of readers and writers that exist and
+check that the docstring says the same thing, so the two cannot drift apart.
 
 Uses the real module; no test doubles (real-implementation policy).
 """

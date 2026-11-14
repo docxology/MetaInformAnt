@@ -231,18 +231,11 @@ python scripts/test_examples/test_examples.py --example domain/example_name.py
 # Edit README.md...
 ```
 
-### Deprecation Handling
-```python
-# Mark deprecated examples
-"""
-DEPRECATED: This example uses old API.
-Use examples/new_domain/example_name.py instead.
-"""
-
-# Update imports for new API versions
-# from metainformant.old_module import old_function  # Old
-from metainformant.new_module import new_function    # New
-```
+### API Changes
+When an API an example uses changes, update the example in the same change:
+import from the current module and call the current signature, then re-run
+`python scripts/test_examples/test_examples.py --example domain/example_name.py`.
+An example that fits no current API is deleted, not marked.
 
 ## Using Examples
 

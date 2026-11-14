@@ -55,7 +55,7 @@ def test_request_with_max_retries_lowered_after_construction_fails_clearly_not_w
     with pytest.raises(ValueError, match="max_retries must be >= 1"):
         client._request("file:///no/such/ollama/endpoint", {"model": "x"})
     with pytest.raises(ValueError, match="max_retries must be >= 1"):
-        client.generate("hello")  # used to crash with AttributeError: 'NoneType' object has no attribute 'get'
+        client.generate("hello")  # not AttributeError: 'NoneType' object has no attribute 'get'
 
 
 def _retry_messages(caplog: pytest.LogCaptureFixture) -> list[str]:

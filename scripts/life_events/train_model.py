@@ -142,7 +142,6 @@ def main():
             model_type=args.model_type,
             task_type=args.task_type,
             embedding_dim=args.embedding_dim,
-            hidden_dim=args.hidden_dim,
             random_state=args.random_state,
         )
 

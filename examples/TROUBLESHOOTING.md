@@ -244,7 +244,7 @@ If using conda, ensure proper environment:
 
 ```bash
 # Create environment
-conda create -n metainformant python=3.11
+conda create -n metainformant python=3.14
 conda activate metainformant
 
 # Install dependencies

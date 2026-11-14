@@ -23,13 +23,13 @@ This guide provides detailed information for contributing to METAINFORMANT, incl
 METAINFORMANT enforces strict code quality standards to maintain a clean, maintainable codebase.
 
 #### Python Version
-- **Python 3.11+ only** (no backward compatibility with 3.10)
+- **Python 3.14+ only** (`requires-python = ">=3.14"`); CI runs every lane on 3.14 and a fast lane on 3.15
 - All code must use `from __future__ import annotations` for forward reference support
 
 #### Formatting: Black
 - Code formatting is handled by [Black](https://github.com/psf/black) with line length 120
 - Black is automatically run via pre-commit hooks
-- Configuration in `pyproject.toml`: `line-length = 120`, target versions `py311` and `py312`
+- Configuration in `pyproject.toml`: `line-length = 120`, `target-version = ['py314']` (Ruff: `target-version = "py314"`)
 - Manual invocation: `black .` or `uv run black .`
 
 #### Import Sorting: isort
@@ -77,7 +77,7 @@ def gc_content(seq: str) -> float:
 
 METAINFORMANT uses [pre-commit](https://pre-commit.com) to automate code quality checks. The configuration is in `.pre-commit-config.yaml` and includes:
 
-- **black** – code formatting (Python 3.12, line-length 120)
+- **black** – code formatting (target `py314`, line-length 120)
 - **isort** – import sorting (Black profile)
 - **flake8** – blocking linting with the CI configuration
 - **mypy** – type checking through the documented ratcheted scope; the full
@@ -88,11 +88,10 @@ METAINFORMANT uses [pre-commit](https://pre-commit.com) to automate code quality
   - `check-yaml`, `check-json`, `check-toml`
   - `end-of-file-fixer`
   - `trailing-whitespace` (excludes `.md`, `.rst`)
-  - `detect-private-key`
+  - `detect-private-key`, `detect-aws-credentials` (credential leak checks)
+  - `mixed-line-ending` – enforce LF
 - **Local hooks**:
   - `validate-examples` – validates example Python files
-  - `detect-aws-credentials`
-  - `mixed-line-ending` – enforce LF
 - **pygrep-hooks**: Python-specific checks (blanket noqa, type annotations, no log warnings, RST syntax)
 - **Bandit** – blocking medium/high-severity security checks
 - **pydocstyle** – informational documentation-style checks; not a release gate
@@ -161,7 +160,7 @@ Follow these steps for a smooth PR experience:
    - Scope: module name (`dna`, `rna`, `gwas`, `core`, `visualization`)
 5. **Push** to your fork and open a **Draft PR** early to get feedback.
 6. **CI pipeline** runs automatically:
-   - Tests on multiple Python versions (3.11, 3.12)
+   - Tests on Python 3.14 (every lane) and 3.15 (fast lane; the full extras do not install on 3.15 because `ray` has no cp315 wheels)
    - Linting (black, isort, flake8)
    - Type checking (mypy)
    - Documentation build check

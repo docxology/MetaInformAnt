@@ -1,8 +1,7 @@
 """GWAS visualization utilities.
 
-Manhattan, Q-Q, regional and summary plots. The implementations live in
-``_general_impl``; this module re-exports them so that the import path
-``metainformant.gwas.visualization.general`` stays stable.
+Manhattan, Q-Q, regional and summary plots. This module is their public import path; the
+implementations live in the private module ``_general_impl``.
 """
 
 from __future__ import annotations

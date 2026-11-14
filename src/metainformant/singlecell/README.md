@@ -27,7 +27,7 @@ graph TD
         DA --> |integration.py| BI[Batch Correction: BBKNN, Harmony, MNN, Scanorama, ComBat]
 
         AN[analysis/] --> |clustering.py| CL[Leiden, Louvain, K-means]
-        AN --> |dimensionality.py| DR[PCA, UMAP, t-SNE]
+        AN --> |pca_methods.py, nonlinear_methods.py| DR[PCA, UMAP, t-SNE]
         AN --> |trajectory.py| TJ[Diffusion Pseudotime]
 
         CT[celltyping/] --> |annotation.py| CA[Cell Type Annotation]
@@ -43,7 +43,7 @@ graph TD
 | Module | Purpose |
 |--------|---------|
 | [`data/`](data/) | `SingleCellData` container, `load_count_matrix`, QC (`calculate_qc_metrics`), filtering (`filter_cells`, `filter_genes`), normalization (`normalize_counts`, `log_transform`, `scale_data`), HVG selection (`identify_highly_variable_genes`), batch integration (`bbknn_integration`, `harmony_integration`, `mnn_integration`, `scanorama_integration`, `combat_integration`) |
-| [`analysis/`](analysis/) | `leiden_clustering`, `compute_pca`, `compute_umap`, `compute_diffusion_pseudotime` |
+| [`analysis/`](analysis/) | `leiden_clustering`, `pca_reduction`, `umap_reduction`, `compute_diffusion_pseudotime` |
 | [`celltyping/`](celltyping/) | Automated cell type annotation from marker genes |
 | [`differential/`](differential/) | Differential expression testing between clusters |
 | [`doublet/`](doublet/) | Simulation-based doublet detection (Scrublet-style KNN scoring) |
@@ -69,17 +69,18 @@ print(f"{data.n_obs} cells, {data.n_vars} genes")
 
 | Function | Description |
 |----------|-------------|
-| `pca_reduction` / `compute_pca` | Principal component analysis |
-| `compute_umap` / `run_umap` | UMAP embedding |
-| `compute_tsne` / `run_tsne` | t-SNE embedding |
+| `pca_reduction` | Principal component analysis |
+| `umap_reduction` | UMAP embedding |
+| `tsne_reduction` | t-SNE embedding |
 | `compute_diffusion_map` | Diffusion map coordinates |
 | `select_hvgs` | Highly variable gene selection |
 
 ```python
-from metainformant.singlecell.analysis.dimensionality import compute_pca, compute_umap
+from metainformant.singlecell.analysis.nonlinear_methods import umap_reduction
+from metainformant.singlecell.analysis.pca_methods import pca_reduction
 
-data = compute_pca(data, n_components=50)
-data = compute_umap(data, n_neighbors=15)
+data = pca_reduction(data, n_components=50)
+data = umap_reduction(data, n_neighbors=15)
 ```
 
 ### Clustering and Trajectory
@@ -100,15 +101,16 @@ Analysis functions return a modified copy and leave their input untouched; `sele
 
 ```python
 from metainformant.singlecell.data.preprocessing import SingleCellData
-from metainformant.singlecell.analysis.dimensionality import compute_pca, compute_umap
+from metainformant.singlecell.analysis.nonlinear_methods import umap_reduction
+from metainformant.singlecell.analysis.pca_methods import pca_reduction
 from metainformant.singlecell.analysis.clustering import leiden_clustering
 from metainformant.singlecell.visualization.visualization import plot_umap
 import numpy as np
 
 # End-to-end single-cell workflow
 data = SingleCellData(X=np.random.rand(1000, 3000))
-data = compute_pca(data, n_components=50)
-data = compute_umap(data, n_neighbors=15)
+data = pca_reduction(data, n_components=50)
+data = umap_reduction(data, n_neighbors=15)
 data = leiden_clustering(data, resolution=0.8)   # needs networkx, igraph and leidenalg
 fig = plot_umap(data, color="leiden_cluster")    # the label column written by leiden_clustering
 ```

@@ -19,7 +19,7 @@ Invariants:
   (`_spec.validate_output_dir`).
 - RNA campaign/analysis outputs are DESCRIPTIVE ONLY until the evidence
   manifest freezes (no inferential statistics in tool outputs).
-- `amalgkit_monitor.py` predates the spec contract and is wired by
+- `amalgkit_monitor.py` is outside the spec contract and is wired by
   `metainformant/mcp/tool_adapters.py`; do not duplicate it in the catalog.
 
 Tests: `tests/mcp/test_tools_specs.py` (contract),

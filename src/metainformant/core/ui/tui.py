@@ -144,7 +144,7 @@ class TerminalInterface:
         try:
             self._original_sigint = signal.getsignal(signal.SIGINT)
             signal.signal(signal.SIGINT, self._sigint_handler)
-        except (OSError, ValueError):
+        except OSError, ValueError:
             # Cannot set signal handler from non-main thread -- that is fine
             pass
 
@@ -155,7 +155,7 @@ class TerminalInterface:
                 sys.stdout.write(SHOW_CURSOR)
                 sys.stdout.write("\n")
                 sys.stdout.flush()
-            except (OSError, ValueError):
+            except OSError, ValueError:
                 pass
 
         # Remove from live instances
@@ -168,7 +168,7 @@ class TerminalInterface:
         if self._original_sigint is not None:
             try:
                 signal.signal(signal.SIGINT, self._original_sigint)
-            except (OSError, ValueError):
+            except OSError, ValueError:
                 pass
             self._original_sigint = None
 
@@ -381,7 +381,7 @@ class TerminalInterface:
             try:
                 sys.stdout.write(output)
                 sys.stdout.flush()
-            except (OSError, ValueError):
+            except OSError, ValueError:
                 # stdout closed or not writable -- silently skip
                 pass
 

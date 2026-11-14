@@ -1,20 +1,20 @@
 ### DNA: Transcription
 
-Functions: `transcribe_dna_to_rna` (wraps `transcribe`), `transcribe_reverse_complement`, `transcribe_with_introns`, `find_transcription_start_sites`, `calculate_transcription_efficiency`
+Functions in `metainformant.dna.expression.transcription`: `transcribe`, `transcribe_reverse_complement`, `transcribe_with_introns`, `find_transcription_start_sites`, `calculate_transcription_efficiency`
 
 ```mermaid
 flowchart LR
-  A[DNA] --> BtranscribeDnaToRna[transcribe_dna_to_rna] --> C[RNA]
+  A[DNA] --> Btranscribe[transcribe] --> C[RNA]
 ```
 
 Example
 
 ```python
-from metainformant.dna import transcription
+from metainformant.dna.expression import transcription
 
 # DNA to RNA transcription (T -> U)
 dna = "ATCGATCG"
-rna = transcription.transcribe_dna_to_rna(dna)  # "AUCGAUCG"
+rna = transcription.transcribe(dna)  # "AUCGAUCG"
 
 # Transcribe the opposite strand: reverse complement first, then T -> U
 rna = transcription.transcribe_reverse_complement("ATCGGC")  # "GCCGAU"

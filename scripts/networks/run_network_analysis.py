@@ -145,7 +145,7 @@ def analyze_metrics(network, output_dir: Path) -> dict[str, Any]:
     """
     logger.info("Calculating network metrics...")
 
-    from metainformant.networks.analysis.graph import network_metrics
+    from metainformant.networks.analysis.graph_algorithms import network_metrics
 
     try:
         metrics = network_metrics(network)
@@ -173,7 +173,7 @@ def analyze_centrality(network, output_dir: Path) -> dict[str, Any]:
     """
     logger.info("Calculating centrality measures...")
 
-    from metainformant.networks.analysis.graph import centrality_measures
+    from metainformant.networks.analysis.graph_algorithms import centrality_measures
 
     try:
         centralities = centrality_measures(network)
@@ -274,7 +274,7 @@ def run_workflow(args):
 
     # Construct network
     logger.info("Constructing network...")
-    from metainformant.networks.analysis.graph import add_edges_from_interactions, create_network
+    from metainformant.networks.analysis.graph_core import add_edges_from_interactions, create_network
 
     network = create_network([], directed=args.directed)
     add_edges_from_interactions(network, interactions)

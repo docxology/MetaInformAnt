@@ -143,7 +143,7 @@ def simulate_popgen(
         # Two populations
         n_pop1 = n_sequences // 2
         n_pop2 = n_sequences - n_pop1
-        pop1, pop2 = generate_two_populations(n_pop1, n_pop2, sequence_length, fst=fst, theta=diversity, rng=rng)
+        pop1, pop2 = generate_two_populations(n_pop1, n_pop2, sequence_length, f_st=fst, theta=diversity, rng=rng)
 
         from metainformant.dna.sequence.core import write_fasta
 

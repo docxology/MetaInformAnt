@@ -546,7 +546,7 @@ def effect_size_forest_plot(
                 lower_ci.append(float(beta) - 1.96 * float(se))
                 upper_ci.append(float(beta) + 1.96 * float(se))
         else:
-            # Legacy dict-of-lists format
+            # Dict-of-lists input with precomputed confidence intervals
             required_keys = ["variants", "effects", "lower_ci", "upper_ci"]
             missing_keys = [key for key in required_keys if key not in effect_data]
             if missing_keys:
@@ -797,7 +797,7 @@ def _variant_category(variant: Mapping[str, Any], annotation_key: str, annotatio
     if chrom is not None and position is not None:
         try:
             location = (chromosome_label(chrom), int(position))
-        except (TypeError, ValueError):  # e.g. a NaN position: the variant simply has no (chromosome, position) key
+        except TypeError, ValueError:  # e.g. a NaN position: the variant simply has no (chromosome, position) key
             return None
         return _clean_category(annotations.get(location))
     return None
@@ -933,7 +933,7 @@ def functional_enrichment_plot(
                 "output_path": str(output_path) if output_path else None,
             }
 
-        # Legacy dict-of-dicts format (enrichment results)
+        # Dict-of-dicts input: precomputed enrichment statistics per function
         if not enrichment_results:
             return {"status": "failed", "error": "No enrichment results provided"}
 

@@ -540,7 +540,7 @@ def download_sra_run(sra_accession: str, output_dir: str | Path, threads: int = 
                     logger.info(f"Downloaded SRA run {sra_accession} using fasterq-dump")
                     return run_dir
                 logger.warning(f"fasterq-dump produced invalid output for {sra_accession}: {validation['issues']}")
-        except (subprocess.TimeoutExpired, FileNotFoundError):
+        except subprocess.TimeoutExpired, FileNotFoundError:
             pass
 
         # Fall back to fastq-dump

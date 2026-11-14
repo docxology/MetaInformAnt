@@ -406,7 +406,7 @@ def test_sha256():
 
 ## Future Enhancements
 
-- **MD5 and SHA1** for legacy checksum compatibility (non-crypto)
+- **MD5 and SHA1** for matching checksums that upstream sources publish (non-crypto)
 - **xxHash** for ultra-fast non-crypto hashing (if `xxhash` package available)
 - **Parallel directory hashing** with progress bar
 - **Hash database**: SQLite backend for persistent hash cache (avoid recompute)

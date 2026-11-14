@@ -72,10 +72,10 @@ for seq_id, sequence in seqs.items():
 
 **Patterns**:
 ```python
-from metainformant.dna.phylogeny import tree
+from metainformant.dna.phylogeny import neighbor_joining_tree, to_newick
 
-tree_result = tree.neighbor_joining_tree(seqs)  # seqs: {sequence_id: aligned sequence}
-# Returns a tree dictionary; tree.to_newick(tree_result) gives the Newick string
+tree_result = neighbor_joining_tree(seqs)  # seqs: {sequence_id: aligned sequence}
+# Returns a tree dictionary; to_newick(tree_result) gives the Newick string
 ```
 
 ### Population (`population`)

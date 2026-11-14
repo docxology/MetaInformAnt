@@ -248,7 +248,6 @@ def deconvolve_spots(
     method: str = "nnls",
     *,
     cell_type_names: list[str] | None = None,
-    gene_names: list[str] | None = None,
     spatial_gene_names: list[str] | None = None,
     reference_gene_names: list[str] | None = None,
     alpha: float = 0.0,
@@ -259,7 +258,7 @@ def deconvolve_spots(
     - "nnls": Non-negative least squares (fast, robust).
     - "nmf": Non-negative matrix factorization based approach.
 
-    When gene_names are provided for both spatial and reference data, the function
+    When spatial_gene_names and reference_gene_names are both provided, the function
     automatically intersects to shared genes.
 
     Args:
@@ -267,7 +266,6 @@ def deconvolve_spots(
         reference_profiles: Reference cell type profiles (n_types x n_genes).
         method: Deconvolution method ("nnls" or "nmf").
         cell_type_names: Names of cell types (length n_types).
-        gene_names: Deprecated, use spatial_gene_names and reference_gene_names.
         spatial_gene_names: Gene names for spatial data.
         reference_gene_names: Gene names for reference profiles.
         alpha: Regularization parameter (for NMF).

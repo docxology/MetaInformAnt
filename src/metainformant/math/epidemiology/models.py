@@ -10,13 +10,12 @@ from metainformant.core.utils import logging
 logger = logging.get_logger(__name__)
 
 
-def basic_reproduction_number(transmission_rate: float, recovery_rate: float, contact_rate: float = 0.0) -> float:
+def basic_reproduction_number(transmission_rate: float, recovery_rate: float) -> float:
     """Calculate basic reproduction number (R₀) for SIR model.
 
     Args:
         transmission_rate: Rate of transmission (β)
         recovery_rate: Rate of recovery (γ)
-        contact_rate: Contact rate (c) - not used in simple SIR
 
     Returns:
         Basic reproduction number (R₀ = β/γ)
@@ -54,12 +53,9 @@ def sir_step(
     susceptible: float,
     infected: float,
     recovered: float,
-    transmission_rate: float | None = None,
-    recovery_rate: float | None = None,
+    transmission_rate: float,
+    recovery_rate: float,
     dt: float = 1.0,
-    *,
-    beta: float | None = None,
-    gamma: float | None = None,
 ) -> tuple[float, float, float]:
     """Single time step of SIR model.
 
@@ -74,12 +70,6 @@ def sir_step(
     Returns:
         Tuple of (new_susceptible, new_infected, new_recovered)
     """
-    if beta is not None:
-        transmission_rate = beta
-    if gamma is not None:
-        recovery_rate = gamma
-    if transmission_rate is None or recovery_rate is None:
-        raise ValueError("transmission_rate/beta and recovery_rate/gamma are required")
 
     total_population = susceptible + infected + recovered
 

@@ -43,19 +43,6 @@ def correlation(x: Sequence[float] | np.ndarray, y: Sequence[float] | np.ndarray
     return float(np.corrcoef(x_arr, y_arr)[0, 1])
 
 
-def correlation_coefficient(x: List[float], y: List[float]) -> float:
-    """Calculate Pearson correlation coefficient (alias for correlation).
-
-    Args:
-        x: First variable values
-        y: Second variable values
-
-    Returns:
-        Pearson correlation coefficient
-    """
-    return correlation(x, y)
-
-
 def linear_regression(x: Sequence[float] | np.ndarray, y: Sequence[float] | np.ndarray) -> tuple[float, float, float]:
     """Perform linear regression and return slope, intercept, and r-squared.
 

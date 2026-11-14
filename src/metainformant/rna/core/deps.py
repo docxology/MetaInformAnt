@@ -26,13 +26,8 @@ def check_amalgkit_availability() -> Tuple[bool, str]:
     return available, msg
 
 
-def ensure_required_amalgkit(auto_install: bool = False) -> Tuple[bool, str]:
+def ensure_required_amalgkit() -> Tuple[bool, str]:
     """Check that the pinned upstream Amalgkit build is installed; never install it.
-
-    Args:
-        auto_install: Accepted for configurations written for earlier releases
-            and ignored. Passing true logs a one-time warning; nothing is ever
-            installed, upgraded or downgraded at runtime.
 
     Returns:
         Tuple of (ok, message). A failure message carries the provisioning hint
@@ -42,11 +37,8 @@ def ensure_required_amalgkit(auto_install: bool = False) -> Tuple[bool, str]:
         AMALGKIT_SYNC_HINT,
         REQUIRED_AMALGKIT_VERSION,
         ensure_cli_available,
-        warn_auto_install_ignored,
     )
 
-    if auto_install:
-        warn_auto_install_ignored()
     ok, msg, _version_info = ensure_cli_available(min_version=REQUIRED_AMALGKIT_VERSION)
     if ok:
         return True, msg
@@ -124,7 +116,7 @@ def check_memory_gb() -> float:
                     if line.startswith("MemAvailable"):
                         kb = int(line.split()[1])
                         return kb / (1024**2)  # Convert to GB
-        except (FileNotFoundError, ValueError, IndexError):
+        except FileNotFoundError, ValueError, IndexError:
             pass
 
     return 0.0  # Unknown
@@ -136,7 +128,7 @@ def check_cpu_cores() -> int:
         import multiprocessing
 
         return multiprocessing.cpu_count()
-    except (NotImplementedError, OSError):
+    except NotImplementedError, OSError:
         return 1  # Conservative estimate
 
 
@@ -273,7 +265,7 @@ def check_step_dependencies(step_name: str, params: Dict[str, Any], config: Any)
         "sanity",
     }
     if step_name in amalgkit_steps:
-        ok, msg = ensure_required_amalgkit(auto_install=bool(getattr(config, "auto_install_amalgkit", False)))
+        ok, msg = ensure_required_amalgkit()
         if not ok:
             return False, f"Required amalgkit CLI unavailable: {msg}"
 

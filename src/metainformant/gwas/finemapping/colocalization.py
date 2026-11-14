@@ -17,9 +17,8 @@ The probability that ``N`` traits share one causal variant
 traits (a partition model in the manner of MOLOC and HyPrColoc): each trait has no causal
 variant or one, traits with the same causal variant form a group, and a group of ``k``
 traits at one variant has prior ``p1 * (p12 / p1) ** (k - 1)``. For two traits it is coloc's
-``PP.H4``. It was a heuristic, ``sum_v prod_t BF / (n + sum_t sum_v BF + sum_v prod_t BF)``,
-whose flat priors and missing "distinct variants" hypothesis made it call a null trait
-"shared" whenever the other traits shared a signal (see :func:`multi_trait_coloc`).
+``PP.H4``. Because the model has a "distinct variants" hypothesis, a null trait is not called
+"shared" just because the other traits share a signal (see :func:`multi_trait_coloc`).
 
 References:
     - Giambartolomei et al. (2014) PLoS Genetics 10:e1004383 (coloc)
@@ -58,7 +57,6 @@ MAX_EXACT_TRAITS = 10
 
 def multi_trait_coloc(
     z_scores: dict,
-    ld_matrix: list[list[float]] | None = None,
     *,
     prior_variances: Mapping[str, float] | None = None,
     standard_errors: Mapping[str, float | Sequence[float]] | None = None,
@@ -88,11 +86,10 @@ def multi_trait_coloc(
     coloc. Cost is ``O(n_variants * 2 ** n_traits)`` and at most :data:`MAX_EXACT_TRAITS` traits are
     accepted; analyse subsets of more traits.
 
-    The previous statistic was a heuristic that gave the null hypothesis, "some trait
-    associated" and "all share" equal prior weight and had no hypothesis of distinct causal
-    variants. In simulations it called a null third trait "shared" in 99% of regions where the other
-    two shared a signal, and "shared" in 87% where the third had a distinct signal, at the 0.8
-    cut-off; the posterior here flags about 1% of those.
+    In simulations at the 0.8 cut-off, the posterior calls a null third trait "shared" in about 1%
+    of regions where the other two traits share a signal, and a third trait with a distinct signal
+    "shared" in about 1% of regions. A flat-prior heuristic without a distinct-variants hypothesis
+    calls them "shared" in 99% and 87% of those regions.
 
     The per-trait mappings below are keyed by the trait names of ``z_scores``;
     a trait absent from every mapping is scored on the z-score scale. See
@@ -103,8 +100,6 @@ def multi_trait_coloc(
         z_scores: Dictionary mapping trait names to lists of Z-scores.
             All Z-score lists must have the same length (same variant set).
             Example: {"height": [1.2, -0.5, ...], "bmi": [0.8, 2.1, ...]}
-        ld_matrix: Accepted for API compatibility and **not used**: the Bayes-factor model does not
-            model LD, so the result is the same with or without it (a warning is logged if given).
         prior_variances: Optional prior variance W of the true effect per trait.
         standard_errors: Optional standard errors per trait (scalar or one per
             variant).
@@ -133,9 +128,6 @@ def multi_trait_coloc(
             - n_variants: Number of variants in the region
             - summary: Human-readable summary
     """
-    if ld_matrix is not None:
-        logger.warning("multi_trait_coloc: ld_matrix is not used by the Wakefield Bayes-factor model and is ignored")
-
     if not z_scores:
         return {"status": "error", "message": "No Z-scores provided"}
 
@@ -218,7 +210,6 @@ def multi_trait_coloc(
             result = _pairwise_coloc(
                 z_scores_1=z_scores[trait_a],
                 z_scores_2=z_scores[trait_b],
-                ld_matrix=None,
                 prior_p1=prior_p1,
                 prior_p2=prior_p1,
                 prior_p12=prior_p12,
@@ -279,7 +270,6 @@ def eqtl_coloc(
     gwas_z: list[float],
     eqtl_z: list[float],
     gene_id: str,
-    ld_matrix: list[list[float]] | None = None,
     *,
     gwas_prior_variance: float | None = None,
     eqtl_prior_variance: float | None = None,
@@ -309,8 +299,6 @@ def eqtl_coloc(
         eqtl_z: Z-scores from eQTL analysis for the target gene.
         gene_id: Gene identifier (e.g., ENSG ID or gene symbol) for
             annotation and reporting.
-        ld_matrix: Accepted for API compatibility and **not used**: the Bayes-factor model does not
-            model LD, so the result is the same with or without it (a warning is logged if given).
         gwas_prior_variance: Prior variance W of the true GWAS effect.
         eqtl_prior_variance: Prior variance W of the true eQTL effect.
         gwas_standard_errors: GWAS standard errors (scalar or one per variant).
@@ -332,9 +320,6 @@ def eqtl_coloc(
             - shared_variant: Index of most likely shared variant (if H4)
             - interpretation: Human-readable interpretation
     """
-    if ld_matrix is not None:
-        logger.warning("eqtl_coloc: ld_matrix is not used by the Wakefield Bayes-factor model and is ignored")
-
     if not gwas_z or not eqtl_z:
         return {"status": "error", "message": "GWAS and eQTL Z-scores are required"}
 
@@ -351,7 +336,6 @@ def eqtl_coloc(
     coloc_result = _pairwise_coloc(
         z_scores_1=gwas_z,
         z_scores_2=eqtl_z,
-        ld_matrix=None,
         prior_variance_1=gwas_prior_variance,
         prior_variance_2=eqtl_prior_variance,
         standard_errors_1=gwas_standard_errors,
@@ -493,7 +477,6 @@ def compute_clpp(
 def regional_coloc(
     z_scores_dict: dict,
     region: dict,
-    ld_matrix: list[list[float]] | None = None,
     *,
     prior_variances: Mapping[str, float] | None = None,
     standard_errors: Mapping[str, float | Sequence[float]] | None = None,
@@ -519,8 +502,6 @@ def regional_coloc(
             - positions: Optional list of variant positions (bp) matching
               the Z-score indices. If not provided, variants are assumed
               to be uniformly spaced.
-        ld_matrix: Accepted for API compatibility and **not used** (see :func:`multi_trait_coloc`);
-            a warning is logged if given.
         prior_variances: Optional prior variance W of the true effect per trait.
         standard_errors: Optional standard errors per trait: a scalar, or one
             value per variant of the whole region (sliced with each window).
@@ -542,9 +523,6 @@ def regional_coloc(
             - region: The input region specification
             - message: Why the analysis failed (only when ``status`` is "error")
     """
-    if ld_matrix is not None:
-        logger.warning("regional_coloc: ld_matrix is not used by the Wakefield Bayes-factor model and is ignored")
-
     if not z_scores_dict:
         return {"status": "error", "message": "No Z-scores provided"}
 

@@ -2,6 +2,6 @@
 
 from __future__ import annotations
 
-from . import channel, decomposition, geometry, hypothesis, semantic
+from . import channel, decomposition, fisher_rao, hypothesis, information_projection, semantic
 
-__all__ = ["channel", "decomposition", "geometry", "hypothesis", "semantic"]
+__all__ = ["channel", "decomposition", "fisher_rao", "hypothesis", "information_projection", "semantic"]

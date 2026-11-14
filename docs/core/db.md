@@ -371,26 +371,21 @@ print(url)  # postgresql://analyst:***@db.cluster.example.com:5432/omics
 # engine = create_engine(url)
 ```
 
-#### `get_db_client(**kwargs) -> PostgresConnection`
+#### `get_db_client(host="localhost", port=5432, database="metainformant", user="postgres", password="", **kwargs) -> PostgresConnection`
 
-Factory function that reads environment variables and creates a `PostgresConnection` instance.
+Factory function that creates a `PostgresConnection` instance from the given parameters. It does not read environment variables; to configure from the environment, pass the fields of `metainformant.core.utils.config.load_postgres_config_from_env()` (which reads `PG_HOST`, `PG_PORT`, `PG_DATABASE`, `PG_USER` and `PG_PASSWORD`, with `DB_NAME`, `DB_USER` and `DB_PASSWORD` taking precedence for the database, user and password).
 
-**Parameters**: Any `PostgresConnection` constructor parameters can be passed as keyword arguments to override environment variables.
+**Parameters**: `host`, `port`, `database`, `user` and `password`, plus any other `PostgresConnection` constructor parameter as a keyword argument.
 
 **Returns**: Configured `PostgresConnection` instance
 
 **Raises**:
 - `ImportError`: If psycopg2 unavailable
-- `RuntimeError`: If required environment variables missing
-
-**Environment variable priority**:
-1. Explicit kwargs passed to function
-2. `PG_*` environment variables
-3. `DB_*` environment variables (for backward compatibility)
+- `RuntimeError`: If the connection pool cannot be created
 
 **Example**:
 ```python
-# Uses environment variables PG_HOST, PG_PORT, PG_DATABASE, PG_USER, PG_PASSWORD
+# Connects to localhost:5432/metainformant as postgres
 client = get_db_client()
 
 # Override with explicit parameters
@@ -442,7 +437,7 @@ Context manager that yields a `PostgresConnection` and ensures cleanup.
 
 **Example**:
 ```python
-from metainformant.core import db  # canonical: metainformant.core.db
+from metainformant.core.data import db
 
 with db.get_connection(database="analysis") as conn_wrapper:
     with conn_wrapper.connect() as conn:
@@ -479,7 +474,7 @@ def progress_cb(*, bytes_written: int, total_bytes: int | None) -> None: ...
 ### Basic Database Connection and Query
 
 ```python
-from metainformant.core import db  # canonical: metainformant.core.db
+from metainformant.core.data import db
 
 def count_samples_by_species() -> dict[str, int]:
     """Count samples grouped by species."""
@@ -504,7 +499,7 @@ for species, count in counts.items():
 ### Transaction with Multiple Statements
 
 ```python
-from metainformant.core import db  # canonical: metainformant.core.db
+from metainformant.core.data import db
 
 def record_analysis_run(samples: list[str], parameters: dict) -> int:
     """Record a complete analysis run with samples and parameters."""
@@ -534,7 +529,7 @@ def record_analysis_run(samples: list[str], parameters: dict) -> int:
 ### Bulk Insert with Error Handling
 
 ```python
-from metainformant.core import db  # canonical: metainformant.core.db
+from metainformant.core.data import db
 import json
 
 def store_variant_calls(vcf_path: str, run_id: int) -> int:
@@ -576,7 +571,7 @@ def store_variant_calls(vcf_path: str, run_id: int) -> int:
 ### Connection Pool Tuning
 
 ```python
-from metainformant.core import db  # canonical: metainformant.core.db
+from metainformant.core.data import db
 
 # High-throughput pipeline: larger pool
 pool = db.PostgresConnection(
@@ -597,7 +592,7 @@ pool.close()
 
 ```python
 import os
-from metainformant.core import db
+from metainformant.core.data import db
 from metainformant.core.utils import config
 
 # Load database config from environment
@@ -622,7 +617,7 @@ else:
 
 ```python
 from contextlib import contextmanager
-from metainformant.core import db  # canonical: metainformant.core.db
+from metainformant.core.data import db
 
 @contextmanager
 def get_db_cursor():
@@ -644,7 +639,8 @@ with get_db_cursor() as cur:
 ### With I/O Module
 
 ```python
-from metainformant.core import db  # canonical: metainformant.core.db, io
+from metainformant.core import io
+from metainformant.core.data import db
 import json
 
 def export_query_to_json(query: str, output_path: str | Path) -> int:
@@ -668,7 +664,7 @@ print(f"Exported {count} records")
 ### With Configuration Module
 
 ```python
-from metainformant.core import db
+from metainformant.core.data import db
 from metainformant.core.utils import config
 
 def setup_database_from_config(config_path: str) -> None:
@@ -701,7 +697,7 @@ def setup_database_from_config(config_path: str) -> None:
 ### With Logging Module
 
 ```python
-from metainformant.core import db  # canonical: metainformant.core.db
+from metainformant.core.data import db
 from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -836,7 +832,7 @@ def bulk_import_pipeline(
 **Recovery pattern**:
 ```python
 import time
-from metainformant.core import db  # canonical: metainformant.core.db
+from metainformant.core.data import db
 
 def robust_query(query: str, params: tuple, max_retries: int = 3):
     for attempt in range(max_retries):
@@ -1046,7 +1042,7 @@ results = conn_wrapper.execute_query(
 
 **ALWAYS**:
 - Use environment variables
-- Consider a secrets manager (HashiCorp Vault, AWS Secrets Manager) for production
+- Consider a secrets manager (for example HashiCorp Vault) for production
 - Rotate credentials periodically
 - Use separate database users with minimal required privileges
 
@@ -1064,7 +1060,7 @@ PG_PASSWORD=dev_pass
 from dotenv import load_dotenv
 load_dotenv()  # Loads .env into os.environ
 
-from metainformant.core import db  # canonical: metainformant.core.db
+from metainformant.core.data import db
 # Now get_db_client() picks up loaded env vars
 ```
 
@@ -1178,7 +1174,7 @@ export TEST_DATABASE_AVAILABLE=1
 ```python
 # tests/conftest.py
 import pytest
-from metainformant.core import db  # canonical: metainformant.core.db
+from metainformant.core.data import db
 
 @pytest.fixture(scope="session")
 def db_pool():

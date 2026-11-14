@@ -481,7 +481,7 @@ def _parse_activity_value(raw: Any, allele: str, source: str | Path) -> float:
         raise ValueError(f"Allele {allele!r} in {source} has a non-numeric activity_value: {raw!r}")
     try:
         value = float(raw)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         raise ValueError(f"Allele {allele!r} in {source} has a non-numeric activity_value: {raw!r}") from None
     if not math.isfinite(value) or value < 0:
         raise ValueError(f"Allele {allele!r} in {source} has activity_value {raw!r}: it must be a finite number >= 0")

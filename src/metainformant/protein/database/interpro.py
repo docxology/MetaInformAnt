@@ -281,7 +281,7 @@ def batch_fetch_interpro_domains(uniprot_ids: List[str]) -> Dict[str, List[Dict[
 
 
 def parse_interpro_results(xml_content: str) -> List[Dict[str, Any]]:
-    """Parse InterPro XML results (legacy format).
+    """Parse InterProScan XML results.
 
     Args:
         xml_content: InterPro XML response

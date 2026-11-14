@@ -4,7 +4,7 @@
 > Fork this to start any new analysis project.
 
 [![MetaInformAnt CI](https://github.com/docxology/MetaInformAnt/actions/workflows/test.yml/badge.svg)](https://github.com/docxology/MetaInformAnt/actions/workflows/test.yml)
-[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/)
+[![Python 3.14+](https://img.shields.io/badge/python-3.14%2B-blue.svg)](https://www.python.org/)
 [![uv](https://img.shields.io/badge/env-uv-green)](https://astral.sh/uv)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -56,7 +56,7 @@ uv run pytest tests/ -v
 template_bioinformatics_project/
  .github/
  workflows/
- ci.yml # GitHub Actions CI (Python 3.11 + 3.12)
+ ci.yml # GitHub Actions CI (Python 3.14 + 3.15)
  AGENTS.md # AI agent responsibilities & standards
  CHANGELOG.md # Version history (Keep a Changelog format)
  SPEC.md # Living project specification

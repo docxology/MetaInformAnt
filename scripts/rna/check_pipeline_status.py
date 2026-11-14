@@ -35,6 +35,7 @@ from pathlib import Path
 # Bootstrap src path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "src"))
 
+from metainformant.rna.engine.campaign_lock import writer_status
 from metainformant.rna.engine.progress_db import ProgressDB
 from metainformant.rna.engine.provenance import current_downstream_steps, is_current_downstream
 from metainformant.rna.engine.species import configured_data_root, discover_species_names
@@ -64,9 +65,9 @@ def check_downstream(species: str, data_root: Path = DATA_ROOT) -> str:
 
 
 def check_writer_lock(data_root: Path) -> bool:
-    """Return whether a campaign-owned writer lock is present."""
+    """Return whether a campaign writer (producer, finalization or maintenance) holds the data root."""
 
-    return any((data_root / "results" / name).exists() for name in (".full_campaign.lock", ".finalization.lock"))
+    return bool(writer_status(data_root)["held"])
 
 
 # ---------- main ----------

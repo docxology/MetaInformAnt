@@ -1,6 +1,6 @@
 """Round-4 test-depth tests for singlecell data (preprocessing, integration) and doublet detection.
 
-Covers previously untested public APIs:
+Covers these public APIs:
 - data.preprocessing: identify_highly_variable_genes, remove_batch_effects
 - data.integration: combat_integration, integrate_multiple_batches (mnn/scanorama),
   evaluate_integration_quality
@@ -124,7 +124,7 @@ class TestCombatIntegration:
 
 
 # ---------------------------------------------------------------------------
-# bbknn_integration (single-dataset, batch-aware; previously untested)
+# bbknn_integration (single-dataset, batch-aware)
 # ---------------------------------------------------------------------------
 
 
@@ -148,8 +148,8 @@ class TestBbknnIntegration:
 
 
 # ---------------------------------------------------------------------------
-# integrate_multiple_batches (regression: mnn/scanorama branches previously
-# dropped batch_key, raising TypeError)
+# integrate_multiple_batches (regression: the mnn/scanorama branches pass
+# batch_key on instead of raising TypeError)
 # ---------------------------------------------------------------------------
 
 

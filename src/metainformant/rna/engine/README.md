@@ -8,47 +8,10 @@ before any discovery or scheduling work.
 
 ## Components
 
-For a separately qualified local recovery, `AMALGKIT_PROGRESS_DB_PATH` may
-select an already migrated, existing absolute nonsymlink progress database.
-`AMALGKIT_PROGRESS_DB_JOURNAL_MODE=DELETE` selects rollback journaling with
-verified `synchronous=FULL` and `mmap_size=0`. The default remains WAL at the
-data root. Invalid modes and absent, relative or symlinked override paths
-refuse rather than initializing a replacement store. Operators must preserve
-the original database and WAL/SHM files, verify a complete native SQLite
-backup, and attest the new storage root before activation. This option
-changes operational progress storage, not quantification inputs or results.
-
-The opt-in local `acquisition_frontier.py` scheduler separates acquisition,
-recovery and quantification pools. `AMALGKIT_LOCAL_FRONTIER_SIZE=48` bounds
-planned plus admitted identities; `AMALGKIT_LOCAL_RAW_RESERVATION_BYTES` bounds
-the sum of frozen compressed-size reservations held through the checkpoint.
-These are planning weights, not a measurement or hard ceiling on physical
-bytes: preexisting partials, size-estimation error and extraction/staging space
-need independent filesystem capacity checks. Missing/oversized reservations
-remain explicit unresolved tasks. With the option unset or zero, the existing
-whole-sample scheduler remains active.
-
-Every frontier transition is fsynced to the run's `frontier_events.jsonl` with
-manifest, selection and optional runtime source hashes. The manifest/selection,
-current validated files and progress database drive restart; the transition
-ledger is observational and never grants permission to skip validation. STOP
-prevents planned items from starting while acquired/recovering/ready items
-drain through the existing result journal and checkpoint. Four acquisition
-slots do not imply 48 active downloads, and four quant slots share the total
-thread budget.
-
-The local frontier can check existing current-contract quantifications while
-acquisition slots are busy. One synchronous reuse check runs at a time; it
-cannot download, extract or quantify. A hit retains the normal raw reservation,
-result journal and checkpoint sequence, and increments reused work only. A miss
-is probed once and remains ordinary bounded acquisition work. STOP and admission
-checks still apply. `reused_without_acquisition` counts this path; it does not
-increase newly quantified samples or measured network capacity.
-All checkpoint payload paths, including abundance, run information, H5 files
-and restored input witnesses, must be regular files inside their owned roots
-before content reads. A symlink or nonregular payload is a clean probe miss;
-the downstream checkpoint remains unchanged. Ready futures are drained between
-serial probe attempts, including misses.
+`AMALGKIT_PROGRESS_DB_JOURNAL_MODE=DELETE` selects rollback journaling for the
+progress database with verified `synchronous=FULL` and `mmap_size=0`; the
+default is WAL at the data root. Any other mode refuses before the database is
+created.
 
 | Module | Purpose |
 |---|---|
@@ -57,10 +20,10 @@ serial probe attempts, including misses.
 | `preflight.py` | Mandatory start-of-run environment preflight (data-root write probe, producer tools, kallisto compatibility, free-space floors, optional reuse dry-run) |
 | `process_observation.py` | Native confirmed absence/zombie checks for recovery observers; live or denied processes remain unresolved |
 | `progress_db.py` | Concurrent-safe SQLite sample state, exclusions, resume queries, and frozen-cohort migration |
-| `cohort.py` | Frozen cohort definition (`COHORT.json`), install, hash verification, producer task tables, data-root maintenance lock |
+| `cohort.py` | Frozen cohort definition (`COHORT.json`), install, hash verification, producer task tables |
 | `quant_import.py` | Plan/execute import of verified quantifications from other data roots (never overwrites) |
-| `campaign_status.py`, `campaign_status_io.py`, `campaign_status_cli.py` | Read-only frozen-inventory cloud/local status, complete stage marginals and per-sample transfer candidates; receipt/file presence is distinct from checksum validation |
-| `campaign_observation.py`, `campaign_observation_report.py`, `campaign_observation_cli.py` | Explicit manifest/phase journal capture, restore-bound new-output counts, isolated tables/figures/working supplement; operational evidence only |
+| `acquisition_manifest.py` | Hash-bound frozen acquisition snapshot loader (`snapshot.json` plus its `manifest.jsonl`) that cohort definition and install read |
+| `acquisition_order.py`, `acquisition_size_overlay.py` | Species-fair, size-banded or smallest-first acquisition order over frozen compressed FASTQ weights |
 | `progress_dashboard.py` | Mosaic PDF/PNG dashboard of per-species sample processing status rendered from the progress DB |
 | `exclusions.py` | CLI for recording and inspecting sample exclusions |
 | `workflow.py` | Public re-export hub for configuration, planning, and execution |
@@ -82,26 +45,8 @@ serial probe attempts, including misses.
 
 ## Key interfaces
 
-- `capture_campaign_observation()` captures stable control records and append-only
-  journal prefixes from explicit paths. Startup totals remain producer-reported;
-  new increments require matching restore/provenance contracts and abundance hashes.
-  `write_observation_bundle()` refuses live-root destinations and existing outputs.
-  The thin entry point is `scripts/rna/observe_acquisition.py`; optional transfer
-  observations are explicit inputs, never selected by modification time.
-
-- `acquisition_*` implements generic frozen local/AWS manifest acquisition,
-  disjoint allocations, stage-resource controls, replay journals, live regional
-  price quotation and explicit cost/time scenarios. Use the public facade
-  `metainformant.rna.amalgkit.acquisition` or `scripts/rna/acquisition.py`.
-  [Generic acquisition guide](../../../../docs/rna/GENERIC_ACQUISITION.md).
-  Library `run_manifest()` callers can checkpoint each successful or reused sample
-  through `on_quantified(species, accession)` and stop new admissions through
-  `should_stop()`. Callback failures propagate; stopped summaries retain the
-  unsubmitted task count.
-  Opt-in `AMALGKIT_PIPELINE_DEDICATED_RECOVERY=yes` uses `acquisition_lanes.py`
-  to isolate SRA recovery while retaining admission, storage and deadline
-  ownership through each sample's checkpoint. `AMALGKIT_NCBI_PREFETCH_FIRST=yes`
-  resumes verified archives inside the sample's raw tree before SSD extraction.
+- Producer acquisition settings: `AMALGKIT_NCBI_PREFETCH_FIRST=yes` resumes
+  verified archives inside the sample's raw tree before SSD extraction.
   `AMALGKIT_LOCAL_ENA_SCRATCH_DIR` enables bounded fresh SSD acquisition and
   serialized verified promotion to the selected data root. The opt-in
   `AMALGKIT_PIPELINE_DOWNLOAD_FIRST_PASS_SECONDS` reports `deferred_download`
@@ -110,38 +55,26 @@ serial probe attempts, including misses.
   local SRA extraction and reuse. SSD acquisition also requires record
   validation for retained inputs when the explicit flag is disabled. Promotion
   validates the prospective retained and extracted mate union before modifying
-  inputs. Conflicting extracted reads
-  remain in a unique `<accession>-conflict-*/output/` directory beside the
-  extraction workspace; recovery refuses invalid complete canonical inputs.
+  inputs. Conflicting extracted reads stay in a unique
+  `<accession>-conflict-*/output/` directory beside the extraction workspace;
+  recovery refuses invalid complete canonical inputs.
   [Transfer and preservation contract](../retrieval/README.md).
 
-- `acquisition_prerequisites.py` resolves native quantifier requirements from
-  frozen batch metadata before raw acquisition. `acquisition_references.py`
-  binds metadata target aliases to the existing reference checksum. Long-read
-  oarfish tasks require an amended frozen reference/tool/output contract; they
-  remain unresolved under the Kallisto-bound acquisition envelope. See the
-  [method boundary](../../../../docs/rna/HYMENOPTERA_METHODS.md#quantifier-and-reference-prerequisites).
-  Explicit 16S titles together with GENOMIC/PCR or METAGENOMIC/PCR metadata remain
-  unresolved for host-transcriptome quantification, without changing frozen
-  membership. `acquisition_order.py` interleaves unsealed current outputs with
-  species-fair, size-ordered acquisition; duplicate task identities are refused.
-  Reference preflight shares full index digests only within that invocation
-  when the resolved path, device, inode, size, modification time and change time
-  still match. Each distinct native index copy is hashed independently.
-  An unchanged invalid-SRA validation witness rejects extraction before waiting
-  for a fallback slot, so ENA recovery can proceed while another SRA is extracting.
-
-- `acquisition_scheduling.py` models new batches from explicit transfer/extraction/
-  quantification rates and records remaining-deadline refusals. Unknown sizes/rates
-  do not authorize new work. See the
-  [deadline planning contract](../../../../docs/rna/GENERIC_ACQUISITION.md#deadline-planning-for-new-admissions).
+- `acquisition_order.py` orders the producer's fresh acquisitions in global
+  size bands (`size_bands`), smallest first (`smallest_first`) or by
+  species-fair rotation (`species_order`); duplicate task identities are
+  refused. `reference_digest.IndexDigestCache` shares full index digests within
+  one producer only while the resolved path, device, inode, size, modification
+  time and change time still match; each distinct index copy is hashed
+  independently. An unchanged invalid-SRA validation witness rejects
+  extraction before waiting for a fallback slot, so ENA recovery can proceed
+  while another SRA is extracting.
 
 - `StreamingPipelineOrchestrator.run_all()` starts the bounded producer for a
   declared config set and returns a run summary. It holds the campaign writer
   lock (`campaign_lock.acquire(root, "producer")`) for the whole run and
   raises `CampaignLockBusy` before touching state when another writer (a
-  producer, an import, a live shell launcher's `results/.full_campaign.lock`
-  or the acquisition worker's `.acquisition.lock`) holds the root. Under the
+  producer, an import, a migration or a seal) holds the root. Under the
   lock it runs `run_campaign_preflight()` (data-root write probe, every
   producer tool on PATH, installed kallisto equal to the version and index
   format recorded in one `run_info.json` per species, free-space floors) and
@@ -151,8 +84,7 @@ serial probe attempts, including misses.
   which a producer without external-volume write access failed thousands of
   tasks before its first successful write.
   Startup then returns every `downloading`/`downloaded`/`quantifying` row and
-  every environment-class failure to `pending` (no age threshold:
-  `AMALGKIT_PIPELINE_STALE_DOWNLOADING_SECONDS` is ignored), keeps
+  every environment-class failure to `pending` (no age threshold), keeps
   `permanent_drop` rows excluded and runs the reuse dry-run: it classifies a
   deterministic sample (`--reuse-dry-run FRACTION`, else
   `AMALGKIT_PREFLIGHT_REUSE_DRY_RUN`, else 1% with `--cohort` and off
@@ -228,9 +160,9 @@ serial probe attempts, including misses.
 - `plan_workflow()` resolves the fixed per-species chain:
   `metadata → select → getfastq → integrate → quant → merge → wsfilter → finalize → sanity`.
 - `provenance.py` rejects missing, stale, or hash-mismatched receipts.
-- `durable_quant.py` preserves validated per-sample outputs in local and S3 stores;
-  `aws_completion.py` resumes byte-bounded missing-task partitions within a gross budget.
-  See [the durable quantification guide](../../../../docs/rna/DURABLE_QUANT.md).
+- `durable_quant.py` locks validated per-sample outputs into a content-addressed
+  directory store (`quant_storage.DirectoryStore`) and restores them after
+  verification. See [the durable quantification guide](../../../../docs/rna/DURABLE_QUANT.md).
 
 ## Python example
 
@@ -284,8 +216,8 @@ Without a cohort the producer scripts refuse an NCBI metadata refresh unless
 `--refresh-metadata` is given; `--max-gb` defaults to `AMALGKIT_MAX_SAMPLE_GB`
 (the launcher's budget), then `PIPELINE_MAX_GB`, then 1000.
 
-`ProgressDB.prune_species()` no longer deletes rows outside the task universe;
-it reports them. `migrate_to_cohort()` adds missing task rows, records cohort
+`ProgressDB.prune_species()` reports rows outside the task universe and
+deletes none. `migrate_to_cohort()` adds missing task rows, records cohort
 exclusions, resets environment-class failures (`RETRYABLE_ENVIRONMENT_CLASSES`;
 transfer failures only on request) to `pending` with the old message after a
 `reset-by-cohort-migration[<class>]` prefix, and binds the store to the cohort
@@ -310,53 +242,37 @@ Portable restoration accepts `verified_config_path` alongside the frozen referen
 index hash. It preserves original provenance and creates checksum-bound local
 configuration/reference witnesses for strict downstream classification. See
 [durable quantification](../../../../docs/rna/DURABLE_QUANT.md).
-# Whole-sample acquisition admission
+## Whole-sample acquisition admission
 
 `AMALGKIT_PIPELINE_ACQUISITION_SLOTS` optionally bounds simultaneous
 `download_fastq` calls separately from task workers, file connections and
-quantification slots. Zero retains the existing unlimited sample admission.
+quantification slots. Zero leaves sample admission unbounded.
 `AMALGKIT_PIPELINE_ACQUISITION_QUEUE_TIMEOUT_SECONDS` is a finite positive
 queue allowance (default 7,200 seconds). A queue expiry defers the task without
 touching its inputs. The first-pass clock starts after admission; no file
 request, retry, validation, or mate resets that clock. The lease is released
 before quantification and on every error path.
 
-The prepared local profile selects four acquisition slots for eight native
-file connections and two file workers per paired sample, with twelve task
-workers and four quantifiers. This reduces competition between samples for
-file leases; it does not increase the file cap or prove maximum bandwidth.
-A task may spend up to the queue allowance plus its acquisition allowance
-before quantification. STOP still drains admitted work without forced termination.
-
 ## Cross-species size bands
 
-The local launcher selects `AMALGKIT_LOCAL_ACQUISITION_ORDER=size_bands`.
-Known positive frozen compressed-size weights enter global bands ending at
-100 MiB, 500 MiB, 1 GiB, 2 GiB, 5 GiB and 20 GiB; larger known sizes follow,
-then unknown/nonpositive sizes. Species rotate inside each band, with smaller
-samples first within a species. Checkpoint verification stays interleaved.
-The general API and direct continuous runner retain `species_fair` by default.
-Unknown order settings fail before runtime controls or locks are written.
+The producer's default scheduling order is `size_bands`
+(`AMALGKIT_PIPELINE_SCHEDULING_ORDER` or `run_all_species.py
+--scheduling-order`). Known positive frozen compressed-size weights enter
+global bands ending at 100 MiB, 500 MiB, 1 GiB, 2 GiB, 5 GiB and 20 GiB;
+larger known sizes follow, then unknown/nonpositive sizes. Species rotate
+inside each band, with smaller samples first within a species. An unknown
+order raises `ValueError` when the resource profile is resolved.
 
 Bands govern admission order, not completion barriers, eligibility or remote
-bandwidth. Every selected identity appears once; held prerequisites stay held.
-Frozen size weights can contain metadata fallbacks and do not subtract retained
-local inputs or resumable parts. Only a new phase can use a new ordering policy;
-never rewrite an active partition or discard its download progress.
+bandwidth. Every selected identity appears once. Frozen size weights can
+contain metadata fallbacks and do not subtract retained local inputs or
+resumable parts.
 
-For strict ascending cross-species acquisition priority, select
-`AMALGKIT_LOCAL_ACQUISITION_ORDER=smallest_first`. This uses
-`plan_acquisition_order(..., global_size_order=True)`: positive frozen weights
-are globally sorted, ties use task identity, and nonpositive/unknown sizes come
-last. Checkpoint reuse remains interleaved. The launcher default stays
-`size_bands`; the explicit mode takes effect only in a new phase. Independent
-recovery pools, reservations and concurrent service can change start/completion
-order. Frozen weights are estimated total compressed sizes, not remaining
-network bytes; this policy does not alter validation, concurrency or deadlines.
-
-
-### Frozen size supplements
-
-Local bounded frontiers can fill zero estimated compressed FASTQ weights from an independently reviewed size supplement without changing the frozen task manifest, task IDs, references, metadata inputs, or checkpoint identity. Configure both AMALGKIT_LOCAL_SIZE_OVERLAY_PATH (an existing absolute nonsymlink file) and AMALGKIT_LOCAL_SIZE_OVERLAY_SHA256. The overlay binds the exact frozen manifest hash, preserves run/layout/reference identity, and requires positive per-mate byte counts and advertised MD5s from HTTPS ENA file URLs. It cannot replace positive frozen weights. Global ordering and raw reservation use the same immutable size map; actual download/FASTQ validation and service deadlines remain unchanged. Overlay file metadata is a planning estimate, not new validation of downloaded payloads. The runtime, active scope, frontier events, and worker result record its path/hash/count. Missing or conflicting configuration refuses rather than silently falling back.
+`smallest_first` uses `plan_acquisition_order(..., global_size_order=True)`:
+positive frozen weights are globally sorted, ties use task identity, and
+nonpositive/unknown sizes come last. Concurrent acquisition, recovery and
+quantification can change start and completion order. Frozen weights are
+estimated total compressed sizes, not remaining network bytes; the order does
+not alter validation, concurrency or deadlines.
 
 [Recovery observations and preservation](../../../../docs/rna/recovery.md) separates native liveness, raw DB custody, fixture deadlines and launch authority.

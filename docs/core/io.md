@@ -194,9 +194,9 @@ Load YAML file.
 
 Load TOML file.
 
-**Requires**: Python 3.11+ (`tomllib` stdlib) or `tomli` backport on older Python.
+**Uses**: the standard-library `tomllib`.
 
-**Raises**: `ImportError` if unavailable
+**Raises**: `metainformant.core.utils.errors.IOError` if the file cannot be read or parsed
 
 #### `dump_yaml(obj: Any, path: str | Path) -> None`
 
@@ -616,7 +616,6 @@ session.close()
 - `pandas`: `read_csv`, `write_csv`, `read_parquet`, `write_parquet`. Falls back to native CSV if missing.
 - `pyarrow` or `fastparquet`: Required for Parquet support (pandas uses one of these).
 - `PyYAML`: Full YAML support. Without it: `.yaml` files may fail unless simple enough for built-in parser.
-- `tomllib` (Python 3.11+) or `tomli`: TOML support.
 
 ## Common Pitfalls
 

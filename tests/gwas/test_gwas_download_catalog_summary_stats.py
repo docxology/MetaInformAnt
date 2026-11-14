@@ -284,7 +284,7 @@ def test_the_study_trait_and_pubmed_id_are_read() -> None:
     ],
 )
 def test_a_study_without_trait_or_publication_gives_none_instead_of_crashing(payload: str) -> None:
-    """``publicationInfo: null`` used to raise ``AttributeError`` on ``None.get``."""
+    """``publicationInfo: null`` gives ``None`` fields; it does not raise ``AttributeError`` on ``None.get``."""
     assert download.parse_catalog_study(payload) == {"trait": None, "pubmed_id": None}
 
 

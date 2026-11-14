@@ -33,8 +33,8 @@ jobs:
           **/pyproject.toml
           **/uv.lock
 
-    - name: Set up Python 3.12
-      run: uv python install 3.12
+    - name: Set up Python 3.14
+      run: uv python install 3.14
 
     - name: Run blocking security checks
       run: bash scripts/package/security_checks.sh

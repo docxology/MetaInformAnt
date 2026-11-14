@@ -166,7 +166,7 @@ class DependencyChecker:
         try:
             result = subprocess.run(check_command, shell=True, capture_output=True, text=True, timeout=10)
             available = result.returncode == 0
-        except (subprocess.TimeoutExpired, subprocess.SubprocessError):
+        except subprocess.TimeoutExpired, subprocess.SubprocessError:
             available = False
 
         return {

@@ -16,7 +16,6 @@ Amalgkit integration.
 - [End-to-end validation](END_TO_END_VALIDATION.md)
 - [Troubleshooting](TROUBLESHOOTING_RNA.md)
 - [External data-root setup](EXTERNAL_DRIVE_SETUP.md)
-- [Local processing rate and artifact inventory](LOCAL_PROCESSING_RATE.md)
 
 ## Amalgkit integration
 
@@ -35,5 +34,3 @@ Amalgkit integration.
 The project-specific executable analysis, current data inventory, evidence
 manifest, manuscript methods, and figure provenance are maintained in
 [`projects/hymenoptera_amalgkit`](../../projects/hymenoptera_amalgkit/README.md).
-
-- [2026-10-06 reference-bound campaign checkpoint](HYMENOPTERA_STATUS_20261006.md)

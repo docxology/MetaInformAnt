@@ -75,10 +75,9 @@ def _cross_validate(
     """Cross-validate a model and return mean score (larger is better; ``mse`` is negated).
 
     A scikit-learn estimator is scored by scikit-learn. Any other object with ``fit`` / ``predict`` (or no
-    scikit-learn) is cross-validated here, in contiguous folds. Errors from fitting or scoring propagate: a fold that
-    failed used to be scored 0.0 and averaged in (0.0 is the *best* possible negated MSE), and a scikit-learn
-    failure silently re-ran the pure-Python route, which itself returned 0.0 for every model because it appended to a
-    ``scores`` list that was never defined.
+    scikit-learn) is cross-validated here, in contiguous folds. Errors from fitting or scoring propagate: a failed
+    fold is never scored 0.0 and averaged in (0.0 is the *best* possible negated MSE), and a scikit-learn failure
+    does not fall back to the pure-Python route.
 
     Args:
         model: Model with fit/predict interface.

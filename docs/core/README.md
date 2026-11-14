@@ -53,10 +53,9 @@ from metainformant.core.io import paths
 from metainformant.core.utils import config
 ```
 
-The 0.4.0 release removed the former `metainformant.core.config`,
-`metainformant.core.paths`, and top-level DNA `sequences` import paths. New
-code should use the canonical paths above; callers migrating from the removed
-surface should follow [the migration guide](../MIGRATION_0.4.md).
+These are the only import paths for these helpers. The
+[0.4.0 migration guide](../MIGRATION_0.4.md) maps each removed path to its
+replacement.
 
 Regenerate and verify the public API inventory after changing a core module:
 

@@ -127,8 +127,8 @@ def plot_integrated_omics_heatmap(
         matplotlib Axes object
 
     Raises:
-        ValueError: If ``feature_names`` does not have one name per row of the stacked matrix. Its first
-            names used to be repeated for every matrix after the first, labelling their rows wrongly.
+        ValueError: If ``feature_names`` does not have one name per row of the stacked matrix (repeating its
+            first names for every matrix after the first would label their rows wrongly).
     """
     validation.validate_type(omics_data, dict, "omics_data")
     total_rows = sum(data.shape[0] for data in omics_data.values())
@@ -644,8 +644,7 @@ def create_interactive_multiomics_dashboard(
 
     Raises:
         ImportError: If plotly is not installed.
-        ValueError: If ``network_data`` is not a graph or an adjacency mapping, or has no node. (It used to
-            be replaced by a fixed three-point zig-zag, whatever the network was.)
+        ValueError: If ``network_data`` is not a graph or an adjacency mapping, or has no node.
     """
     if not HAS_PLOTLY or not make_subplots:
         raise ImportError("plotly required for interactive multi-omics dashboard")

@@ -104,9 +104,11 @@ transcriptomics_data = pd.read_csv("expression_matrix.csv", index_col=0)
 proteomics_data = pd.read_csv("protein_abundances.csv", index_col=0)
 
 multiomics_data = MultiOmicsData(
-    genomics=genomics_data,
-    transcriptomics=transcriptomics_data,
-    proteomics=proteomics_data
+    data={
+        "genomics": genomics_data,
+        "transcriptomics": transcriptomics_data,
+        "proteomics": proteomics_data,
+    },
 )
 
 print(f"Integrated {multiomics_data.n_samples} samples across {len(multiomics_data.layer_names)} omics layers")
@@ -194,8 +196,10 @@ expression_data = pd.read_csv("expression.tsv", index_col=0, sep="\t")
 
 # Add to multi-omics container
 multiomics_data = MultiOmicsData(
-    transcriptomics=expression_data,
-    # Add other omics data...
+    data={
+        "transcriptomics": expression_data,
+        # Add other omics data...
+    },
 )
 
 # Joint analysis with expression
@@ -215,8 +219,10 @@ transcriptomics_data = from_rna_expression("expression.tsv")
 
 # Create multi-omics dataset
 multiomics_data = MultiOmicsData(
-    genomics=genomics_data,
-    transcriptomics=transcriptomics_data
+    data={
+        "genomics": genomics_data,
+        "transcriptomics": transcriptomics_data,
+    },
 )
 ```
 
@@ -233,8 +239,10 @@ transcriptomics_data = from_rna_expression("expression.tsv")
 
 # Create multi-omics dataset
 multiomics_data = MultiOmicsData(
-    proteomics=proteomics_data,
-    transcriptomics=transcriptomics_data
+    data={
+        "proteomics": proteomics_data,
+        "transcriptomics": transcriptomics_data,
+    },
 )
 ```
 

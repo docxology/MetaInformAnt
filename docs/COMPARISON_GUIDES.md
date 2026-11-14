@@ -12,7 +12,7 @@ These guides provide full-module comparisons to help you select the right tool f
 
 | Guide | Focus | When to Read |
 |-------|-------|--------------|
-| **[Methods Matrix](comparisons/methods_matrix.md)** | All 30 modules compared across data types, scale, methods, outputs, best-use | **Start here** if you're unsure which module fits your data |
+| **[Methods Matrix](comparisons/methods_matrix.md)** | All 29 modules compared across data types, scale, methods, outputs, best-use | **Start here** if you're unsure which module fits your data |
 | **[DNA vs RNA vs Transcriptome](comparisons/dna_vs_rna_vs_transcriptome.md)** | dna, rna, singlecell, spatial, multiomics modules for transcriptomics | Choosing between bulk RNA-seq, scRNA-seq, or spatial methods |
 | **[GWAS vs Phenotype vs Multi-omics](comparisons/gwas_vs_phenotype_vs_multiomics.md)** | Study design, power, integration strategies for association studies | Designing genetic association studies or multi-omic integration |
 | **[Visualization Approaches](comparisons/visualization_approaches.md)** | 70+ plot types organized by domain, audience, interactivity | Choosing the right plot type for your data |
@@ -145,7 +145,7 @@ Choose appropriate distance metrics for different data types.
 |--------|-----------|------------|----------|----------------|
 | **Hamming** | Equal length sequences | Counts differences | SNP analysis | `dna.alignment.distances.hamming_distance` |
 | **Jukes-Cantor** | DNA sequences | Corrects multiple hits | Evolutionary distance | `dna.alignment.distances.jukes_cantor_distance` |
-| **Kimura 2-parameter** | DNA/RNA | Transition/transversion | Nucleotide evolution | `dna.alignment.distances.kimura_2p_distance` |
+| **Kimura 2-parameter** | DNA/RNA | Transition/transversion | Nucleotide evolution | `dna.alignment.distances.kimura_distance` |
 | **Tamura-Nei** | DNA sequences | Transition/transversion ratio `kappa` (simplified implementation) | Complex substitution models | `dna.alignment.distances.tamura_nei_distance` |
 
 #### Decision Factors
@@ -162,7 +162,7 @@ graph TD
 
     D --> Imetainformant.dna.alignment.distances.hammingDistance[metainformant.dna.alignment.distances.hamming_distance]
     F --> Kmetainformant.dna.alignment.distances.jukesCantorDistance[metainformant.dna.alignment.distances.jukes_cantor_distance]
-    G --> Lmetainformant.dna.alignment.distances.kimura2pDistance[metainformant.dna.alignment.distances.kimura_2p_distance]
+    G --> Lmetainformant.dna.alignment.distances.kimuraDistance[metainformant.dna.alignment.distances.kimura_distance]
     H --> Mmetainformant.dna.alignment.distances.tamuraNeiDistance[metainformant.dna.alignment.distances.tamura_nei_distance]
 ```
 

@@ -344,7 +344,7 @@ class TestVisualizationEdgeCases:
         try:
             fig = manhattan_plot(invalid_results)
             assert hasattr(fig, "savefig")
-        except (KeyError, ValueError):
+        except KeyError, ValueError:
             # This is acceptable - function should validate input
             pass
 
@@ -356,6 +356,6 @@ class TestVisualizationEdgeCases:
         try:
             fig = qq_plot(invalid_pvalues)
             assert hasattr(fig, "savefig")
-        except (ValueError, TypeError):
+        except ValueError, TypeError:
             # This is acceptable - function should validate input
             pass

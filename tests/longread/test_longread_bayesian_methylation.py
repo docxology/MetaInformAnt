@@ -1,8 +1,8 @@
 """Regression tests for the ``bayesian`` model of ``call_methylation_from_signal``.
 
-The option used to be ``(1 + p) / 3`` above 0.5 and ``p`` below it: a capped linear map
-(never above 2/3) that ignored every other read at the site. It is now a hierarchical
-Bayesian posterior. Reads at one ``(chrom, position, strand)`` share a methylation rate with a
+The option is a hierarchical Bayesian posterior, not a capped linear map of one read
+(such as ``(1 + p) / 3`` above 0.5 and ``p`` below it) that ignores every other read at
+the site. Reads at one ``(chrom, position, strand)`` share a methylation rate with a
 Beta prior, and each read's probability is its posterior given the LLRs of all reads at the site.
 
 The tests check that posterior against an exact enumeration of every methylated/unmethylated

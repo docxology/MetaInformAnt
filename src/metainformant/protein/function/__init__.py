@@ -2,6 +2,6 @@
 
 from __future__ import annotations
 
-from . import prediction
+from . import prediction_analysis, prediction_core
 
-__all__ = ["prediction"]
+__all__ = ["prediction_analysis", "prediction_core"]

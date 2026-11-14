@@ -8,11 +8,8 @@ from __future__ import annotations
 
 import hashlib
 
-from metainformant.math.population_genetics.statistics import (
-    deterministic_replicate_seeds,
-    normal_approximate_power,
-    sample_size_for_power,
-)
+from metainformant.core.utils.seeds import deterministic_replicate_seeds
+from metainformant.math.population_genetics.statistics import normal_approximate_power, sample_size_for_power
 from metainformant.simulation.models.sequences import deterministic_evolution_replicates
 
 

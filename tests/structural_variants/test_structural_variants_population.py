@@ -556,8 +556,8 @@ class TestSvAssociationTest:
 
         result = sv_association_test(genotypes, phenotypes)
         assert result["n_samples"] == 20
-        # The design matrix is singular: no effect size, standard error or p-value exists. (This test used to pin
-        # beta ~ 0, with a p-value of 1.0, as if the SV had been tested and found no effect.)
+        # The design matrix is singular: no effect size, standard error or p-value exists, so there is no
+        # beta ~ 0 with a p-value of 1.0, as if the SV had been tested and found no effect.
         assert math.isnan(result["beta"]) and math.isnan(result["se"]) and math.isnan(result["p_value"])
         assert "singular" in result["error"]
 

@@ -6,10 +6,8 @@ import numpy as np
 import pytest
 
 from metainformant.math.population_genetics.coalescent import (
-    coalescent_time_to_mrca,
     expected_coalescent_waiting_times,
     expected_pairwise_diversity,
-    expected_pairwise_diversity_from_theta,
     expected_segregating_sites,
     expected_sfs_counts,
     expected_time_to_mrca,
@@ -29,7 +27,6 @@ def test_basic_expectations_monotonic():
 
 def test_pairwise_diversity():
     assert expected_pairwise_diversity(1000, 1e-8) == 4 * 1000 * 1e-8
-    assert expected_pairwise_diversity_from_theta(0.01) == 0.01
 
 
 def test_watterson_and_expected_S():
@@ -64,7 +61,7 @@ def test_waiting_times_and_tajimas_D_stability():
     const = tajima_constants(10)
     assert const["a1"] > 0 and const["a2"] > 0
     # Tajima's D handles zero-variance gracefully
-    assert tajimas_D(0, 0.0, 10) == 0.0
+    assert tajimas_D(0.0, 0, 10) == 0.0
 
 
 def test_expected_time_to_mrca_simple():
@@ -81,16 +78,11 @@ def test_expected_total_branch_length_harmonic():
 def test_time_to_mrca_validation():
     with pytest.raises(ValueError, match="at least 2"):
         expected_time_to_mrca(1, 1000)
-    # A non-positive effective size has no coalescent time; it used to be reported as 0.0
+    # A non-positive effective size has no coalescent time, not 0.0
     with pytest.raises(ValueError, match="positive"):
         expected_time_to_mrca(5, 0.0)
     with pytest.raises(ValueError, match="positive"):
         expected_time_to_mrca(5, -10.0)
-
-
-def test_watterson_theta_alias_conventions():
-    assert watterson_theta(10, 5) == pytest.approx(watterson_theta(n_sites=5, n_segregating_sites=10))
-    assert watterson_theta(10, 5) == pytest.approx(watterson_theta(num_segregating_sites=10, sample_size=5))
 
 
 def test_watterson_theta_validation():
@@ -98,8 +90,6 @@ def test_watterson_theta_validation():
         watterson_theta(10, 1)
     with pytest.raises(ValueError, match="negative"):
         watterson_theta(-1, 5)
-    with pytest.raises(ValueError, match="must be provided"):
-        watterson_theta(None, 5)
 
 
 def test_waiting_times_validation():
@@ -107,10 +97,6 @@ def test_waiting_times_validation():
         expected_coalescent_waiting_times(1, 1000.0)
     with pytest.raises(ValueError, match="positive"):
         expected_coalescent_waiting_times(5, 0.0)
-
-
-def test_coalescent_time_to_mrca_alias():
-    assert coalescent_time_to_mrca(6, 500.0) == pytest.approx(expected_time_to_mrca(6, 500.0))
 
 
 def test_simulate_coalescent_basic_shape():
@@ -126,7 +112,7 @@ def test_simulate_coalescent_basic_shape():
 
 
 def test_simulate_coalescent_two_samples():
-    # Regression: n_samples=2 previously crashed via watterson_theta(1000, 1)
+    # Regression: n_samples=2 does not crash
     np.random.seed(7)
     res = simulate_coalescent(2, effective_size=1000.0, mutation_rate=0.1)
     assert len(res["coalescence_times"]) == 1

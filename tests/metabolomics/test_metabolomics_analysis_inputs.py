@@ -45,8 +45,8 @@ class TestDifferentialAbundanceNeedsTwoSamplesPerGroup:
         with pytest.raises(ValueError, match=r"at least 2 samples in each group"):
             differential_abundance(self.DATA, group_a, group_b)
 
-    def test_one_versus_one_no_longer_reports_p_equal_zero(self) -> None:
-        # two single observations that differ: used to give t = -inf and p = 0.0
+    def test_one_versus_one_does_not_report_p_equal_zero(self) -> None:
+        # two single observations that differ would give t = -inf and p = 0.0
         with pytest.raises(ValueError, match=r"got 1 in group A and 1 in group B"):
             differential_abundance(np.array([[1.0, 2.0]]), [0], [1])
 

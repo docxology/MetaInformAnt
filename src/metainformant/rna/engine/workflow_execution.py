@@ -604,7 +604,7 @@ def execute_workflow(
                         if target_link.is_symlink() or target_link.exists():
                             target_link.unlink()
                         target_link.symlink_to(real_gf_dir.resolve())
-                        logger.info(f"Symlinked getfastq dir for compatibility: {real_gf_dir} -> {target_link}")
+                        logger.info(f"Symlinked getfastq dir into the work directory: {real_gf_dir} -> {target_link}")
                     except Exception as e:
                         logger.warning(f"Could not symlink getfastq dir: {e}")
 

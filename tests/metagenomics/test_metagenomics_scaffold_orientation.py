@@ -165,7 +165,7 @@ class TestJoinsAreChosenCarefully:
         assert len(scaffold.gaps) == 2
 
     def test_a_repeat_shared_by_two_contigs_anchors_nothing(self) -> None:
-        """Reads from a segment present in both contigs used to link the contigs to each other."""
+        """Reads from a segment present in both contigs do not link the contigs to each other."""
         rng = random.Random(4)
         shared = _random_dna(150, rng)
         a = Contig("a", _random_dna(600, rng) + shared, coverage=10.0)

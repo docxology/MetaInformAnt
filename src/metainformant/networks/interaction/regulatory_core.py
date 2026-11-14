@@ -388,7 +388,7 @@ def regulatory_network_stability_analysis(regulatory_graph: Any, **kwargs: Any) 
         try:
             avg_path = nx.average_shortest_path_length(regulatory_graph.to_undirected())
             analysis["structural_stability"]["average_path_length"] = avg_path
-        except (nx.NetworkXError, ZeroDivisionError):
+        except nx.NetworkXError, ZeroDivisionError:
             analysis["structural_stability"]["average_path_length"] = None
 
     else:
@@ -462,25 +462,14 @@ class GeneRegulatoryNetwork:
     networks, including transcription factor-target relationships and regulatory motifs.
     """
 
-    def __init__(self, name_or_graph: Any = "", name: str = "", **kwargs: Any):
+    def __init__(self, name: str = "", **kwargs: Any):
         """Initialize a gene regulatory network.
 
         Args:
-            name_or_graph: Name string or NetworkX DiGraph for backward compatibility
-            name: Name of the network (used when name_or_graph is a graph)
+            name: Name of the network
         """
-        if isinstance(name_or_graph, str):
-            self.name = name_or_graph or name
-            if HAS_NETWORKX:
-                self.graph = nx.DiGraph()
-            else:
-                self.graph = None
-        else:
-            # Backward compat: first arg is a graph
-            self.graph = name_or_graph
-            self.name = name
-            if self.graph is None and HAS_NETWORKX:
-                self.graph = nx.DiGraph()
+        self.name = name
+        self.graph: Any = nx.DiGraph() if HAS_NETWORKX else None
         self.metadata: Dict[str, Any] = {}
         self.tf_targets: Dict[str, List[str]] = {}  # Map of transcription factors to their targets
         self.target_tfs: Dict[str, List[str]] = {}  # Map of targets to their regulators
@@ -800,10 +789,6 @@ class GeneRegulatoryNetwork:
         self._gene_metadata[gene_id].update(kwargs)
         self._gene_metadata[gene_id]["is_tf"] = True
 
-    def get_regulators(self, target: str) -> List[str]:
-        """Get regulators of a target gene. Alias for get_target_regulators."""
-        return self.get_target_regulators(target)
-
     def filter_by_confidence(self, threshold: float) -> "GeneRegulatoryNetwork":
         """Filter regulations by confidence/weight threshold.
 
@@ -862,7 +847,7 @@ class GeneRegulatoryNetwork:
         Returns:
             BiologicalNetwork instance
         """
-        from metainformant.networks.analysis.graph import BiologicalNetwork
+        from metainformant.networks.analysis.graph_core import BiologicalNetwork
 
         bio_net = BiologicalNetwork()
         if HAS_NETWORKX and self.graph is not None:

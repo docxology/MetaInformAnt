@@ -5,7 +5,7 @@ This script discovers and runs all example files in the examples/ directory head
 validates their outputs, and generates a comprehensive test report.
 
 Usage:
-    python scripts/test_examples.py [--verbose] [--domain DOMAIN] [--continue-on-error]
+    python scripts/test_examples/test_examples.py [--verbose] [--domain DOMAIN] [--continue-on-error]
 
 Arguments:
     --verbose: Enable verbose output
@@ -13,9 +13,9 @@ Arguments:
     --continue-on-error: Continue testing even if individual examples fail
 """
 
-# Backward compatibility wrapper - imports from the modular package.  When
-# this file is executed directly, its filename would otherwise shadow the
-# ``test_examples`` package name.
+# Command-line entry point for the modular package.  When this file is
+# executed directly, its filename would otherwise shadow the ``test_examples``
+# package name, so the repository root goes first on sys.path.
 if __package__ in {None, ""}:
     from pathlib import Path
 

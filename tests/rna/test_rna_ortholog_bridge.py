@@ -87,7 +87,7 @@ def og_fixture(tmp_path: Path) -> Path:
 
 
 def test_default_policy_all_joined_and_wrappers_agree(tmp_path: Path, og_fixture: Path) -> None:
-    """The default 'all-joined' policy preserves the historical join behaviour."""
+    """The default 'all-joined' policy joins every mapped transcript, and the wrappers agree."""
 
     result = build_orthogroup_bridge(og_fixture, ORTHODB_PROTEINS, PROT_TO_RNA, EXPRESSION_TIDS, TAXON_TO_SPECIES)
     assert isinstance(result, OrthogroupBridgeResult)

@@ -30,13 +30,10 @@ def _three_blobs(per_blob: int = 20, n_genes: int = 6) -> np.ndarray:
 
 @pytest.mark.skipif(LEIDEN_STACK_AVAILABLE, reason="needs an environment without the Leiden stack")
 class TestWithoutTheLeidenStack:
-    def test_feature_matrix_raises_instead_of_running_kmeans(self) -> None:
-        with pytest.raises(ImportError, match="allow_kmeans_fallback"):
-            leiden_clustering(feature_matrix=_three_blobs())
-
-    def test_positional_matrix_raises_too(self) -> None:
-        with pytest.raises(ImportError, match="leidenalg"):
+    def test_matrix_input_raises_instead_of_running_kmeans(self) -> None:
+        with pytest.raises(ImportError, match="leidenalg") as excinfo:
             leiden_clustering(_three_blobs())
+        assert "allow_kmeans_fallback" in str(excinfo.value)
 
     def test_single_cell_data_is_pointed_at_kmeans_clustering(self) -> None:
         with pytest.raises(ImportError, match="kmeans_clustering"):
@@ -62,7 +59,7 @@ class TestWithTheLeidenStack:
     def test_matrix_input_is_partitioned_by_leiden(self) -> None:
         X = _three_blobs()
 
-        labels = leiden_clustering(feature_matrix=X, resolution=1.0, n_neighbors=8, random_state=0)
+        labels = leiden_clustering(X, resolution=1.0, n_neighbors=8, random_state=0)
         data = leiden_clustering(SingleCellData(X), resolution=1.0, n_neighbors=8, random_state=0)
 
         np.testing.assert_array_equal(labels, data.obs["leiden_cluster"].to_numpy())
@@ -84,4 +81,4 @@ class TestMatrixValidation:
 
     def test_one_dimensional_input_is_rejected(self) -> None:
         with pytest.raises(ValueError, match="2D"):
-            leiden_clustering(feature_matrix=np.zeros(5))
+            leiden_clustering(np.zeros(5))

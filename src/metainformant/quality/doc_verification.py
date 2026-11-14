@@ -22,6 +22,7 @@ import os
 import re
 import sys
 import textwrap
+import tomllib
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
@@ -38,8 +39,6 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_REPORT_PATH = Path("output") / "cross_code_verification_report.md"
 KNOWN_OPTIONAL_IMPORT_ROOTS = {
     "anndata",
-    "boto3",
-    "botocore",
     "cloudscraper",
     "dask",
     "cryptography",
@@ -475,11 +474,6 @@ class CodeValidator:
     def _load_entry_points(self, pyproject: Path) -> Set[str]:
         """Load CLI entry points from pyproject.toml."""
         entry_points = set()
-        if sys.version_info >= (3, 11):
-            import tomllib
-        else:
-            import tomli as tomllib
-
         try:
             with open(pyproject, "rb") as f:
                 data = tomllib.load(f)
@@ -583,7 +577,7 @@ class CodeValidator:
         try:
             spec = importlib.util.find_spec(module_name)
             return spec is not None
-        except (ImportError, ValueError):
+        except ImportError, ValueError:
             return False
 
     def _import_exists(self, module_name: str, item_name: str) -> bool:
@@ -621,7 +615,7 @@ class CodeValidator:
             try:
                 if importlib.util.find_spec(f"{module_name}.{item_name}") is not None:
                     return True
-            except (ImportError, ModuleNotFoundError, ValueError):
+            except ImportError, ModuleNotFoundError, ValueError:
                 pass
             return hasattr(module, item_name)
         except ImportError:
@@ -914,7 +908,7 @@ def _active_markdown(paths: List[Path], include_historical: bool = False) -> Ite
                 continue
             try:
                 lines = md.read_text(encoding="utf-8").splitlines()
-            except (OSError, UnicodeDecodeError):
+            except OSError, UnicodeDecodeError:
                 continue
             if not include_historical and _is_historical_snapshot(lines):
                 continue
@@ -1182,7 +1176,7 @@ def call_signature_mismatch(callee: object, call: ast.Call) -> Optional[str]:
         return f"{type(callee).__name__!r} object is not callable"
     try:
         signature = inspect.signature(callee)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return None
     placeholder = object()
     keywords = {kw.arg: placeholder for kw in call.keywords if kw.arg is not None}
@@ -1315,7 +1309,7 @@ def find_broken_doc_links(
         if document not in anchors:
             try:
                 anchors[document] = markdown_anchors(document.read_text(encoding="utf-8").splitlines())
-            except (OSError, UnicodeDecodeError):
+            except OSError, UnicodeDecodeError:
                 anchors[document] = set()
         return anchors[document]
 

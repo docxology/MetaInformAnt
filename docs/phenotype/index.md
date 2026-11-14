@@ -178,7 +178,7 @@ scores = genetic_risk_score([[0, 1, 2], [1, 1, 0], [2, 0, 1]], effect_sizes=[0.2
 print(scores["risk_scores"])  # one score per sample
 
 # Heritability screen (Haseman-Elston) against a samples x samples kinship matrix
-genotypes = generate_genotype_matrix(n_individuals=n, n_sites=200, rng=rng)
+genotypes = generate_genotype_matrix(n_individuals=n, n_snps=200, rng=rng)
 kinship = compute_kinship_matrix(genotypes)["kinship_matrix"]
 h2 = phenotype_heritability_screen(phenotypes, kinship)  # dicts with phenotype, h2, se, p_value
 

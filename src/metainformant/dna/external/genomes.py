@@ -69,8 +69,8 @@ def download_genome_package(
             ``gbff``, ``rna``, ``protein``, ``cds``, ``seq-report``) or API names (``GENOME_FASTA``, ...).
             The assembly data report is always included.  When omitted or empty, genomic FASTA is
             explicitly requested in a fully hydrated package. File types are sent as repeated
-            ``include_annotation_type`` parameters; the ``include`` parameter this
-            function used to send is not part of the v2 API and was silently ignored by the server.
+            ``include_annotation_type`` parameters (an ``include`` parameter is not part of the v2 API
+            and the server ignores it silently).
         client: A configured :class:`NCBIDatasetsClient` (API key, timeout); one is created if omitted.
 
     Returns:
@@ -236,7 +236,6 @@ def get_genome_metadata(accession: str, *, client: Optional[NCBIDatasetsClient] 
         ValueError: If the accession is not a versioned GenBank/RefSeq assembly accession.
         AssemblyNotFoundError: If NCBI has no report for the accession.
         requests.RequestException: If the request fails (:class:`NCBIDatasetsError`, a subclass).
-            This function used to return ``{"accession": ..., "error": ...}`` instead of raising.
 
     Example:
         >>> # This would query NCBI for metadata
@@ -288,7 +287,6 @@ def list_genome_assemblies(
     Raises:
         ValueError: If an argument is invalid.
         requests.RequestException: If the request fails (:class:`NCBIDatasetsError`, a subclass).
-            This function used to return ``[]`` on failure.
 
     Example:
         >>> # Search for human genome assemblies
@@ -337,7 +335,6 @@ def download_reference_genome(
         ValueError: If an argument is invalid.
         RuntimeError: If a reference genome was found but could not be downloaded.
         requests.RequestException: If the lookup fails (:class:`NCBIDatasetsError`, a subclass).
-            Lookup and download failures used to be logged and returned as ``None``.
 
     Example:
         >>> # Download the honey bee reference genome
@@ -372,9 +369,8 @@ def _download_from_ftp(ftp_url: str, output_dir: Path) -> Path:
     """Download the file at ``ftp_url`` into ``output_dir``.
 
     Raises:
-        ValueError: If the URL names a directory (empty path or trailing ``/``) instead of a file.  The
-            download used to be saved as an invented ``genome_data.fasta``, or under the name of the last
-            directory, which turned an FTP listing into a "genome".
+        ValueError: If the URL names a directory (empty path or trailing ``/``) instead of a file, so that
+            an FTP directory listing is never saved as a "genome".
     """
     parsed = urlparse(ftp_url)
     if not parsed.path or parsed.path.endswith("/"):
@@ -438,7 +434,6 @@ def get_chromosome_lengths(
         NCBIContactError: If no contact is available and ``allow_anonymous`` is false.
         AssemblyNotFoundError: If NCBI lists no sequences for the accession.
         requests.RequestException: If the request fails (:class:`NCBIDatasetsError`, a subclass).
-            Failures, a missing assembly and a missing Biopython used to return ``{}``.
 
     Example:
         >>> # Get sequence lengths for the honey bee genome (requires network)

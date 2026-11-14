@@ -107,16 +107,6 @@ class BiologicalRegressor:
         """Whether the model has been fitted."""
         return self._is_fitted
 
-    @property
-    def is_trained(self) -> bool:
-        """Alias for is_fitted."""
-        return self._is_fitted
-
-    @is_trained.setter
-    def is_trained(self, value: bool) -> None:
-        """Setter for backward compatibility."""
-        self._is_fitted = value
-
     def fit(self, X: np.ndarray, y: np.ndarray, feature_names: Optional[List[str]] = None) -> BiologicalRegressor:
         """Fit the regressor.
 

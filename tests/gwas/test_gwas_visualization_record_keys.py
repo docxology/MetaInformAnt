@@ -396,7 +396,7 @@ def test_ideogram_infers_lengths_from_every_position_spelling():
     assert result["status"] == "success"
     assert result["chromosomes"] == ["1", "2"]
     lengths = [text.get_text() for text in plt.gcf().axes[0].texts if text.get_text().endswith(" Mb")]
-    assert lengths == ["3.0 Mb", "2.0 Mb"]  # the ``position`` spelling used to read as 0
+    assert lengths == ["3.0 Mb", "2.0 Mb"]  # the ``position`` spelling does not read as 0
 
 
 def test_ideogram_does_not_invent_a_chromosome_or_a_length():

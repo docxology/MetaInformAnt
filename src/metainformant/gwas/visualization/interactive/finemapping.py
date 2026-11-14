@@ -310,8 +310,8 @@ def conditional_analysis_plot(
     markers = ["o", "s", "^", "D", "v", "<", ">", "p"]
 
     # Positions and -log10 p of every round, read under every spelling of the shared helpers. A result without a
-    # p-value (a failed test) is not drawn: it used to be drawn as p = 1; one without a position used to be placed
-    # at its index in the list.
+    # p-value (a failed test) is not drawn (not as p = 1), and one without a position is not placed at its index
+    # in the list.
     rounds: List[tuple] = []
     n_without_p_value = 0
     for round_idx, (results, label) in enumerate(zip(assoc_results_list, labels)):

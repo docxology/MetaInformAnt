@@ -109,14 +109,6 @@ class EventSequence:
         self.events = sorted(events or [], key=lambda e: e.timestamp)
         self.metadata = metadata or {}
 
-    def filter_by_time(self, start_time: datetime | float, end_time: datetime | float) -> EventSequence:
-        """Alias for filter_by_time_range with flexible input."""
-        if isinstance(start_time, (int, float)):
-            start_time = datetime.fromtimestamp(start_time)
-        if isinstance(end_time, (int, float)):
-            end_time = datetime.fromtimestamp(end_time)
-        return self.filter_by_time_range(start_time, end_time)
-
     def filter_by_domain(self, domain: str) -> EventSequence:
         """Filter events by domain.
 
@@ -129,16 +121,20 @@ class EventSequence:
         filtered_events = [e for e in self.events if e.domain == domain]
         return EventSequence(self.person_id, filtered_events)
 
-    def filter_by_time_range(self, start: datetime, end: datetime) -> EventSequence:
+    def filter_by_time_range(self, start: datetime | float, end: datetime | float) -> EventSequence:
         """Filter events by time range.
 
         Args:
-            start: Start timestamp (inclusive)
-            end: End timestamp (inclusive)
+            start: Start timestamp (inclusive), a ``datetime`` or POSIX seconds
+            end: End timestamp (inclusive), a ``datetime`` or POSIX seconds
 
         Returns:
             New EventSequence with filtered events
         """
+        if isinstance(start, (int, float)):
+            start = datetime.fromtimestamp(start)
+        if isinstance(end, (int, float)):
+            end = datetime.fromtimestamp(end)
         filtered_events = [e for e in self.events if start <= e.timestamp <= end]
         return EventSequence(self.person_id, filtered_events)
 

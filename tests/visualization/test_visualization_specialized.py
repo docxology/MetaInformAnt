@@ -72,8 +72,8 @@ class TestVennDiagram:
 
         sets = {name: {1, 2} for name in ("A", "B", "C", "D")}
         # The same ValueError whether or not matplotlib-venn is installed: an unsupported number of sets is not
-        # a missing dependency (it used to be an ImportError that told the user to install a package that
-        # cannot draw more than three sets either).
+        # a missing dependency, so no ImportError tells the user to install a package that cannot draw more
+        # than three sets either.
         with pytest.raises(ValueError, match="two or three sets"):
             plot_venn_diagram(sets)
         plt.close("all")

@@ -53,7 +53,6 @@ verification outputs under `output/`.
 | Structural Variants | [structural_variants/](structural_variants/) | SV detection |
 | Metabolomics | [metabolomics/](metabolomics/) | Mass spectrometry, pathways |
 | Menu | [menu/](menu/) | Interactive CLI system |
-| Cloud | [cloud/](cloud/) | GCP deployment, Docker pipelines |
 | eQTL | [eqtl/](eqtl/) | Expression QTL integration |
 | Agents | [agents/](agents/) | Per-module agent rules for development |
 | Tasks | [tasks/](tasks/) | Goal-oriented workflow guides |

@@ -121,12 +121,13 @@ def translate(rna_seq: str, genetic_code: int = 1) -> str:
     return "".join(amino_acids)
 
 
-def translate_dna(dna_seq: str, genetic_code: int = 1) -> str:
+def translate_dna(dna_seq: str, genetic_code: int = 1, *, to_stop: bool = False) -> str:
     """Translate DNA sequence to amino acid sequence.
 
     Args:
         dna_seq: DNA sequence string
         genetic_code: Genetic code table number (1 = standard)
+        to_stop: If True, return only the residues before the first stop codon (``*``)
 
     Returns:
         Amino acid sequence string
@@ -135,7 +136,10 @@ def translate_dna(dna_seq: str, genetic_code: int = 1) -> str:
 
     # Transcribe DNA to RNA first
     rna_seq = transcribe(dna_seq)
-    return translate(rna_seq, genetic_code)
+    protein = translate(rna_seq, genetic_code)
+    if to_stop:
+        return protein.split("*", 1)[0]
+    return protein
 
 
 def find_orfs(rna_seq: str, min_length: int = 30) -> List[Tuple[int, int, str]]:
@@ -392,16 +396,15 @@ def get_genetic_code(code_id: int = 1) -> Dict[str, str]:
     return GENETIC_CODE.copy()
 
 
-def back_translate(protein_seq: str, codon_usage: Dict[str, float] | None = None) -> str:
+def back_translate(protein_seq: str) -> str:
     """Back-translate an amino acid sequence to DNA with a fixed codon table.
 
-    Uses a hardcoded one-codon-per-amino-acid table; ``codon_usage`` is
-    accepted for API compatibility but is NOT used (no organism-specific
-    codon optimization is performed).
+    Uses a hardcoded one-codon-per-amino-acid table, with no organism-specific
+    codon optimization. :func:`metainformant.dna.expression.codon.back_translate`
+    takes per-residue codon preferences.
 
     Args:
         protein_seq: Amino acid sequence
-        codon_usage: Unused; retained for API compatibility
 
     Returns:
         DNA sequence

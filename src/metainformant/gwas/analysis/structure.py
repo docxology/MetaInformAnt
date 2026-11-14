@@ -7,9 +7,10 @@ including PCA computation and kinship matrix calculation.
 from __future__ import annotations
 
 import json
-import math
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union, cast
+from typing import Any, Dict, List, Optional, Union, cast
+
+import numpy as np
 
 from metainformant.core.utils import logging
 
@@ -24,7 +25,7 @@ def _is_empty_genotype_matrix(genotype_matrix: Any) -> bool:
         return int(genotype_matrix.size) == 0
     try:
         return len(genotype_matrix) == 0 or len(genotype_matrix[0]) == 0
-    except (TypeError, IndexError):
+    except TypeError, IndexError:
         return True
 
 
@@ -45,9 +46,6 @@ def compute_pca(genotype_matrix: List[List[int]], n_components: int = 10) -> Dic
         return {"status": "failed", "error": "Empty genotype matrix", "pcs": [], "explained_variance_ratio": []}
 
     try:
-        # Use numpy if available for efficient computation (SVD)
-        import numpy as np
-
         # Convert to numpy array (impute missing -1 with mean)
         # genotype_matrix is n_samples x n_variants
         X = np.array(genotype_matrix, dtype=float)
@@ -90,105 +88,6 @@ def compute_pca(genotype_matrix: List[List[int]], n_components: int = 10) -> Dic
         explained_variance_ratio = (eigenvalues[:n_comp] / total_variance).tolist()
 
         logger.info(f"PCA completed (SVD): {n_comp} components computed")
-
-        return {
-            "status": "success",
-            "pcs": pcs,
-            "explained_variance_ratio": explained_variance_ratio,
-            "n_components": n_comp,
-        }
-
-    except ImportError:
-        logger.warning("Numpy not found. Using slow pure-Python PCA implementation.")
-        # Fallback to existing pure Python implementation (legacy code below)
-        pass
-
-    # --- Pure Python Fallback ---
-    if _is_empty_genotype_matrix(genotype_matrix):
-        return {"status": "failed", "error": "Empty genotype matrix", "pcs": [], "explained_variance_ratio": []}
-
-    n_samples = len(genotype_matrix)
-    n_variants = len(genotype_matrix[0])
-
-    logger.info(f"Computing PCA on {n_samples} samples x {n_variants} variants (Pure Python)")
-
-    try:
-        # Handle missing data by imputation (replace -1 with variant mean)
-        imputed_matrix = []
-        for sample_gts in genotype_matrix:
-            imputed_gts = []
-            for gt in sample_gts:
-                if gt < 0:
-                    # Impute with 1 (heterozygous) as simple approach
-                    imputed_gts.append(1)
-                else:
-                    imputed_gts.append(gt)
-            imputed_matrix.append(imputed_gts)
-
-        # Transpose to [variant][sample] for centering
-        transposed = [[imputed_matrix[s][v] for s in range(n_samples)] for v in range(n_variants)]
-
-        # Center by variant (subtract mean)
-        centered_matrix = []
-        for variant_gts in transposed:
-            mean = sum(variant_gts) / len(variant_gts) if variant_gts else 0
-            centered = [gt - mean for gt in variant_gts]
-            centered_matrix.append(centered)
-
-        # Compute covariance matrix (sample x sample)
-        # Note: This computes variant covariance which is HUGE if M >> N.
-        # This implementation is inefficient for GWAS data.
-        covariance_matrix = _compute_covariance_matrix(centered_matrix)
-
-        # Compute eigenvalues and eigenvectors
-        eigenvalues, eigenvectors = _simple_eigen_decomposition(covariance_matrix)
-
-        # Sort by eigenvalue magnitude (descending)
-        eigen_pairs = list(zip(eigenvalues, eigenvectors))
-        eigen_pairs.sort(key=lambda x: abs(x[0]), reverse=True)
-
-        # Extract requested number of components
-        # Ensure we return at least n_components (or n_samples) even with low-rank data
-        n_comp = min(n_components, n_samples)
-
-        # Pad eigen_pairs if we don't have enough
-        while len(eigen_pairs) < n_comp:
-            # Add zero eigenvalue with random eigenvector
-            zero_vec = [0.0] * n_variants
-            if len(zero_vec) > 0:
-                zero_vec[len(eigen_pairs) % len(zero_vec)] = 1.0
-            eigen_pairs.append((0.0, zero_vec))
-
-        # Build PC scores: for each sample, its score on each PC
-        pcs = []
-        explained_variance = []
-
-        for i in range(n_comp):
-            eigenvalue, eigenvector = eigen_pairs[i]
-            explained_variance.append(abs(eigenvalue))
-
-        # Calculate explained variance ratio
-        total_variance = sum(abs(ev) for ev, _ in eigen_pairs)
-        if total_variance > 0:
-            explained_variance_ratio = [ev / total_variance for ev in explained_variance]
-        else:
-            explained_variance_ratio = [1.0 / n_comp] * n_comp  # Equal distribution if no variance
-
-        # PC scores per sample: project samples onto principal components
-        # pcs[sample_idx] = [pc1_score, pc2_score, ...]
-        pcs = []
-        for sample_idx in range(n_samples):
-            sample_scores = []
-            for i in range(n_comp):
-                _, eigenvector = eigen_pairs[i]
-                # Project this sample onto the eigenvector
-                score = sum(
-                    centered_matrix[v][sample_idx] * eigenvector[v] for v in range(min(n_variants, len(eigenvector)))
-                )
-                sample_scores.append(score)
-            pcs.append(sample_scores)
-
-        logger.info(f"PCA completed: {n_comp} components computed")
 
         return {
             "status": "success",
@@ -358,144 +257,78 @@ def _vanraden_kinship(genotype_matrix: List[List[int]]) -> List[List[float]]:
     n_variants = len(genotype_matrix)
     n_samples = len(genotype_matrix[0])
 
-    try:
-        import numpy as np
+    # Convert to numpy array
+    X = np.array(genotype_matrix, dtype=float)
 
-        # Convert to numpy array
-        X = np.array(genotype_matrix, dtype=float)
+    # Handle missing data (< 0)
+    # Compute allele frequencies on valid data
+    # Creates a mask of valid entries
+    mask = X >= 0
 
-        # Handle missing data (< 0)
-        # Compute allele frequencies on valid data
-        # Creates a mask of valid entries
-        mask = X >= 0
+    # We need to compute p for each variant based on valid entries
+    # p = sum(g) / (2 * count)
+    # Avoid division by zero
+    counts = 2.0 * np.sum(mask, axis=1)
+    sums = np.sum(np.where(mask, X, 0), axis=1)
 
-        # We need to compute p for each variant based on valid entries
-        # p = sum(g) / (2 * count)
-        # Avoid division by zero
-        counts = 2.0 * np.sum(mask, axis=1)
-        sums = np.sum(np.where(mask, X, 0), axis=1)
+    # Initialize p with 0.5 (or fit) for variants with no data
+    p = np.zeros(n_variants)
+    valid_idx = counts > 0
+    p[valid_idx] = sums[valid_idx] / counts[valid_idx]
 
-        # Initialize p with 0.5 (or fit) for variants with no data
-        p = np.zeros(n_variants)
-        valid_idx = counts > 0
-        p[valid_idx] = sums[valid_idx] / counts[valid_idx]
+    # Filter monomorphic
+    valid_p_mask = (p > 0.0) & (p < 1.0)
 
-        # Filter monomorphic
-        valid_p_mask = (p > 0.0) & (p < 1.0)
+    if not np.any(valid_p_mask):
+        return np.eye(n_samples).tolist()
 
-        if not np.any(valid_p_mask):
-            return np.eye(n_samples).tolist()
+    # Filter genotype matrix to valid variants
+    X = X[valid_p_mask, :]
+    p = p[valid_p_mask]
 
-        # Filter genotype matrix to valid variants
-        X = X[valid_p_mask, :]
-        p = p[valid_p_mask]
+    # Update n_variants
+    n_variants = X.shape[0]
 
-        # Update n_variants
-        n_variants = X.shape[0]
+    # Impute missing values with 2*p (mean)
+    # Z = X - 2p
+    # If X is missing, Z = 0 (mean centered)
+    # So we can replace missing X with 2p, then subtract 2p -> 0
 
-        # Impute missing values with 2*p (mean)
-        # Z = X - 2p
-        # If X is missing, Z = 0 (mean centered)
-        # So we can replace missing X with 2p, then subtract 2p -> 0
+    # Reshape p for broadcasting (n_variants, 1)
+    p_col = p.reshape(-1, 1)
 
-        # Reshape p for broadcasting (n_variants, 1)
-        p_col = p.reshape(-1, 1)
+    # Replace missing with mean (2*p)
+    # We need to iterate or use careful masking.
+    # X is (variants, samples)
+    # missing locations:
+    missing_mask = ~mask[valid_p_mask, :]
 
-        # Replace missing with mean (2*p)
-        # We need to iterate or use careful masking.
-        # X is (variants, samples)
-        # missing locations:
-        missing_mask = ~mask[valid_p_mask, :]
+    # Create Z matrix
+    Z = X.copy()
 
-        # Create Z matrix
-        Z = X.copy()
+    # Fill missing with 2*p
+    # Create a matrix of means
+    means = 2.0 * p_col
+    # Broadcast standard numpy way if possible, or use where
+    # Z[missing_mask] approach requires matching shapes which is tricky with boolean index
+    # Easier: Z = np.where(missing, means, X)
+    Z = np.where(missing_mask, means, Z)
 
-        # Fill missing with 2*p
-        # Create a matrix of means
-        means = 2.0 * p_col
-        # Broadcast standard numpy way if possible, or use where
-        # Z[missing_mask] approach requires matching shapes which is tricky with boolean index
-        # Easier: Z = np.where(missing, means, X)
-        Z = np.where(missing_mask, means, Z)
+    # Subtract mean (2*p)
+    Z = Z - means
 
-        # Subtract mean (2*p)
-        Z = Z - means
+    # Compute scaling: 2 * sum(p * (1-p))
+    scaling = float(2.0 * np.sum(p * (1.0 - p)))
 
-        # Compute scaling: 2 * sum(p * (1-p))
-        scaling = float(2.0 * np.sum(p * (1.0 - p)))
-
-        if scaling <= 0:
-            return np.eye(n_samples).tolist()
-
-        # Compute Kinship: K = Z.T @ Z / scaling
-        # Z is (variants, samples). Z.T is (samples, variants)
-        # Result is (samples, samples)
-        K = np.matmul(Z.T, Z) / scaling
-
-        return cast(List[List[float]], K.tolist())
-
-    except ImportError:
-        pass
-
-    # --- Pure Python Fallback ---
-    # Compute allele frequencies per variant
-    allele_freqs = []
-    valid_variant_indices = []
-    for v_idx, locus in enumerate(genotype_matrix):
-        valid = [g for g in locus if g >= 0]
-        if len(valid) == 0:
-            continue
-        freq = sum(valid) / (2.0 * len(valid))
-        # Skip monomorphic loci (p=0 or p=1) as they contribute nothing
-        if freq <= 0.0 or freq >= 1.0:
-            continue
-        allele_freqs.append(freq)
-        valid_variant_indices.append(v_idx)
-
-    if not allele_freqs:
-        # Fallback: return identity if no valid variants
-        return [[1.0 if i == j else 0.0 for j in range(n_samples)] for i in range(n_samples)]
-
-    # Compute scaling factor: 2 * sum(p_i * (1-p_i))
-    scaling = 2.0 * sum(p * (1.0 - p) for p in allele_freqs)
     if scaling <= 0:
-        return [[1.0 if i == j else 0.0 for j in range(n_samples)] for i in range(n_samples)]
+        return np.eye(n_samples).tolist()
 
-    # Build Z matrix (centered genotypes) and compute G = ZZ'/scaling
-    # Z[sample_i][variant_k] = genotype[variant_k][sample_i] - 2*p_k
-    # For missing genotypes, substitute 0 (mean-centered value)
-    kinship = [[0.0] * n_samples for _ in range(n_samples)]
+    # Compute Kinship: K = Z.T @ Z / scaling
+    # Z is (variants, samples). Z.T is (samples, variants)
+    # Result is (samples, samples)
+    K = np.matmul(Z.T, Z) / scaling
 
-    for k, v_idx in enumerate(valid_variant_indices):
-        locus = genotype_matrix[v_idx]
-        freq_k = allele_freqs[k]
-        two_p = 2.0 * freq_k
-
-        # Compute centered genotypes for this variant
-        z = []
-        for s in range(n_samples):
-            g = locus[s]
-            if g < 0:
-                z.append(0.0)  # impute to mean (centered = 0)
-            else:
-                z.append(float(g) - two_p)
-
-        # Accumulate outer product: kinship += z * z' (rank-1 update)
-        for i in range(n_samples):
-            if z[i] == 0.0:
-                continue
-            for j in range(i, n_samples):
-                val = z[i] * z[j]
-                kinship[i][j] += val
-                if i != j:
-                    kinship[j][i] += val
-
-    # Scale by 2*sum(p*(1-p))
-    for i in range(n_samples):
-        for j in range(n_samples):
-            kinship[i][j] /= scaling
-
-    return kinship
+    return cast(List[List[float]], K.tolist())
 
 
 def _ibs_kinship(genotype_matrix: List[List[int]]) -> List[List[float]]:
@@ -532,11 +365,12 @@ def _ibs_kinship(genotype_matrix: List[List[int]]) -> List[List[float]]:
 def _astle_kinship(genotype_matrix: List[List[int]]) -> List[List[float]]:
     """Compute kinship matrix using the Astle-Balding standardization.
 
-    Note: with the current standardization ``(g - 2p) / sqrt(2p(1-p))`` and
+    Note: with the standardization ``(g - 2p) / sqrt(2p(1-p))`` and
     per-locus-pair normalization by the valid-locus count, this is numerically
-    identical to the Yang GRM implemented in ``_yang_kinship``; the two entry
-    points are kept for API stability. (A weighted Astle-Balding variant would
-    normalize by the sum of ``2p(1-p)`` across loci instead.)
+    identical to the Yang GRM implemented in ``_yang_kinship``; both estimators
+    are named in the literature, so both method names are offered. (A weighted
+    Astle-Balding variant would normalize by the sum of ``2p(1-p)`` across loci
+    instead.)
 
     Args:
         genotype_matrix: Genotype matrix (variants x samples)
@@ -597,101 +431,3 @@ def _yang_kinship(genotype_matrix: List[List[int]]) -> List[List[float]]:
                 kinship[j][i] = kinship_value
 
     return kinship
-
-
-def _compute_covariance_matrix(matrix: List[List[float]]) -> List[List[float]]:
-    """Compute covariance matrix from data matrix.
-
-    Args:
-        matrix: Data matrix (features x samples)
-
-    Returns:
-        Covariance matrix
-    """
-    try:
-        import numpy as np
-
-        return cast(List[List[float]], np.cov(matrix).tolist())
-    except ImportError:
-        pass
-
-    n_features = len(matrix)
-    n_samples = len(matrix[0])
-
-    cov_matrix = [[0.0] * n_features for _ in range(n_features)]
-
-    # Compute means
-    means = [sum(row) / n_samples for row in matrix]
-
-    # Compute covariance
-    for i in range(n_features):
-        for j in range(n_features):
-            cov = 0.0
-            for k in range(n_samples):
-                cov += (matrix[i][k] - means[i]) * (matrix[j][k] - means[j])
-            cov /= n_samples - 1
-            cov_matrix[i][j] = cov
-
-    return cov_matrix
-
-
-def _simple_eigen_decomposition(matrix: List[List[float]]) -> Tuple[List[float], List[List[float]]]:
-    """Perform eigenvalue decomposition using power iteration method.
-
-    This is a pure Python implementation for cases where numpy is not available.
-    Uses power iteration to find dominant eigenvectors.
-
-    Args:
-        matrix: Square covariance matrix as list of lists
-
-    Returns:
-        Tuple of (eigenvalues, eigenvectors)
-    """
-    n = len(matrix)
-    if n == 0:
-        return [], []
-
-    eigenvalues = []
-    eigenvectors = []
-
-    # Work with a copy of the matrix for deflation
-    work_matrix = [row[:] for row in matrix]
-
-    # Find top eigenvalues/eigenvectors using power iteration
-    for _ in range(min(n, 10)):  # Find up to 10 eigenvalues
-        # Initialize random vector
-        v = [1.0 / math.sqrt(n)] * n
-
-        # Power iteration
-        for _ in range(100):  # Max iterations
-            # Matrix-vector multiply
-            new_v = [0.0] * n
-            for i in range(n):
-                for j in range(n):
-                    new_v[i] += work_matrix[i][j] * v[j]
-
-            # Compute eigenvalue estimate (Rayleigh quotient)
-            eigenvalue = sum(new_v[i] * v[i] for i in range(n))
-
-            # Normalize
-            norm = math.sqrt(sum(x * x for x in new_v))
-            if norm < 1e-10:
-                break
-            v = [x / norm for x in new_v]
-
-        # Compute final eigenvalue
-        Av = [sum(work_matrix[i][j] * v[j] for j in range(n)) for i in range(n)]
-        eigenvalue = sum(Av[i] * v[i] for i in range(n))
-
-        if abs(eigenvalue) < 1e-10:
-            break
-
-        eigenvalues.append(eigenvalue)
-        eigenvectors.append(v)
-
-        # Deflate matrix: A = A - eigenvalue * v * v^T
-        for i in range(n):
-            for j in range(n):
-                work_matrix[i][j] -= eigenvalue * v[i] * v[j]
-
-    return eigenvalues, eigenvectors

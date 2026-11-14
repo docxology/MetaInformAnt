@@ -138,7 +138,7 @@ def generate_qc_report(pipeline_result: Any) -> QCReport:
     for step in steps:
         if step.name == "trim_adapters" and step.result is not None:
             if isinstance(step.result, list):
-                # a read counts as trimmed when bases were cut at either end (the end alone used to be missed)
+                # a read counts as trimmed when bases were cut at either end (the end alone included)
                 adapter_trimmed = sum(
                     1
                     for r in step.result

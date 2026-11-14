@@ -7,7 +7,9 @@ the per-species default workflow.
 
 from __future__ import annotations
 
+import fcntl
 import json
+import os
 import re
 from pathlib import Path
 
@@ -37,6 +39,48 @@ RETIRED_PATHS = (
     REPO_ROOT / "src" / "metainformant" / "rna" / "engine" / "monitoring.py",
     REPO_ROOT / "src" / "metainformant" / "rna" / "engine" / "progress_tracker.py",
     REPO_ROOT / "src" / "metainformant" / "rna" / "engine" / "tui_workflow.py",
+    REPO_ROOT / "scripts" / "rna" / "aws_acquisition_startup.sh",
+    REPO_ROOT / "scripts" / "rna" / "hymenoptera_status.py",
+    *(
+        REPO_ROOT / "src" / "metainformant" / "rna" / "engine" / f"{name}.py"
+        for name in (
+            "acquisition_allocation",
+            "acquisition_aws_policy",
+            "acquisition_estimates",
+            "acquisition_pricing",
+            "acquisition_scheduling",
+            "aws_completion",
+            "aws_fleet",
+            "aws_inputs",
+            "aws_resources",
+            "campaign_status",
+            "campaign_status_cli",
+            "campaign_status_io",
+            "legacy_quant_recovery",
+            "source_resolution",
+            "acquisition_cli",
+            "acquisition_frontier",
+            "acquisition_lanes",
+            "acquisition_prerequisites",
+            "acquisition_references",
+            "acquisition_sample",
+            "acquisition_snapshot",
+            "acquisition_worker",
+            "acquisition_worker_cli",
+            "campaign_observation",
+            "campaign_observation_cli",
+            "campaign_observation_report",
+            "completion_inventory",
+        )
+    ),
+    REPO_ROOT / "src" / "metainformant" / "rna" / "amalgkit" / "acquisition.py",
+    REPO_ROOT / "src" / "metainformant" / "rna" / "integration",
+    REPO_ROOT / "scripts" / "rna" / "acquisition.py",
+    REPO_ROOT / "scripts" / "rna" / "acquisition_worker.py",
+    REPO_ROOT / "scripts" / "rna" / "observe_acquisition.py",
+    REPO_ROOT / "scripts" / "rna" / "install_r_deps.R",
+    REPO_ROOT / "docs" / "rna" / "GENERIC_ACQUISITION.md",
+    REPO_ROOT / "docs" / "rna" / "LOCAL_PROCESSING_RATE.md",
 )
 ACTIVE_SURFACE = (
     REPO_ROOT / "scripts" / "rna",
@@ -50,7 +94,12 @@ RETIRED_REFERENCE = re.compile(
     r"run_workflow(?:_tui)?\.py|run_workflow_for_species|"
     r"metainformant\.rna\.orchestration|orchestration_multi_species|"
     r"metainformant\.rna\.engine\.(?:monitoring|progress_tracker|tui_workflow)|"
-    r"(?<!Streaming)\bPipelineOrchestrator\b|\bAK_(?:THREADS|WORK_DIR|LOG_DIR)\b"
+    r"(?<!Streaming)\bPipelineOrchestrator\b|\bAK_(?:THREADS|WORK_DIR|LOG_DIR)\b|"
+    r"\bacquisition_(?:worker|frontier|lanes|prerequisites|references|sample|cli)\b|campaign_observation|"
+    r"completion_inventory\.py|engine\.completion_inventory|\bfreeze_inventory\b|observe_acquisition|"
+    r"GENERIC_ACQUISITION|LOCAL_PROCESSING_RATE|\brun_manifest\b|install_r_deps|\.acquisition\.lock|"
+    r"\bwarn_auto_install_ignored\b|\bconfigured_progress_db_path\b|AMALGKIT_LOCAL_SIZE_OVERLAY|"
+    r"AMALGKIT_LOCAL_FRONTIER_SIZE|AMALGKIT_LOCAL_RAW_RESERVATION_BYTES|AMALGKIT_PIPELINE_DEDICATED_RECOVERY"
 )
 
 
@@ -121,24 +170,27 @@ def test_legacy_quant_cleanup_is_idempotent_and_lock_guarded(tmp_path: Path) -> 
     legacy = quant_root / "SRR_legacy"
     legacy.mkdir(parents=True)
     (legacy / "abundance.tsv").write_text("target_id\ttpm\n")
-    results = tmp_path / "results"
-    results.mkdir()
-    (results / ".full_campaign.lock").mkdir()
 
-    with pytest.raises(SystemExit, match="active writer lock"):
-        cleanup_main(
-            [
-                "--data-root",
-                str(tmp_path),
-                "--archive-legacy-quant",
-                "--legacy-quant-only",
-                "--execute",
-                "--manifest",
-                str(tmp_path / "blocked.json"),
-            ]
-        )
+    # Another process's writer flock on the data root (a separate open file description conflicts like one).
+    holder = os.open(tmp_path / ".campaign.flock", os.O_RDWR | os.O_CREAT, 0o644)
+    try:
+        fcntl.flock(holder, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        with pytest.raises(SystemExit, match="active writer lock"):
+            cleanup_main(
+                [
+                    "--data-root",
+                    str(tmp_path),
+                    "--archive-legacy-quant",
+                    "--legacy-quant-only",
+                    "--execute",
+                    "--manifest",
+                    str(tmp_path / "blocked.json"),
+                ]
+            )
+    finally:
+        os.close(holder)
+    assert legacy.exists()
 
-    (results / ".full_campaign.lock").rmdir()
     manifest = tmp_path / "archived.json"
     assert (
         cleanup_main(

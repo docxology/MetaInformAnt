@@ -109,10 +109,10 @@ class TestBismarkCovLayout:
     """``load_methylation_cov`` must read the real Bismark layout, not an invented one.
 
     A Bismark coverage file is tab-separated with no header and the columns
-    ``chromosome, start, end, methylation percentage, count methylated, count unmethylated``. The loader used to
-    read column 3 as a strand and column 6 as the *total*, so ``chr1 100 100 75.0 15 5`` aborted the whole load
-    ("total_reads must be >= 15, got 5") and a minority-methylated site such as ``chr1 200 200 25.0 5 15`` was
-    silently read as 15 reads instead of 20.
+    ``chromosome, start, end, methylation percentage, count methylated, count unmethylated``. Reading column 3
+    as a strand and column 6 as the *total* would make ``chr1 100 100 75.0 15 5`` abort the whole load
+    ("total_reads must be >= 15, got 5") and silently read a minority-methylated site such as
+    ``chr1 200 200 25.0 5 15`` as 15 reads instead of 20.
     """
 
     @staticmethod
@@ -174,7 +174,7 @@ class TestBismarkCovLayout:
         assert load_methylation_cov(path, min_coverage=21) == {}
 
     def test_a_coverage_file_has_no_strand(self, tmp_path: Path) -> None:
-        # the strand used to be read from column 3, which in this format is the end coordinate
+        # the strand is not read from column 3, which in this format is the end coordinate
         data = load_methylation_cov(self._write(tmp_path, "chr1\t100\t100\t75.0\t15\t5\n"))
 
         assert data["chr1"][0].strand == MethylationSite("chr1", 100, 15, 20).strand
@@ -284,7 +284,7 @@ class TestCpGIslands:
         assert [island["chromosome"] for island in islands] == ["chr1"]  # the AT-only chr3 has none
         (island,) = islands
         # The edges are resolved to the base: the island starts at the C of its first CpG and ends at the G of its last
-        # (they used to be the edges of the merged windows, up to a window beyond the planted island)
+        # (not the edges of the merged windows, up to a window beyond the planted island)
         assert (island["start"], island["end"]) == (500, 900)
         assert island["length"] == island["end"] - island["start"] == 400
         assert island["gc_content"] >= 0.5
@@ -292,7 +292,7 @@ class TestCpGIslands:
         assert island["cpg_count"] == 200
 
     def test_methylation_levels_cannot_create_islands(self) -> None:
-        # Dense, highly methylated sites over a sequence with no CpG at all used to be reported as an island
+        # Dense, highly methylated sites over a sequence with no CpG at all are not an island
         sites = {"chr1": [_site("chr1", 1000 + i * 20, 9, 10) for i in range(20)]}
         sequences = {"chr1": "AT" * 1000}
 

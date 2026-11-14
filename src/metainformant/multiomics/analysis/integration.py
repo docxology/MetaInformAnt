@@ -47,47 +47,18 @@ class MultiOmicsData:
         sample_ids: List[str] | None = None,
         feature_ids: Dict[str, List[str]] | None = None,
         metadata: pd.DataFrame | None = None,
-        # Legacy aliases for individual omics types
-        genomics: pd.DataFrame | None = None,
-        transcriptomics: pd.DataFrame | None = None,
-        proteomics: pd.DataFrame | None = None,
-        epigenomics: pd.DataFrame | None = None,
-        metabolomics: pd.DataFrame | None = None,
-        dna_data: pd.DataFrame | None = None,
-        rna_data: pd.DataFrame | None = None,
-        protein_data: pd.DataFrame | None = None,
     ):
         """Initialize multi-omics data container.
 
         Args:
-            data: Dictionary mapping omics type to data matrix
+            data: Dictionary mapping omics type (layer name, e.g. ``"genomics"`` or
+                ``"transcriptomics"``) to a samples x features data matrix
             sample_ids: Common sample identifiers
             feature_ids: Feature identifiers for each omics type
-            genomics: DNA/genomics data (legacy parameter)
-            transcriptomics: RNA data (legacy parameter)
-            proteomics: Protein data (legacy parameter)
-            epigenomics: Epigenetic data (legacy parameter)
-            metabolomics: Metabolomics data (legacy parameter)
-            dna_data: Alias for genomics
-            rna_data: Alias for transcriptomics
-            protein_data: Alias for proteomics
+            metadata: Optional per-sample metadata table
         """
-        # Handle legacy parameters
         if data is None:
             data = {}
-
-        # Add legacy parameters to data dict
-        # Use explicit is not None checks to avoid DataFrame truth value ambiguity
-        legacy_mapping = {
-            "genomics": genomics if genomics is not None else dna_data,
-            "transcriptomics": transcriptomics if transcriptomics is not None else rna_data,
-            "proteomics": proteomics if proteomics is not None else protein_data,
-            "epigenomics": epigenomics,
-            "metabolomics": metabolomics,
-        }
-        for key, value in legacy_mapping.items():
-            if value is not None and key not in data:
-                data[key] = value
 
         if not data:
             raise ValueError("At least one omics layer must be provided")
@@ -189,10 +160,6 @@ class MultiOmicsData:
         if layer_name not in self.data:
             raise KeyError(f"Layer '{layer_name}' not available. Available layers: {self.layer_names}")
         return self.data[layer_name]
-
-    def get_common_samples(self) -> List[str]:
-        """Get samples present in all omics types."""
-        return self.samples
 
     def __getattr__(self, name: str) -> Any:
         """Allow direct attribute access to layers by name (e.g., .transcriptomics)."""
@@ -316,22 +283,13 @@ class MultiOmicsData:
 
 def integrate_omics_data(
     data: Optional[Dict[str, Union[pd.DataFrame, str, Path]]] = None,
-    dna_data: pd.DataFrame | None = None,
-    rna_data: pd.DataFrame | None = None,
-    protein_data: pd.DataFrame | None = None,
-    epigenome_data: pd.DataFrame | None = None,
-    metabolomics_data: pd.DataFrame | None = None,
     **kwargs: Any,
 ) -> "MultiOmicsData":
     """Integrate data from multiple omics types.
 
     Args:
-        data: Dictionary mapping omics type to data (DataFrame or file path)
-        dna_data: DNA-related data (variants, copy number, etc.)
-        rna_data: RNA expression data
-        protein_data: Protein abundance data
-        epigenome_data: Epigenetic data (methylation, ChIP-seq, etc.)
-        metabolomics_data: Metabolomics data
+        data: Dictionary mapping omics type (layer name, e.g. ``"dna"``, ``"rna"``,
+            ``"protein"``) to data (DataFrame or path to a .csv, .tsv or .parquet file)
         **kwargs: Additional integration parameters
 
     Returns:
@@ -343,74 +301,47 @@ def integrate_omics_data(
     sample_mapping = kwargs.pop("sample_mapping", None)
     feature_mapping = kwargs.pop("feature_mapping", None)
 
-    # Handle dict input
-    if data is not None:
-        # Process dict - load files if needed
-        processed_data = {}
-        for key, value in data.items():
-            if isinstance(value, (str, Path)):
-                # Load from file
-                path = Path(value)
-                if path.suffix == ".csv":
-                    processed_data[key] = pd.read_csv(path, index_col=0)
-                elif path.suffix == ".tsv":
-                    processed_data[key] = pd.read_csv(path, sep="\t", index_col=0)
-                elif path.suffix == ".parquet":
-                    processed_data[key] = pd.read_parquet(path)
-                else:
-                    raise errors.ValidationError(f"Unsupported file format: {path.suffix}")
+    if data is None:
+        raise errors.ValidationError("At least one omics dataset must be provided")
+
+    # Process dict - load files if needed
+    processed_data = {}
+    for key, value in data.items():
+        if isinstance(value, (str, Path)):
+            # Load from file
+            path = Path(value)
+            if path.suffix == ".csv":
+                processed_data[key] = pd.read_csv(path, index_col=0)
+            elif path.suffix == ".tsv":
+                processed_data[key] = pd.read_csv(path, sep="\t", index_col=0)
+            elif path.suffix == ".parquet":
+                processed_data[key] = pd.read_parquet(path)
             else:
-                processed_data[key] = value
+                raise errors.ValidationError(f"Unsupported file format: {path.suffix}")
+        else:
+            processed_data[key] = value
 
-        if sample_mapping:
-            for layer, mapping in sample_mapping.items():
-                if layer in processed_data:
-                    processed_data[layer] = processed_data[layer].rename(index=mapping)
-
-        if feature_mapping:
-            for layer, mapping in feature_mapping.items():
-                if layer in processed_data:
-                    processed_data[layer] = processed_data[layer].rename(columns=mapping)
-
-        # Load metadata from file if it's a path
-        if "metadata" in kwargs and isinstance(kwargs["metadata"], (str, Path)):
-            meta_path = Path(kwargs["metadata"])
-            if meta_path.suffix == ".csv":
-                kwargs["metadata"] = pd.read_csv(meta_path, index_col=0)
-            elif meta_path.suffix == ".tsv":
-                kwargs["metadata"] = pd.read_csv(meta_path, sep="\t", index_col=0)
-            elif meta_path.suffix == ".parquet":
-                kwargs["metadata"] = pd.read_parquet(meta_path)
-
-        return MultiOmicsData(data=processed_data, **kwargs)
-
-    # Handle legacy individual params
-    omics_data = {
-        "dna": dna_data,
-        "rna": rna_data,
-        "protein": protein_data,
-        "epigenome": epigenome_data,
-        "metabolomics": metabolomics_data,
-    }
-
-    # Filter out None values
-    available_omics = {k: v for k, v in omics_data.items() if v is not None}
     if sample_mapping:
         for layer, mapping in sample_mapping.items():
-            if layer in available_omics:
-                available_omics[layer] = available_omics[layer].rename(index=mapping)
+            if layer in processed_data:
+                processed_data[layer] = processed_data[layer].rename(index=mapping)
 
     if feature_mapping:
         for layer, mapping in feature_mapping.items():
-            if layer in available_omics:
-                available_omics[layer] = available_omics[layer].rename(columns=mapping)
+            if layer in processed_data:
+                processed_data[layer] = processed_data[layer].rename(columns=mapping)
 
-    if not available_omics:
-        raise errors.ValidationError("At least one omics dataset must be provided")
+    # Load metadata from file if it's a path
+    if "metadata" in kwargs and isinstance(kwargs["metadata"], (str, Path)):
+        meta_path = Path(kwargs["metadata"])
+        if meta_path.suffix == ".csv":
+            kwargs["metadata"] = pd.read_csv(meta_path, index_col=0)
+        elif meta_path.suffix == ".tsv":
+            kwargs["metadata"] = pd.read_csv(meta_path, sep="\t", index_col=0)
+        elif meta_path.suffix == ".parquet":
+            kwargs["metadata"] = pd.read_parquet(meta_path)
 
-    logger.info(f"Integrating {len(available_omics)} omics types: {list(available_omics.keys())}")
-
-    return MultiOmicsData(data=available_omics, **kwargs)
+    return MultiOmicsData(data=processed_data, **kwargs)
 
 
 def joint_pca(
@@ -594,7 +525,6 @@ def _impute_column_means(values: np.ndarray, layer: str) -> np.ndarray:
 def canonical_correlation(
     multiomics_data: Union["MultiOmicsData", Dict[str, pd.DataFrame]],
     layers: Optional[Tuple[str, str]] = None,
-    layer_pair: Optional[Tuple[str, str]] = None,
     n_components: int = 10,
     regularization: float = 0.0,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
@@ -617,7 +547,6 @@ def canonical_correlation(
     Args:
         multiomics_data: MultiOmicsData object or dictionary of omics datasets
         layers: Tuple of (layer1, layer2) to correlate. Required if more than 2 layers.
-        layer_pair: Alias for ``layers``.
         n_components: Number of canonical components. Fewer are returned when the layers have
             fewer features, or too low a rank, to support that many pairs.
         regularization: Ridge parameter ``lambda >= 0``, on the scale of a correlation matrix
@@ -662,9 +591,6 @@ def canonical_correlation(
     else:
         data_dict = multiomics_data
 
-    # Determine layers to use - support both 'layers' and 'layer_pair' kwargs
-    if layers is None and layer_pair is not None:
-        layers = layer_pair
     if layers is None:
         if len(data_dict) != 2:
             raise errors.ValidationError("CCA requires exactly 2 omics datasets or layers tuple specified")

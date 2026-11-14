@@ -244,7 +244,7 @@ class TestFisherLogSeries:
         assert fit["x"] == pytest.approx(individuals / (individuals + fit["alpha"]))
 
     def test_one_species_has_positive_alpha(self) -> None:
-        # S = 1 used to return alpha = 0 (and x = 0), which does not satisfy S = alpha ln(1 + N / alpha)
+        # S = 1 gives a positive alpha; alpha = 0 (and x = 0) does not satisfy S = alpha ln(1 + N / alpha)
         fit = macroecology.fit_logseries([100])
         assert fit["alpha"] == pytest.approx(0.1544496866793, rel=1e-9)
         assert fit["x"] == pytest.approx(100 / (100 + fit["alpha"]))
@@ -277,8 +277,8 @@ class TestDegenerateRegressions:
             call()
 
     def test_bootstrap_interval_does_not_count_slopes_of_unfit_resamples_as_zero(self) -> None:
-        # With three areas, 1 resample in 9 draws a single area; its "slope" used to be counted as 0, which at
-        # 1000 resamples pulled the lower end of the interval to exactly 0 for a clearly positive exponent.
+        # With three areas, 1 resample in 9 draws a single area; counting its "slope" as 0 would, at 1000
+        # resamples, pull the lower end of the interval to exactly 0 for a clearly positive exponent.
         fit = macroecology.species_area_power([1, 10, 100], [5, 14, 50], n_bootstrap=1000)
         lower, upper = fit["ci_z"]
         assert fit["z"] > 0.4
@@ -778,7 +778,7 @@ class TestCompareSadModels:
         assert result["logseries"]["gof"]["chi_squared"] > 100 > result["lognormal"]["gof"]["chi_squared"]
         spread = max(entry["aic"] for entry in result.values()) - min(entry["aic"] for entry in result.values())
         assert spread < 40
-        assert result["logseries"]["rank"] < 4  # no longer last
+        assert result["logseries"]["rank"] < 4  # not last
         assert sorted(entry["rank"] for entry in result.values()) == [1, 2, 3, 4]
 
     def test_all_singleton_community_does_not_break_the_comparison(self) -> None:

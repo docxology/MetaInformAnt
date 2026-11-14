@@ -60,16 +60,16 @@ def default_metadata(gwas_output, default_vcf):
 
 
 # ---------------------------------------------------------------------------
-# 1. Default generation backward compatibility
+# 1. Default generation
 # ---------------------------------------------------------------------------
 
 
 class TestDefaultGeneration:
-    """Ensure defaults produce the same results as before."""
+    """Default parameters produce the documented cohort."""
 
     def test_default_generation_unchanged(self, gwas_output):
         """Default params should produce 90 samples (80 diploid + 10 drones)."""
-        from metainformant.gwas.workflow.amellifera_pipeline import DEFAULT_SUBSPECIES, generate_real_vcf
+        from metainformant.gwas.workflow.amellifera_pipeline import generate_real_vcf
 
         vcf_path = generate_real_vcf(gwas_output, n_variants=100, force=True)
         assert vcf_path.exists()
@@ -78,10 +78,6 @@ class TestDefaultGeneration:
 
         data = parse_vcf_full(vcf_path)
         assert len(data["samples"]) == 90
-        # Check subspecies alias still works
-        from metainformant.gwas.workflow.amellifera_pipeline import SUBSPECIES
-
-        assert SUBSPECIES is DEFAULT_SUBSPECIES
 
     def test_default_subspecies_structure(self):
         """DEFAULT_SUBSPECIES has expected keys and structure."""
@@ -229,7 +225,7 @@ class TestPhenotypeMatching:
 
     def test_phenotype_id_matching(self, default_phenotypes):
         """_load_phenotypes_by_id returns dict keyed by sample_id."""
-        from metainformant.gwas.workflow.workflow import _load_phenotypes_by_id
+        from metainformant.gwas.workflow.workflow_config import _load_phenotypes_by_id
 
         result = _load_phenotypes_by_id(default_phenotypes, trait="varroa_resistance")
         assert isinstance(result, dict)
@@ -239,14 +235,14 @@ class TestPhenotypeMatching:
 
     def test_phenotype_id_missing_trait_returns_default(self, default_phenotypes):
         """Without trait, should use second column."""
-        from metainformant.gwas.workflow.workflow import _load_phenotypes_by_id
+        from metainformant.gwas.workflow.workflow_config import _load_phenotypes_by_id
 
         result = _load_phenotypes_by_id(default_phenotypes)
         assert len(result) > 0
 
     def test_phenotype_id_binary_trait(self, default_phenotypes):
         """Can load binary trait column."""
-        from metainformant.gwas.workflow.workflow import _load_phenotypes_by_id
+        from metainformant.gwas.workflow.workflow_config import _load_phenotypes_by_id
 
         result = _load_phenotypes_by_id(default_phenotypes, trait="disease_resistance")
         assert len(result) > 0
@@ -265,7 +261,7 @@ class TestMultiTrait:
 
     def test_multi_trait_runs(self, default_vcf, default_phenotypes):
         """run_multi_trait_gwas should analyze multiple traits."""
-        from metainformant.gwas.workflow.workflow import run_multi_trait_gwas
+        from metainformant.gwas.workflow.workflow_execution import run_multi_trait_gwas
 
         config = {
             "work_dir": str(default_vcf.parent.parent / "work"),
@@ -293,7 +289,7 @@ class TestMultiTrait:
 
     def test_multi_trait_shares_pca(self, default_vcf, default_phenotypes):
         """PCA should be computed once (in shared steps), not per trait."""
-        from metainformant.gwas.workflow.workflow import run_multi_trait_gwas
+        from metainformant.gwas.workflow.workflow_execution import run_multi_trait_gwas
 
         config = {
             "work_dir": str(default_vcf.parent.parent / "work"),

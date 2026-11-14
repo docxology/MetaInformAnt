@@ -59,8 +59,10 @@ print(f"   Proteomics shape: {proteomics_data.shape}")
 
 # Create MultiOmicsData
 omics_data = MultiOmicsData(
-    transcriptomics=transcriptomics_data,
-    proteomics=proteomics_data,
+    data={
+        "transcriptomics": transcriptomics_data,
+        "proteomics": proteomics_data,
+    },
 )
 print(f"   Integrated {omics_data.n_samples} samples")
 

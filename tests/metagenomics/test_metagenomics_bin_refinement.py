@@ -80,7 +80,7 @@ class TestContaminationCriterion:
 
 
 class TestSplitBinsDescribeThemselves:
-    """Sub-bins used to come back with a GC content of 0.0 and no coverage."""
+    """Sub-bins come back with their own GC content and coverage, not 0.0 and none."""
 
     CONTIGS = {
         "x1": "AAAC" * 400,

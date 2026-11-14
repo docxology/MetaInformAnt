@@ -10,7 +10,7 @@ This module provides functionality organized into the following structure:
 
 - `database/` — exports: `interpro`, `uniprot`
 - `domains/` — exports: `classification`, `detection`
-- `function/` — exports: `prediction` (re-export facade), `prediction_core`, `prediction_analysis`
+- `function/` — exports: `prediction_core`, `prediction_analysis`
 - `sequence/` — exports: `alignment`, `proteomes`, `sequences`
 - `structure/` — exports: `alphafold`, `analysis`, `contacts`, `general`, `io`, `pdb`, `secondary`
 - `visualization/` — exports: `general`

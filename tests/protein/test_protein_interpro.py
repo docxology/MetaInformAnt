@@ -143,7 +143,7 @@ def test_fetch_interpro_domains_with_timeout():
         pytest.skip(f"InterPro request failed or timed out - real failure mode: {e}")
 
 
-def test_parse_interpro_results_legacy_xml_match():
+def test_parse_interpro_results_xml_match():
     """Parse a deterministic InterProScan-style XML match."""
     xml = """
     <protein-matches>

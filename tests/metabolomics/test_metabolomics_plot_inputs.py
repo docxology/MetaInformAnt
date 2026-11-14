@@ -160,7 +160,7 @@ class TestPcaArguments:
     def test_constant_data_keeps_matching_shapes(self) -> None:
         scores, explained = pca_metabolomics(np.ones((5, 3)), n_components=3)
 
-        assert scores.shape == (3, 3) and explained.shape == (3,)  # explained used to be sized by the request
+        assert scores.shape == (3, 3) and explained.shape == (3,)  # explained is sized by the data, not by the request
         assert explained.tolist() == [0.0, 0.0, 0.0]
 
     @pytest.mark.parametrize("bad", [np.nan, np.inf])

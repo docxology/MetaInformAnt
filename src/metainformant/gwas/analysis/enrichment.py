@@ -161,7 +161,7 @@ def pathway_enrichment_from_annotations(
     """Run Fisher enrichment tests across multiple gene sets.
 
     Args:
-        annotated_hits: Output of annotate_top_hits_ensembl() — each entry
+        annotated_hits: Output of annotate_top_hits_ncbi() — each entry
             has 'nearby_genes' list with gene_name.
         all_annotated_genes: Background genes (all tested genes with annotation).
         gene_sets: Dict of {pathway_name: [gene_names]}. If None, uses a minimal

@@ -186,13 +186,13 @@
    - Not in popgen.md (only in index.md line 20)
    - Algorithm: Linear transformation `new_freq = admixture_proportions @ current_freq` + Gaussian drift
    - **Gap**: No recombination, no continuous migration over time
-   - **Recommendation**: Document or deprecate
+   - **Recommendation**: Document or remove
 
 2. **`simulate_selection`** (popgen.py lines 812-904)
    - Not in popgen.md
    - Implements Wright-Fisher selection with fitness per genotype ✓
    - **Gap**: No mutation, no recombination, selection only
-   - **Recommendation**: Document or deprecate
+   - **Recommendation**: Document or remove
 
 ---
 

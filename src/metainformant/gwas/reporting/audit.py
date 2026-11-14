@@ -1,8 +1,7 @@
 """GWAS pipeline audit and provenance utilities.
 
 Provides functions for SHA-256 checksumming, library version detection,
-and structured audit log generation.  These were previously embedded in
-the ``09_audit.py`` orchestrator script.
+and structured audit log generation, used by the ``09_audit.py`` orchestrator script.
 """
 
 from __future__ import annotations

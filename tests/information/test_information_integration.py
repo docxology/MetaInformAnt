@@ -269,13 +269,6 @@ class TestMLIntegration:
         assert "top_features" in results
         assert len(results["top_features"]) <= 10
 
-    def test_ml_mutual_info_alias(self) -> None:
-        """Test that 'mutual_info' works as alias for 'feature_mi'."""
-        X = np.random.randn(100, 10)
-        y = np.random.randint(0, 2, 100)
-        results = ml_integration(X, y, method="mutual_info")
-        assert "feature_mis" in results
-
     def test_ml_feature_entropy(self) -> None:
         """Test ML integration with feature entropy."""
         X = np.random.randn(100, 15)
@@ -284,13 +277,6 @@ class TestMLIntegration:
         assert "feature_entropies" in results
         assert "feature_scores" in results
         assert "mean_feature_entropy" in results["feature_scores"]
-
-    def test_ml_entropy_alias(self) -> None:
-        """Test that 'entropy' works as alias for 'feature_entropy'."""
-        X = np.random.randn(100, 10)
-        y = np.random.randint(0, 3, 100)
-        results = ml_integration(X, y, method="entropy")
-        assert "feature_entropies" in results
 
     def test_ml_correlation(self) -> None:
         """Test ML integration with correlation method."""

@@ -8,7 +8,8 @@ Population genetics analysis including diversity statistics, neutrality tests, F
 |------|---------|
 | `core.py` | Core population statistics: allele frequencies, heterozygosity, Tajima's D, F_ST, LD |
 | `analysis.py` | Extended analyses: neutrality test suites with normal-approximation or simulated p-values, selection detection, population structure |
-| `visualization.py` | Population genetics plots: F_ST heatmaps, SFS, PCA, LD decay, diversity comparisons |
+| `visualization_core.py` | Core population genetics plots: F_ST heatmaps, Tajima's D, LD decay, structure, demography, SFS |
+| `visualization_stats.py` | Statistical comparison plots: diversity and F_ST comparisons, PCA, kinship, neutrality test summaries |
 
 ## Key Functions
 

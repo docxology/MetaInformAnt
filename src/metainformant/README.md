@@ -7,10 +7,10 @@ METAINFORMANT: Comprehensive Bioinformatics Toolkit for Multi-Omic Analysis.
 ## Contents
 
 - **[core/](core/)**
-- **[cloud/](cloud/)**
 - **[dna/](dna/)**
 - **[ecology/](ecology/)**
 - **[epigenome/](epigenome/)**
+- **[eqtl/](eqtl/)**
 - **[gwas/](gwas/)**
 - **[information/](information/)**
 - **[life_events/](life_events/)**
@@ -26,6 +26,7 @@ METAINFORMANT: Comprehensive Bioinformatics Toolkit for Multi-Omic Analysis.
 - **[ontology/](ontology/)**
 - **[pharmacogenomics/](pharmacogenomics/)**
 - **[phenotype/](phenotype/)**
+- **[popgen/](popgen/)**
 - **[protein/](protein/)**
 - **[quality/](quality/)**
 - **[rna/](rna/)**
@@ -46,7 +47,6 @@ graph TD
 
     subgraph "Core & Utils"
         core[core]
-        cloud[cloud]
         mcp[mcp]
         menu[menu]
         visualization[visualization]
@@ -70,6 +70,8 @@ graph TD
 
     subgraph "Analysis"
         gwas[gwas]
+        eqtl[eqtl]
+        popgen[popgen]
         ml[ml]
         networks[networks]
         simulation[simulation]
@@ -82,7 +84,6 @@ graph TD
     end
 
     metainformant --> core
-    metainformant --> cloud
     metainformant --> mcp
     metainformant --> dna
     metainformant --> rna
@@ -96,6 +97,6 @@ Import modules directly:
 ```python
 from metainformant import dna, rna, protein
 from metainformant.gwas.analysis import association
-from metainformant.longread.workflow.orchestrator import LongReadOrchestrator
+from metainformant.longread.workflow.orchestrator_core import LongReadOrchestrator
 from metainformant.mcp.tools import amalgkit_monitor
 ```

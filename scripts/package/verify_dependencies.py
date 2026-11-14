@@ -114,7 +114,6 @@ CLI_CHECKS = {
     "muscle": [["muscle", "-version"], ["muscle", "--version"]],
     "blastn": [["blastn", "-version"]],
     "Rscript": [["Rscript", "--version"]],
-    "gcloud": [["gcloud", "--version"]],
     "docker": [["docker", "--version"]],
     "psql": [["psql", "--version"]],
     "postgres": [["postgres", "--version"]],

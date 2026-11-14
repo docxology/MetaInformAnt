@@ -40,7 +40,7 @@ class TestSummarizeScenario:
     def test_returns_all_suite_keys(self):
         seqs = generate_population_sequences(
             n_sequences=12,
-            sequence_length=200,
+            length=200,
             nucleotide_diversity=0.01,
             rng=random.Random(42),
         )
@@ -57,7 +57,7 @@ class TestSummarizeScenario:
     def test_summary_statistics_values(self):
         seqs = generate_population_sequences(
             n_sequences=10,
-            sequence_length=150,
+            length=150,
             nucleotide_diversity=0.01,
             rng=random.Random(1),
         )
@@ -87,17 +87,17 @@ class TestCompareTwoPopulationSequences:
         pop1_low, pop2_low = generate_two_populations(
             n_pop1=10,
             n_pop2=10,
-            sequence_length=200,
+            length=200,
             n_sites=200,
-            fst=0.05,
+            f_st=0.05,
             rng=random.Random(11),
         )
         pop1_high, pop2_high = generate_two_populations(
             n_pop1=10,
             n_pop2=10,
-            sequence_length=200,
+            length=200,
             n_sites=200,
-            fst=0.3,
+            f_st=0.3,
             rng=random.Random(12),
         )
         f1 = tmp_path / "p1_low.fasta"
@@ -120,7 +120,7 @@ class TestGenotypeStructureAnalysis:
     def test_runs_real_pca_kinship_hwe(self):
         genotypes = generate_genotype_matrix(
             n_individuals=30,
-            n_sites=40,
+            n_snps=40,
             maf_min=0.1,
             maf_max=0.5,
             hwe=True,
@@ -176,7 +176,7 @@ class TestLdSummary:
         # generate_linkage_disequilibrium_data targets r2=0.5
         linked = generate_linkage_disequilibrium_data(
             n_individuals=60,
-            n_sites=5,
+            n_snps=5,
             r_squared_target=0.5,
             rng=random.Random(5),
         )
@@ -226,7 +226,7 @@ class TestAnalyzeDataset:
     def _build_dataset_info(self, tmp_path: Path) -> dict:
         seqs = generate_population_sequences(
             n_sequences=8,
-            sequence_length=120,
+            length=120,
             nucleotide_diversity=0.01,
             rng=random.Random(9),
         )
@@ -236,9 +236,9 @@ class TestAnalyzeDataset:
         pop1, pop2 = generate_two_populations(
             n_pop1=8,
             n_pop2=8,
-            sequence_length=120,
+            length=120,
             n_sites=120,
-            fst=0.2,
+            f_st=0.2,
             rng=random.Random(10),
         )
         p1 = tmp_path / "p1.fasta"
@@ -248,7 +248,7 @@ class TestAnalyzeDataset:
 
         genotypes = generate_genotype_matrix(
             n_individuals=20,
-            n_sites=25,
+            n_snps=25,
             maf_min=0.1,
             maf_max=0.5,
             hwe=True,

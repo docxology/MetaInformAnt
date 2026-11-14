@@ -48,7 +48,7 @@ Generate aligned DNA sequences as one neutral coalescent sample: constant popula
 
 **Parameters**:
 - `n_sequences`: Number of sequences to generate (at least 2)
-- `length`: Length of each sequence (alias `sequence_length`); required unless `reference_sequence` is given
+- `length`: Length of each sequence; required unless `reference_sequence` is given
 - `nucleotide_diversity`, `wattersons_theta`, `theta`, `mutation_rate`: Four ways to set the per-site population mutation parameter θ_site (4 · *N* · μ per site). When several are given, the first in this order decides and the others are ignored:
   1. `nucleotide_diversity`: θ_site equals the per-site π asked for, because E[π] = θ_site
   2. `wattersons_theta`: θ_site equals the per-site Watterson's θ asked for, because E[θ_W] = θ_site
@@ -58,8 +58,7 @@ Generate aligned DNA sequences as one neutral coalescent sample: constant popula
 
   The sample is drawn with θ = θ_site · *L*, for the *L* A/C/G/T positions of the ancestral sequence. The targets are expectations over genealogies: the π and θ_W of a realised sample scatter around them.
 - `reference_sequence`: Ancestral sequence; it replaces `length` with its own length. Only its A/C/G/T positions (either case) can mutate, and a derived base keeps the case of the base it replaces. Without one, a random A/C/G/T sequence (about 50% GC) is drawn
-- `n_sites`: Accepted and validated (at least 1) but not used. The number of variable sites is an outcome of the genealogy and θ (mean θ · a_n), not an input, and the variable sites are spread uniformly over the sequence
-- `rng`: `random.Random` for reproducibility (or `random_seed`, an integer). NumPy's global random state is not touched
+- `rng`: `random.Random` for reproducibility. NumPy's global random state is not touched
 
 **Returns**: List of `n_sequences` strings of equal length. At small θ a sample can be monomorphic (all sequences identical): with θ = θ_site · *L* for the whole sequence, the probability is the product of *j* / (*j* + θ) over *j* = 1 to `n_sequences` − 1.
 
@@ -69,15 +68,17 @@ Generate aligned DNA sequences as one neutral coalescent sample: constant popula
 
 **Example**:
 ```python-snippet
+import random
+
 from metainformant.dna.population import nucleotide_diversity, segregating_sites
 from metainformant.simulation.models.popgen import generate_population_sequences
 
 # One neutral sample: 10 sequences of 1000 bp with an expected π of 0.01 per site
 sequences = generate_population_sequences(
     n_sequences=10,
-    sequence_length=1000,
+    length=1000,
     nucleotide_diversity=0.01,
-    random_seed=1,
+    rng=random.Random(1),
 )
 
 # Analyze the generated data
@@ -103,17 +104,17 @@ print(f"Mean π: {mean(nucleotide_diversity(s) for s in samples):.4f}")  # 0.010
 print(f"Mean D: {mean(tajimas_d(s) for s in samples):.2f}")  # -0.04
 ```
 
-### `generate_two_populations(n_pop1, n_pop2, length=None, *, f_st=None, fst=None, ...)`
+### `generate_two_populations(n_pop1, n_pop2, length, *, f_st=0.1, ...)`
 
 Generate two populations differentiated by a target Fst under the Balding-Nichols model.
 
-Each polymorphic site gets an ancestral derived-allele frequency *p* drawn uniformly from [0.05, 0.95]. Each population's frequency is then drawn from Beta(*p*(1 − F)/F, (1 − *p*)(1 − F)/F), so that Hudson's Fst equals the target F in expectation. Every sequence carries the derived allele at each site independently with its population's frequency, and every other position keeps the ancestral base. `fst=0` gives identical frequencies and `fst=1` fixes each population for one allele.
+Each polymorphic site gets an ancestral derived-allele frequency *p* drawn uniformly from [0.05, 0.95]. Each population's frequency is then drawn from Beta(*p*(1 − F)/F, (1 − *p*)(1 − F)/F), so that Hudson's Fst equals the target F in expectation. Every sequence carries the derived allele at each site independently with its population's frequency, and every other position keeps the ancestral base. `f_st=0` gives identical frequencies and `f_st=1` fixes each population for one allele.
 
 **Parameters**:
 - `n_pop1`: Number of sequences in population 1 (at least 2)
 - `n_pop2`: Number of sequences in population 2 (at least 2)
-- `length`: Length of each sequence (alias `sequence_length`); required
-- `fst`: Target Fst between 0 and 1 (alias `f_st`; default 0.1)
+- `length`: Length of each sequence; required
+- `f_st`: Target Fst between 0 and 1 (default 0.1)
 - `theta`: Per-site population mutation rate; it sets the default number of polymorphic sites (default 0.01)
 - `n_sites`: Number of polymorphic sites, at most `length`. The default is Watterson's expectation `theta * length * a_n`, where `a_n` is the harmonic sum over the `n_pop1 + n_pop2` sequences (at least 1)
 - `rng`: `random.Random` for reproducibility
@@ -131,9 +132,9 @@ from metainformant.dna.population import hudson_fst
 pop1, pop2 = generate_two_populations(
     n_pop1=10,
     n_pop2=10,
-    sequence_length=1000,
-    fst=0.2,
-    n_sites=500
+    length=1000,
+    f_st=0.2,
+    n_sites=500,
 )
 
 # Verify Fst
@@ -147,7 +148,7 @@ Generate a genotype matrix with specified allele frequencies.
 
 **Parameters**:
 - `n_individuals`: Number of individuals (rows)
-- `n_snps`: Number of sites (columns); alias `n_sites`. Taken from the length of `allele_frequencies` when that is given
+- `n_snps`: Number of sites (columns). Taken from the length of `allele_frequencies` when that is given
 - `allele_frequencies`: Optional list of alternate-allele frequencies per site
 - `maf_min`: Minimum minor allele frequency (0 to 0.5, default 0.05); sites without a given frequency draw theirs uniformly between `maf_min` and `maf_max`
 - `maf_max`: Maximum minor allele frequency (default 0.5)
@@ -166,7 +167,7 @@ from metainformant.dna.population import allele_frequencies
 # Generate genotypes with specified frequencies
 genotypes = generate_genotype_matrix(
     n_individuals=1000,
-    n_sites=10,
+    n_snps=10,
     allele_frequencies=[0.2, 0.3, 0.4, 0.1, 0.5, 0.3, 0.2, 0.4, 0.1, 0.6],
     hwe=True
 )
@@ -274,13 +275,13 @@ print(f"Mean π: {mean(nucleotide_diversity(s) for s in samples):.4f}")  # 0.013
 print(f"Mean D: {mean(tajimas_d(s) for s in samples):+.2f}")  # -0.89
 ```
 
-### `generate_site_frequency_spectrum(n_samples=None, n_sites=None, *, ...)`
+### `generate_site_frequency_spectrum(n_samples, n_sites, *, ...)`
 
 Generate a site frequency spectrum with specified properties.
 
 **Parameters**:
-- `n_samples`: Number of sampled sequences (alias `sample_size`; at least 2)
-- `n_sites`: Number of polymorphic sites to generate (required)
+- `n_samples`: Number of sampled sequences (at least 2)
+- `n_sites`: Number of polymorphic sites to generate
 - `folded`: If True, return the folded SFS (minor allele counts only)
 - `demographic_model`: `"constant"` (default; each site's class is an independent draw from the neutral 1/i expectation), `"expansion"` or `"bottleneck"`; anything else raises `ValidationError`
 - `parameters`: Optional dictionary of model parameters: `alpha` (default 1.0) for `"expansion"`, a Zipf exponent that only takes effect above 1, and `bottleneck_strength` (default 0.1) for `"bottleneck"`
@@ -296,7 +297,7 @@ from metainformant.simulation.models.popgen import generate_site_frequency_spect
 
 # Generate folded SFS for 10 samples, 100 sites
 sfs = generate_site_frequency_spectrum(
-    sample_size=10,
+    n_samples=10,
     n_sites=100,
     folded=True
 )
@@ -309,20 +310,25 @@ print(f"SFS: {sfs}")  # sums to 100, with the largest counts in the first bins
 
 Generate 0/1 allele data in which neighbouring sites are correlated.
 
-Sites are generated left to right as a first-order Markov chain, one row per individual. Each site keeps its own allele frequency exactly, and each adjacent pair gets the disequilibrium D = r · √(p1 (1 − p1) p2 (1 − p2)) with r = √`r_squared_target`, so the expected r² between adjacent sites equals `r_squared_target`. The probability of allele 1 given the previous site's allele is an exact function of the two frequencies and r. For sites with equal frequencies the correlation between sites *k* apart falls to `r ** k`.
+`model="markov"` (the default) generates sites left to right as a first-order Markov chain, one row per individual. Each site keeps its own allele frequency exactly, and each adjacent pair gets the disequilibrium D = r · √(p1 (1 − p1) p2 (1 − p2)) with r = √`r_squared_target`, so the expected r² between adjacent sites equals `r_squared_target`. The probability of allele 1 given the previous site's allele is an exact function of the two frequencies and r. For sites with equal frequencies the correlation between sites *k* apart falls to `r ** k`.
+
+`model="coalescent"` draws the sample from the neutral coalescent with recombination (`simulate_recombinant_haplotypes`) over a region of `sequence_length` base pairs in a population of `effective_size` diploid individuals, with `recombination_rate` breakpoints per base pair per generation. Exactly `n_snps` segregating sites are placed on the genealogy. Allele frequencies and r² are outcomes of the genealogy, and r² decays with the distance between sites.
 
 **Parameters**:
 - `n_individuals`: Number of individuals (at least 2)
-- `n_snps`: Number of sites (at least 2); alias `n_sites`. Taken from the length of `allele_frequencies` when that is given
+- `n_snps`: Number of sites (at least 2). Taken from the length of `allele_frequencies` when that is given
 - `r_squared_target`: Target r² between adjacent sites, within [0, 1] (default 0.25). A sample r² scatters around the target by about 2r(1 − r²)/√`n_individuals`. A pair whose allele frequencies cannot reach the target (a rare allele next to a common one limits r²) is generated at the largest attainable r², and a warning is logged
 - `selection_coefficient`: Default 0. When non-zero, its absolute value replaces √`r_squared_target` as the correlation r between adjacent sites (capped at 1); a heuristic coupling, not a model of selection
-- `recombination_rate`: Accepted and validated (it must not be negative) but it does not change the output. A first-order chain cannot separate the decay of LD with distance from the LD of adjacent sites, so the model has no recombination step: adjacent LD is set by `r_squared_target` alone and decays geometrically with distance
 - `allele_frequencies`: Frequency of allele 1 at each site, each within [0, 1] (default 0.5 at every site); a frequency of 0 or 1 gives a monomorphic site
 - `rng`: `random.Random` for reproducibility
+- `model`: `"markov"` (default) or `"coalescent"`
+- `recombination_rate`, `effective_size`, `sequence_length`: Coalescent model only. Recombination probability per base pair per generation, at least 0 (default 1e-8); effective population size (default 10000); region length in base pairs, at least `n_snps` (default 100 per SNP)
+
+`r_squared_target`, `selection_coefficient` and `allele_frequencies` apply to the Markov model only. Passing a parameter that the chosen model does not use raises `ValidationError`.
 
 **Returns**: List of lists with one row per individual and one column per site, holding 0/1 alleles (not 0/1/2 genotypes)
 
-**Raises**: `ValueError` if neither `n_snps` nor `n_sites` is given; `ValidationError` if a parameter is out of range or `r_squared_target`, an allele frequency or `selection_coefficient` is not a valid number.
+**Raises**: `ValueError` if neither `n_snps` nor `allele_frequencies` is given; `ValidationError` if a parameter is out of range or `r_squared_target`, an allele frequency or `selection_coefficient` is not a valid number.
 
 **Example**:
 ```python-snippet
@@ -332,7 +338,7 @@ from metainformant.simulation.models.popgen import generate_linkage_disequilibri
 # Generate alleles with LD between adjacent sites
 genotypes = generate_linkage_disequilibrium_data(
     n_individuals=1000,
-    n_sites=10,
+    n_snps=10,
     r_squared_target=0.5
 )
 
@@ -471,7 +477,7 @@ from metainformant.dna.population.analysis import calculate_summary_statistics
 # Generate data with known properties
 sequences = generate_population_sequences(
     n_sequences=20,
-    sequence_length=1000,
+    length=1000,
     nucleotide_diversity=0.01
 )
 
@@ -525,7 +531,7 @@ from metainformant.simulation.models.popgen import generate_genotype_matrix
 # Generate large genotype matrix
 genotypes = generate_genotype_matrix(
     n_individuals=1000,
-    n_sites=10000,
+    n_snps=10000,
     maf_min=0.05,
     maf_max=0.5,
     hwe=True
@@ -547,13 +553,13 @@ from metainformant.dna.population import hudson_fst
 
 # Low differentiation
 pop1_low, pop2_low = generate_two_populations(
-    n_pop1=10, n_pop2=10, sequence_length=1000, fst=0.05, n_sites=500
+    n_pop1=10, n_pop2=10, length=1000, f_st=0.05, n_sites=500
 )
 fst_low = hudson_fst(pop1_low, pop2_low)
 
 # High differentiation
 pop1_high, pop2_high = generate_two_populations(
-    n_pop1=10, n_pop2=10, sequence_length=1000, fst=0.5, n_sites=500
+    n_pop1=10, n_pop2=10, length=1000, f_st=0.5, n_sites=500
 )
 fst_high = hudson_fst(pop1_high, pop2_high)
 
@@ -575,9 +581,9 @@ from metainformant.math.population_genetics.demography import bottleneck_effecti
 pop1, pop2 = generate_two_populations(
     n_pop1=20,
     n_pop2=20,
-    sequence_length=1000,
-    fst=0.2,
-    n_sites=500
+    length=1000,
+    f_st=0.2,
+    n_sites=500,
 )
 
 # Analyze: summarize each population, then compare the summaries
@@ -634,7 +640,7 @@ rng = random.Random(42)
 
 sequences = generate_population_sequences(
     n_sequences=10,
-    sequence_length=1000,
+    length=1000,
     mutation_rate=1e-4,  # θ per site = 4 * 10 * 1e-4 = 0.004
     rng=rng
 )
@@ -657,7 +663,7 @@ target = 0.01
 values = [
     nucleotide_diversity(
         generate_population_sequences(
-            n_sequences=40, sequence_length=1000, nucleotide_diversity=target, rng=random.Random(seed)
+            n_sequences=40, length=1000, nucleotide_diversity=target, rng=random.Random(seed)
         )
     )
     for seed in range(100)
@@ -706,7 +712,7 @@ Each call draws its own genealogy, so the populations share the ancestral bases 
 
 2. **One genealogy, no recombination**: The coalescent samples carry a single genealogy for the whole sequence (infinite sites, no recombination, one panmictic population). Variable sites are not independent loci: windows along a sequence share the tree, so they are not replicates, and any two variable sites pass the four-gamete test. Demographic histories are piecewise constant or exponential changes of one population size, with no migration or structure. Draw one sample per seed and average over seeds when a distribution matters.
 
-3. **Linkage**: `generate_linkage_disequilibrium_data` is a first-order Markov chain along the sites. Adjacent-site r² is set by `r_squared_target`, and for equal allele frequencies the correlation decays geometrically with distance. It does not model recombination (`recombination_rate` does not change the output) or haplotype blocks. For realistic LD patterns, use specialized tools.
+3. **Linkage**: `generate_linkage_disequilibrium_data` is a first-order Markov chain along the sites. Adjacent-site r² is set by `r_squared_target`, and for equal allele frequencies the correlation decays geometrically with distance. The default Markov model has no recombination or haplotype blocks; `model="coalescent"` adds recombination along a region. For realistic LD patterns, use specialized tools.
 
 4. **Selection**: The generators above are neutral. `simulate_selection(genotype_matrix, fitness_effects, generations, ...)` in the same module applies fitness-proportional resampling to an existing genotype matrix (a NumPy array, with `fitness_effects` of shape `(n_sites, 3)`), and `simulate_admixture(n_populations, population_sizes, admixture_proportions, generations, ...)` mixes ancestral allele frequencies; neither generates sequences.
 

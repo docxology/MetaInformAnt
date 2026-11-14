@@ -42,8 +42,8 @@ def _make_rng(random_state: Any) -> random.Random:
 def _log_factorial(n: int) -> float:
     """Compute log(n!) to floating-point precision as ``lgamma(n + 1)``.
 
-    (An earlier version used Stirling's approximation above n = 20, which is off by about 1 / (12 n) in the logarithm
-    and shifted over-representation p-values by around one percent.)
+    (Stirling's approximation is off by about 1 / (12 n) in the logarithm, enough to shift over-representation
+    p-values by around one percent, so it is not used.)
     """
     if n <= 1:
         return 0.0
@@ -141,7 +141,7 @@ def over_representation_analysis(
         background: Optional background gene universe. If ``None``, the
             union of all genes in gene_sets is used.
         correction: Multiple testing correction: ``"fdr_bh"`` (default),
-            ``"bonferroni"``, or ``"none"``. Any other name raises ``ValueError``; it used to leave the p-values
+            ``"bonferroni"``, or ``"none"``. Any other name raises ``ValueError`` rather than leaving the p-values
             uncorrected under the key ``adjusted_p`` (``"fdr"`` and ``"BH"`` are not ``"fdr_bh"``).
 
     Returns:

@@ -9,7 +9,6 @@ and configuration files.
 |------|-------|
 | Analyze DNA sequences | [analyze_dna.md](analyze_dna.md) |
 | Convert data formats | [data_conversion.md](data_conversion.md) |
-| Deploy cloud workflows | [deploy_cloud.md](deploy_cloud.md) |
 | Run GWAS | [run_gwas.md](run_gwas.md) |
 | Run RNA pipelines | [run_rna_pipeline.md](run_rna_pipeline.md) |
 | Visualize results | [visualize_results.md](visualize_results.md) |

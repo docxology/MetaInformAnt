@@ -6,7 +6,6 @@ End-to-end GWAS workflow orchestration: configuration management, VCF loading, Q
 
 | File | Purpose |
 |------|---------|
-| `workflow.py` | Re-export module aggregating config and execution APIs |
 | `workflow_config.py` | GWASWorkflowConfig dataclass, YAML config loading, phenotype loading |
 | `workflow_execution.py` | Pipeline execution: single-trait GWAS, multi-trait GWAS |
 
@@ -33,7 +32,8 @@ End-to-end GWAS workflow orchestration: configuration management, VCF loading, Q
 ## Usage
 
 ```python
-from metainformant.gwas.workflow.workflow import load_gwas_config, execute_gwas_workflow
+from metainformant.gwas.workflow.workflow_config import load_gwas_config
+from metainformant.gwas.workflow.workflow_execution import execute_gwas_workflow
 
 config = load_gwas_config("config/gwas.yaml")
 results = execute_gwas_workflow(config)

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import importlib.util
 import json
 import shutil
@@ -14,7 +15,6 @@ from typing import TYPE_CHECKING
 import pytest
 
 from metainformant.rna.engine.acquisition_manifest import sha256_file
-from metainformant.rna.engine.acquisition_worker import run_manifest
 from tests.rna.test_ehd_runtime_paths import require_operator_files
 
 pytestmark = pytest.mark.external_tool
@@ -57,6 +57,7 @@ def test_real_checkpoint_preserves_restore_contract_and_raw_order(
         shutil.copytree(fixture.data, data)
         work = data / "test_species/work"
         monkeypatch.setenv("AMALGKIT_DATA_ROOT", str(data))
+        fixture = dataclasses.replace(fixture, data=data, work=work)
     operations = tmp_path / "operations"
     (operations / "tmp").mkdir(parents=True)
     bindings = {
@@ -72,23 +73,11 @@ def test_real_checkpoint_preserves_restore_contract_and_raw_order(
         bindings,
         bulk_restore=bulk_restore,
     )
-    # When actual Kallisto output is locked, restored and checked before cleanup.
-    result = run_manifest(
-        manifest_path=fixture.manifest,
-        data_root=data,
-        config_dir=fixture.config_dir,
-        workers=1,
-        threads=1,
-        fastq_threads=1,
-        compression_threads=1,
-        validation_slots=1,
-        quant_slots=1,
-        fasterq_slots=1,
-        max_in_flight=1,
-        on_quantified=checkpoint,
-    )
+    # When the producer quantifies with Kallisto and the output is locked, restored and checked.
+    result = fixture.produce()
+    assert result["quantified"] and not result["skipped"], result
+    checkpoint("test_species", "SRR123")
     # Then the same restore proof is published and no restore payload stays on SSD.
-    assert result["counts"]["newly_quantified"] == 1
     proof = json.loads((work / "quant/SRR123/.local_restore_verified.json").read_text())
     assert proof["reference_index_sha256"] == sha256_file(fixture.index)
     assert not list((operations / "tmp").iterdir())

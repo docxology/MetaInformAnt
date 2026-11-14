@@ -21,7 +21,6 @@ Thank you for your interest in improving METAINFORMANT! This guide covers contri
 | **New modules** | Bioinformatics domain (epigenomics, proteomics, metabolomics) | @maintainers |
 | **Documentation** | Tutorials, example code, module guides | @docs-team |
 | **Performance** | NumPy/SciPy optimization, GPU support | @perf-team |
-| **Cloud** | AWS/Azure support, Kubernetes, workflow engines | @cloud-team |
 | **LLM Integration** | New MCP tools, Claude/Cursor plugins | @ml-team |
 | **Bug fixes** | Issues tagged `bug` or `help wanted` | Any maintainer |
 
@@ -29,7 +28,7 @@ Thank you for your interest in improving METAINFORMANT! This guide covers contri
 
 ### Python
 
-- **Python 3.11+ only** (no 3.10 compatibility)
+- **Python 3.14+ only**; CI runs every lane on 3.14 and a fast lane on 3.15
 - **Type hints required** for all public functions (PEP 484)
 - **Docstrings**: Google style — parameters, returns, raises
 - **Line length**: 120 chars — [black](https://github.com/psf/black) and flake8 both enforce 120
@@ -64,7 +63,7 @@ feat(rna): add differential expression for multi-factor designs
 
 fix(gwas): correct allele frequency calculation in plink reader
 
-docs(cloud): improve gcloud installation instructions
+docs(rna): clarify kallisto index setup
 
 refactor(core): replace pandas with polars in io module
 
@@ -75,7 +74,7 @@ chore: cleanup obsolete import in __init__.py
 
 **Format:** `<type>(<scope>): <subject>`
 - `type`: `feat`, `fix`, `docs`, `test`, `refactor`, `chore`, `build`, `ci`
-- `scope`: module name (`rna`, `gwas`, `core`, `cloud`)
+- `scope`: module name (`rna`, `gwas`, `core`, `dna`)
 - `subject`: imperative mood, no period, max 72 chars
 
 ## Documentation Requirements

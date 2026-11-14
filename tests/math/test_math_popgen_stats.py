@@ -12,7 +12,6 @@ from metainformant.math.population_genetics.statistics import (
     compare_population_statistic,
     compare_statistics,
     detect_outliers,
-    deterministic_replicate_seeds,
     equilibrium_heterozygosity_infinite_alleles,
     expected_pairwise_diversity,
     expected_segregating_sites,
@@ -31,7 +30,7 @@ from metainformant.math.population_genetics.statistics import (
 def test_bootstrap_confidence_interval():
     """Test bootstrap confidence interval calculation."""
     data = [1.0, 2.0, 3.0, 4.0, 5.0]
-    result = bootstrap_confidence_interval(data, np.mean, n_bootstrap=100, random_state=42)
+    result = bootstrap_confidence_interval(data, np.mean, n_bootstraps=100, random_state=42)
 
     assert "statistic" in result
     assert "ci_lower" in result
@@ -124,7 +123,7 @@ def test_calculate_confidence_intervals_rejects_point_values():
 def test_bootstrap_with_empty_data():
     """Test bootstrap with empty data."""
     data = []
-    result = bootstrap_confidence_interval(data, np.mean, n_bootstrap=100)
+    result = bootstrap_confidence_interval(data, np.mean, n_bootstraps=100)
 
     assert "statistic" in result
     assert result["n_bootstrap"] == 0
@@ -133,7 +132,7 @@ def test_bootstrap_with_empty_data():
 
 
 def test_permutation_test_with_empty_groups():
-    """An empty group has no mean to compare: no p-value exists (it used to be reported as 1.0)."""
+    """An empty group has no mean to compare: no p-value exists (not 1.0)."""
     with pytest.raises(ValueError, match="at least one value"):
         permutation_test([], [1.0, 2.0], n_permutations=100)
     with pytest.raises(ValueError, match="at least one value"):
@@ -245,16 +244,9 @@ def test_sample_size_for_power_inverse_of_power():
         sample_size_for_power(0.5, target_power=0.01)
 
 
-def test_deterministic_replicate_seeds_order_independent():
-    seeds = deterministic_replicate_seeds(42, 5)
-    assert len(seeds) == 5
-    assert len(set(seeds)) == 5
-    assert deterministic_replicate_seeds(42, 5) == seeds
-
-
-def test_fixation_probability_aliases_and_limits():
-    # Keyword alias conventions
-    assert fixation_probability(p0=0.1, Ne=1000, selection_coefficient=0.0) == pytest.approx(0.1)
+def test_fixation_probability_defaults_and_limits():
+    assert fixation_probability(0.1, 1000, selection_coefficient=0.0) == pytest.approx(0.1)
+    # A missing initial frequency means one new mutation, 1 / (2N)
     assert fixation_probability(selection_coefficient=0.0, population_size=100) == pytest.approx(0.005)
     # Missing population size raises
     with pytest.raises(ValueError, match="population_size"):

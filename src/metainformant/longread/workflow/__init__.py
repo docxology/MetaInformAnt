@@ -6,12 +6,13 @@ Ties together the io, quality, analysis, assembly, and visualization subpackages
 into cohesive, configurable workflows.
 
 Submodules:
-- orchestrator: Pipeline execution engine with dependency resolution
+- orchestrator_core: Pipeline execution engine with dependency resolution
+- pipeline_stages: Step builders for the QC, assembly, methylation and SV pipelines
 - pipelines: Pre-defined pipeline configurations
 - reporting: QC and analysis report generation"""
 
 from __future__ import annotations
 
-from . import orchestrator, orchestrator_core, pipeline_stages, pipelines, reporting
+from . import orchestrator_core, pipeline_stages, pipelines, reporting
 
-__all__ = ["orchestrator", "orchestrator_core", "pipeline_stages", "pipelines", "reporting"]
+__all__ = ["orchestrator_core", "pipeline_stages", "pipelines", "reporting"]

@@ -192,8 +192,8 @@ class TestPhenotypeEnvironmentInteraction:
         assert result["model"] == "multiplicative"
 
     def test_additive_model_is_rejected(self):
-        # g + e is the sum of the two main effects and has no interaction term to test; it used to be
-        # correlated with the phenotype and reported as an "additive interaction" (see test_phenotype_r4_fixes.py)
+        # g + e is the sum of the two main effects and has no interaction term to test, so it is rejected rather
+        # than correlated with the phenotype and reported as an "additive interaction" (see test_phenotype_r4_fixes.py)
         phenotypes = _make_phenotypes()
         genotypes = _make_genotypes()
         environment = {f"sample_{i}": float(i * 0.5) for i in range(20)}

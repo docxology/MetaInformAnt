@@ -427,7 +427,7 @@ def _log_getfastq_summary(output_text: str, logger: Any) -> None:
                 if "Number of SRAs to be processed:" in line:
                     total_samples = int(line.split(":")[-1].strip())
                     break
-        except (ValueError, IndexError):
+        except ValueError, IndexError:
             pass
 
     # Log summary only if we found relevant information

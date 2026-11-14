@@ -149,7 +149,7 @@ A test that fails has NaN statistics. Its row stays in `outputs["association_res
 
 ## Prerequisites
 
-- Python 3.11+
+- Python 3.14+
 - NumPy
 - Matplotlib (for visualization)
 - Optional: scipy (for advanced statistics)

@@ -308,15 +308,7 @@ def test_cli_execute_default_manifest_lives_under_results(root: Root, capsys: py
     assert (root.root.work / "getfastq" / "SRR104" / "SRR104_1.fastq.gz").exists()
 
 
-def test_cli_refuses_while_a_launcher_or_producer_holds_the_root(root: Root) -> None:
-    lock = root.data / "results" / ".full_campaign.lock"
-    lock.mkdir(parents=True)
-    before = _tree(root.data)
-    with pytest.raises(SystemExit, match="another writer holds the data root"):
-        main(root.args("--execute", "--manifest", str(root.base / "a.json")))
-    assert _tree(root.data) == before
-    lock.rmdir()
-
+def test_cli_refuses_while_a_producer_holds_the_root(root: Root) -> None:
     # A live producer holds the campaign writer lock (a separate process, like the real one).
     holder = subprocess.Popen(
         [sys.executable, "-c", PRODUCER_LOCK_HOLDER, str(root.data)], stdout=subprocess.PIPE, text=True

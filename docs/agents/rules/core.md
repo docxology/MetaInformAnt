@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Shared utilities for the domain modules. Most other modules build on it; `menu` and `cloud` do not import it.
+Shared utilities for the domain modules. Most other modules build on it; `menu` does not import it.
 
 ## Dependencies
 
@@ -13,7 +13,6 @@ Shared utilities for the domain modules. Most other modules build on it; `menu` 
 
 ```text
 src/metainformant/core/
-  db.py                 compatibility re-export of data/db.py
   ncbi.py               NCBI contact policy (resolve_ncbi_contact)
   sequence.py           shared sequence primitives (reverse_complement, validate_dna_sequence)
   data/
@@ -200,7 +199,6 @@ No core function creates these directories by itself: callers pass the directory
 - Optional PostgreSQL helpers (`psycopg2` is imported defensively): `PostgresConnection` with a connection pool, `execute_query`, `execute_transaction`, `bulk_insert`, `create_table` and `table_exists`
 - `get_db_client`, the `get_connection` context manager and `build_postgres_url`
 - `bulk_insert` and `create_table` reject table or column names that are not simple SQL identifiers; like any other failure inside them, the rejection surfaces as `RuntimeError` (with the `ValueError` as its cause)
-- `metainformant.core.db` re-exports `metainformant.core.data.db`
 
 ### Disk (`disk`)
 
@@ -226,7 +224,7 @@ No core function creates these directories by itself: callers pass the directory
 
 ### Text (`text`)
 
-- Whitespace and filename helpers: `normalize_whitespace`, `clean_whitespace`, `remove_control_chars`, `slugify`, `safe_filename`, `truncate_text`
+- Whitespace and filename helpers: `normalize_whitespace`, `remove_control_chars`, `slugify`, `safe_filename`, `truncate_text`
 - Biological-identifier helpers: `standardize_gene_name`, `format_species_name`, `clean_sequence_id`
 - Extraction helpers: `extract_numbers`, `extract_email_addresses`, `count_words`
 
@@ -283,7 +281,7 @@ def function():
 
 ## Integration with Other Modules
 
-Most domain modules build on `core` utilities (`menu` and `cloud` do not import it):
+Most domain modules build on `core` utilities (`menu` does not import it):
 
 - Import core utilities: `from metainformant.core import io`, `from metainformant.core.io import paths`, `from metainformant.core.utils import config`, and `from metainformant.core.utils import logging`
 - Use core utilities for file I/O, logging, and path expansion and containment checks

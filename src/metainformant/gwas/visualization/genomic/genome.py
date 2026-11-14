@@ -585,8 +585,8 @@ def manhattan_plot(
 
         for index, result in enumerate(results):
             # Every spelling of the shared helpers is read; a result that cannot be placed raises ValueError
-            # naming the accepted keys (reported below as the failure), where it used to be drawn on
-            # chromosome 1 at position 0.
+            # naming the accepted keys (reported below as the failure) rather than being drawn on chromosome 1
+            # at position 0.
             chromosome, position = record_placement(result, index, plot="manhattan_plot")
             p_value = get_p_value(result)
             if math.isnan(p_value):

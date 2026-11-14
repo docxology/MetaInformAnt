@@ -34,9 +34,7 @@ from metainformant.multiomics.analysis import integration
 # Integrate multiple omics types: each layer is a samples x features DataFrame;
 # only samples present in every layer are kept
 integrated = integration.integrate_omics_data(
-    dna_data=dna_data,
-    rna_data=rna_data,
-    protein_data=protein_data,
+    {"dna": dna_data, "rna": rna_data, "protein": protein_data}
 )  # Returns a MultiOmicsData (layers: "dna", "rna", "protein")
 
 # Joint analyses take the integrated object
@@ -90,7 +88,7 @@ output_path = paths.expand_and_resolve("output/multiomics/integration/")
 ### Joint Analysis
 - Joint dimensionality reduction is implemented in `analysis/integration.py` (`joint_pca`, `joint_nmf`, `canonical_correlation`)
 - Support multiple integration methods (CCA, PCA, NMF)
-- `canonical_correlation` is closed-form ridge CCA with no `**kwargs`: pass only `layers` (or `layer_pair`), `n_components` and `regularization`; use `regularization > 0` whenever the layers have more features than samples can constrain, because an unregularized fit is then degenerate (the leading canonical correlations equal exactly 1)
+- `canonical_correlation` is closed-form ridge CCA with no `**kwargs`: pass only `layers`, `n_components` and `regularization`; use `regularization > 0` whenever the layers have more features than samples can constrain, because an unregularized fit is then degenerate (the leading canonical correlations equal exactly 1)
 - Return integrated data structures
 
 ### Output Paths

@@ -1034,11 +1034,7 @@ def generate_population_sequences(
     length: int | None = None,
     *,
     theta: float | None = None,
-    n_sites: int = 1000,
     rng: random.Random | None = None,
-    # Parameter aliases for backward compatibility
-    sequence_length: int | None = None,
-    random_seed: int | None = None,
     mutation_rate: float | None = None,
     nucleotide_diversity: float | None = None,
     wattersons_theta: float | None = None,
@@ -1067,8 +1063,7 @@ def generate_population_sequences(
        ``E[theta_W] = theta_site``
     3. ``theta``: used as ``theta_site`` (per site, as in :func:`generate_two_populations`)
     4. ``mutation_rate``: per-site rate ``mu`` per generation. The population size is taken to be
-       ``n_sequences``, as the former ``theta = 4 * n_sequences * mutation_rate`` did, so
-       ``theta_site = 4 * n_sequences * mutation_rate``
+       ``n_sequences``, so ``theta_site = 4 * n_sequences * mutation_rate``
     5. none of them: ``theta_site = 0.01``
 
     The diversity targets are expectations over genealogies; the pi and Watterson's theta of a
@@ -1078,14 +1073,7 @@ def generate_population_sequences(
         n_sequences: Number of sequences to generate (at least 2)
         length: Length of each sequence
         theta: Per-site population mutation parameter ``4*N*mu`` (see above)
-        n_sites: Accepted and validated for backward compatibility, but not used. The former
-            star-shaped generator mutated a pool of this many candidate sites; under the
-            infinite-sites coalescent the number of variable sites is an outcome of the genealogy
-            and ``theta`` (mean ``theta * a_n``), not an input, and the variable sites are spread
-            uniformly over the sequence whatever the size of a candidate pool
         rng: Random number generator for reproducibility
-        sequence_length: Alias for length (backward compatibility)
-        random_seed: Random seed for reproducibility (creates rng if provided)
         mutation_rate: Per-site mutation rate per generation (alternative to theta; see above)
         nucleotide_diversity: Target per-site nucleotide diversity pi (see above)
         wattersons_theta: Target per-site Watterson's theta (see above)
@@ -1101,15 +1089,10 @@ def generate_population_sequences(
             (more expected or drawn segregating sites than A/C/G/T positions)
         ValidationError: If a numeric parameter is out of range
     """
-    # Handle parameter aliases
-    if sequence_length is not None and length is None:
-        length = sequence_length
     if reference_sequence is not None:
         length = len(reference_sequence)
     if length is None:
-        raise ValueError("length (or sequence_length) is required")
-    if random_seed is not None and rng is None:
-        rng = random.Random(random_seed)
+        raise ValueError("length is required")
 
     # Per-site population mutation parameter: the first parameter given decides
     if nucleotide_diversity is not None:
@@ -1126,7 +1109,6 @@ def generate_population_sequences(
     validation.validate_range(n_sequences, min_val=2, name="n_sequences")
     validation.validate_range(length, min_val=1, name="length")
     _check_theta(theta_per_site)
-    validation.validate_range(n_sites, min_val=1, name="n_sites")
 
     return _coalescent_sequences(
         n_sequences, length, theta_per_site, rng=coerce_rng(rng), reference_sequence=reference_sequence
@@ -1136,14 +1118,12 @@ def generate_population_sequences(
 def generate_two_populations(
     n_pop1: int,
     n_pop2: int,
-    length: int | None = None,
+    length: int,
     *,
-    f_st: float | None = None,
-    fst: float | None = None,
+    f_st: float = 0.1,
     theta: float = 0.01,
     n_sites: int | None = None,
     rng: random.Random | None = None,
-    sequence_length: int | None = None,
 ) -> Tuple[List[str], List[str]]:
     """Generate two populations differentiated by F_ST under the Balding-Nichols model.
 
@@ -1160,13 +1140,11 @@ def generate_two_populations(
         n_pop2: Size of population 2
         length: Sequence length
         f_st: Desired F_ST value (0-1)
-        fst: Alias for f_st (lowercase)
         theta: Per-site population mutation rate; sets the default ``n_sites``
         n_sites: Number of polymorphic sites, at most ``length`` (a larger number is an error, not a
             truncation). Defaults to Watterson's expectation ``theta * length * a_n`` for the
             ``n_pop1 + n_pop2`` sequences (at least 1), which must also fit in ``length``.
         rng: Random number generator for reproducibility
-        sequence_length: Alias for length
 
     Returns:
         Tuple of (population1_sequences, population2_sequences)
@@ -1175,16 +1153,6 @@ def generate_two_populations(
         ValueError: If parameters are invalid, or more polymorphic sites are asked for (or follow from
             ``theta``) than the sequences have positions
     """
-    # Handle parameter aliases
-    if sequence_length is not None and length is None:
-        length = sequence_length
-    if fst is not None and f_st is None:
-        f_st = fst
-    if f_st is None:
-        f_st = 0.1
-    if length is None:
-        raise ValueError("length (or sequence_length) is required")
-
     validation.validate_range(n_pop1, min_val=2, name="n_pop1")
     validation.validate_range(n_pop2, min_val=2, name="n_pop2")
     validation.validate_range(length, min_val=1, name="length")
@@ -1227,7 +1195,6 @@ def generate_genotype_matrix(
     n_individuals: int,
     n_snps: int | None = None,
     *,
-    n_sites: int | None = None,
     maf_min: float = 0.05,
     maf_max: float = 0.5,
     hwe_deviation: float = 0.0,
@@ -1240,8 +1207,7 @@ def generate_genotype_matrix(
 
     Args:
         n_individuals: Number of individuals
-        n_snps: Number of SNPs (alias: n_sites)
-        n_sites: Number of sites (alias for n_snps)
+        n_snps: Number of SNPs
         maf_min: Minimum minor allele frequency
         maf_max: Maximum minor allele frequency
         hwe_deviation: Deviation from Hardy-Weinberg equilibrium (0 = perfect HWE)
@@ -1257,11 +1223,8 @@ def generate_genotype_matrix(
     Raises:
         ValueError: If parameters are invalid
     """
-    # Handle parameter aliases
-    if n_sites is not None and n_snps is None:
-        n_snps = n_sites
     if n_snps is None:
-        raise ValueError("n_snps (or n_sites) is required")
+        raise ValueError("n_snps is required")
 
     # Use allele_frequencies to infer n_snps if provided
     if allele_frequencies is not None:
@@ -1642,8 +1605,7 @@ def simulate_population_expansion(
     coalesces, so the genealogy is star-like with long external branches: rare variants are in
     excess and Tajima's D is negative on average (about -0.9 for 20 sequences with the defaults),
     the textbook signature of a recent expansion. The ancestral population has the fixed per-site
-    population mutation parameter 0.01 (``4 * N * mu`` per site), as the founders of the former
-    generator did.
+    population mutation parameter 0.01 (``4 * N * mu`` per site).
 
     Statistics interface: the deterministic size trajectory (exponential growth from ``initial_size`` to
     ``final_size`` over ``expansion_time`` generations, sizes truncated to whole individuals) and what the
@@ -1773,10 +1735,9 @@ _SFS_MODEL_PARAMETERS: Dict[str, Dict[str, float]] = {
 
 
 def generate_site_frequency_spectrum(
-    n_samples: int | None = None,
-    n_sites: int | None = None,
+    n_samples: int,
+    n_sites: int,
     *,
-    sample_size: int | None = None,
     folded: bool = False,
     demographic_model: str = "constant",
     parameters: Dict[str, float] | None = None,
@@ -1805,9 +1766,8 @@ def generate_site_frequency_spectrum(
     a relative sampling error of about ``1 / sqrt(n_replicates)`` on top of the multinomial draw.
 
     Args:
-        n_samples: Number of sampled chromosomes (alias: sample_size)
+        n_samples: Number of sampled chromosomes
         n_sites: Number of polymorphic sites
-        sample_size: Alias for n_samples
         folded: Whether to return folded SFS (default False)
         demographic_model: Demographic model ("constant", "expansion", "bottleneck")
         parameters: Model-specific parameters, with times in units of ``2 * N_ref`` generations and sizes
@@ -1826,14 +1786,6 @@ def generate_site_frequency_spectrum(
         ValueError: If parameters are invalid
         ValidationError: If the model is unknown or ``parameters`` holds a name the model does not take
     """
-    # Handle parameter aliases
-    if sample_size is not None and n_samples is None:
-        n_samples = sample_size
-    if n_samples is None:
-        raise ValueError("n_samples (or sample_size) is required")
-    if n_sites is None:
-        raise ValueError("n_sites is required")
-
     validation.validate_range(n_samples, min_val=2, name="n_samples")
     validation.validate_range(n_sites, min_val=1, name="n_sites")
 
@@ -1937,7 +1889,6 @@ def generate_linkage_disequilibrium_data(
     n_individuals: int,
     n_snps: int | None = None,
     *,
-    n_sites: int | None = None,
     recombination_rate: float | None = None,
     selection_coefficient: float = 0.0,
     r_squared_target: float | None = None,
@@ -1958,7 +1909,7 @@ def generate_linkage_disequilibrium_data(
     the expected r-squared between adjacent sites equals ``r_squared_target`` (a sample r-squared
     scatters around it by about 2 r (1 - r-squared) / sqrt(``n_individuals``)). For sites with
     equal frequencies the correlation falls to r ** k between sites k apart. The model has no recombination
-    and no physical distance, so ``recombination_rate`` has no effect on it.
+    and no physical distance, so it takes no ``recombination_rate``.
 
     ``model="coalescent"``: the sample is drawn from the neutral coalescent with recombination
     (:func:`simulate_recombinant_haplotypes`, Hudson's ancestral recombination graph) over a region of
@@ -1978,18 +1929,15 @@ def generate_linkage_disequilibrium_data(
 
     Args:
         n_individuals: Number of individuals (rows), at least 2
-        n_snps: Number of sites (columns), at least 2 (alias: n_sites). Taken from the length of
+        n_snps: Number of sites (columns), at least 2. Taken from the length of
             ``allele_frequencies`` when that is given. Under the coalescent model, the exact number of
             segregating sites simulated
-        n_sites: Alias for n_snps
         recombination_rate: Probability of a recombination breakpoint per base pair per generation,
-            default 1e-8. Used by ``model="coalescent"`` only; ``model="markov"`` accepts and validates it
-            (it must not be negative) but it does not change the output, and says so in the log
+            at least 0 (default 1e-8). Coalescent model only
         selection_coefficient: Selection coefficient (0 = neutral). When non-zero, its absolute
             value replaces sqrt(``r_squared_target``) as the correlation r between adjacent
             sites (capped at 1); a heuristic coupling, not a model of selection. Markov model only
-        r_squared_target: Target r-squared between adjacent sites, within [0, 1]. The default,
-            0.25, is the r-squared this generator produced before a target was honoured. A pair
+        r_squared_target: Target r-squared between adjacent sites, within [0, 1] (default 0.25). A pair
             whose allele frequencies cannot reach the target (a rare allele next to a common one
             limits r-squared) is generated at the largest attainable r-squared and a warning is
             logged. Markov model only
@@ -2007,22 +1955,20 @@ def generate_linkage_disequilibrium_data(
         List of lists with one row per individual and one column per site, holding 0/1 alleles
 
     Raises:
-        ValueError: If neither n_snps nor n_sites is given
+        ValueError: If neither n_snps nor allele_frequencies is given
         ValidationError: If a parameter is out of range, r_squared_target, an allele frequency
             or selection_coefficient is not a valid number, or a parameter is given that the chosen
-            model does not use (``effective_size`` and ``sequence_length`` under ``"markov"``,
-            ``r_squared_target``, ``selection_coefficient`` and ``allele_frequencies`` under ``"coalescent"``)
+            model does not use (``recombination_rate``, ``effective_size`` and ``sequence_length`` under
+            ``"markov"``, ``r_squared_target``, ``selection_coefficient`` and ``allele_frequencies`` under
+            ``"coalescent"``)
     """
     if model not in _LD_MODELS:
         raise errors.ValidationError(f"model must be one of {_LD_MODELS}, got {model!r}")
 
-    # Handle parameter aliases
-    if n_sites is not None and n_snps is None:
-        n_snps = n_sites
     if allele_frequencies is not None:
         n_snps = len(allele_frequencies)
     if n_snps is None:
-        raise ValueError("n_snps (or n_sites) is required")
+        raise ValueError("n_snps (or allele_frequencies) is required")
 
     validation.validate_range(n_individuals, min_val=2, name="n_individuals")
     validation.validate_range(n_snps, min_val=2, name="n_snps")
@@ -2048,15 +1994,13 @@ def generate_linkage_disequilibrium_data(
             rng=rng,
         )
 
-    for name, value in (("effective_size", effective_size), ("sequence_length", sequence_length)):
+    for name, value in (
+        ("recombination_rate", recombination_rate),
+        ("effective_size", effective_size),
+        ("sequence_length", sequence_length),
+    ):
         if value is not None:
             raise errors.ValidationError(f"{name} is used by model='coalescent' only, not by model='markov'")
-    if recombination_rate is not None:
-        logger.warning(
-            "recombination_rate=%g has no effect on model='markov', which has no recombination step; "
-            "use model='coalescent' for linkage disequilibrium that depends on it",
-            recombination_rate,
-        )
     if r_squared_target is not None and not 0.0 <= r_squared_target <= 1.0:
         raise errors.ValidationError(f"r_squared_target must be within [0, 1], got {r_squared_target}")
     if allele_frequencies is not None and not all(0.0 <= freq <= 1.0 for freq in allele_frequencies):

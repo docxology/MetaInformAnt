@@ -4,19 +4,6 @@ The 27-species campaign uses a frozen inventory, configuration, reference index,
 and quantification contract. Keep these bindings stable while processing;
 changing a reference or quantifier creates a new analysis cohort.
 
-The candidate local frontier changes operational admission only: a bounded
-lookahead can supply acquisition independently of quantification. Size bands
-change admission order across species, not the scientific cohort or accepted
-read/quantification contract. Frozen-size reservations supplement actual
-capacity checks; they are not remaining network-byte estimates. Stage journals
-remain operational evidence. Reused outputs are excluded from new-sample rate,
-and neither a larger frontier nor local fixtures establish a campaign speedup.
-
-The observation bundle ([`scripts/rna/observe_acquisition.py`](../../scripts/rna/observe_acquisition.py))
-writes explicit phase-bound tables, figures and an operational manuscript
-supplement. These report producer startup counts separately from newly
-restore-verified outputs; they do not satisfy the full manuscript release gates.
-
 ## Tool contract
 
 Amalgkit is pinned to **0.16.108**, upstream commit
@@ -24,51 +11,37 @@ Amalgkit is pinned to **0.16.108**, upstream commit
 pin is a commit, recorded in `pyproject.toml`, `uv.lock` and
 `REQUIRED_AMALGKIT_VERSION`/`AMALGKIT_SOURCE_REVISION`; the runtime fails closed
 unless the installed distribution reports that commit. Quantifications made
-under the previous pin (0.16.60, tag `v0.16.60`, revision
-`c656a52aacdcee6fd3bf7e8031769ca957204ebc`) remain reusable as
+with Amalgkit 0.16.60 (tag `v0.16.60`, revision
+`c656a52aacdcee6fd3bf7e8031769ca957204ebc`) are reusable as
 `version_drift_compatible` when their non-version contract is unchanged.
-The worker also verifies Kallisto 0.52.0 and SRA Toolkit 3.4.1. The current downstream
-Amalgkit stages are Python implementations. A newer
-upstream development commit is not silently substituted into the campaign.
+The campaign uses Kallisto 0.52.0 and SRA Toolkit 3.4.1; the start-of-run
+preflight refuses a Kallisto whose version or index format differs from the one
+recorded for each species. The downstream Amalgkit stages are Python
+implementations. A newer upstream development commit is not silently
+substituted into the campaign.
 
 ## Quantifier and reference prerequisites
 
-Backend selection follows the installed Amalgkit metadata rules. Before acquisition,
-the generic worker checks that each frozen batch selects the requested accession
-and classifies its native quantifier. Supported short-read work requires a working
-Kallisto executable and the frozen index. Index staging uses the selected metadata
-`scientific_name`, including an explicitly prepared alias, while retaining the
-original species/index checksum binding.
+The quantification contract binds a Kallisto index. Index staging uses the
+selected metadata `scientific_name`, including an alias declared under the
+species configuration's `reference_aliases`, while keeping the species' index
+checksum binding.
 
-The current acquisition envelope binds a Kallisto index. A long-read run selected
-for oarfish remains unresolved: it needs an explicitly amended transcript FASTA/MMI
+A long-read run that the installed Amalgkit metadata rules select for oarfish
+is outside this contract: it needs an explicitly amended transcript FASTA/MMI
 binding, sequencing-technology provenance, native tool bootstrap and validated
-output/receipt support. Installing oarfish alone does not supply these requirements.
-Do not force a long-read run through Kallisto or replace the frozen reference to
-remove an error. Unresolved prerequisite work remains in the frozen denominator;
-its diagnostic classification is neither completion nor a scientific exclusion.
+output/receipt support. Installing oarfish alone does not supply these
+requirements. Do not force a long-read run through Kallisto or replace the
+frozen reference to remove an error. Such a run stays in the frozen
+denominator; an unquantified run is neither completion nor a scientific
+exclusion until a reviewed exclusion records it.
 
 For a host-transcriptome contract, an explicit 16S experiment title combined
-with GENOMIC or METAGENOMIC source and PCR selection is an unresolved metadata conflict.
-All three fields are required; zero pseudoalignment alone does not classify an
-assay. Existing quantifications remain preserved but require method review.
-Neither metadata nor the frozen task manifest is rewritten by this rule.
-
-## Resolving archive metadata gaps
-
-An optional `source_resolutions.json` supplement binds the original inventory
-hash to preserved NCBI experiment XML. It requires matching run identity,
-taxonomy, RNA-Seq strategy, public loaded data, positive spot/base counts, and
-a primary public SRA file. Source-file HEAD checks confirm the declared sizes.
-Hardened XML parsing rejects DTDs, entity expansion, external entities, and
-malformed evidence. Resolution cannot add samples or alter a reference/configuration. Worker
-partitions overlay recovered counts into a new metadata file and record its
-hash, the original metadata hash, and the source-evidence hash.
-
-For these runs, scheduling uses a modeled raw-file reservation of SRA bytes
-plus three times base count plus 512 bytes per spot. This is a conservative
-resource model, not measured FASTQ size; free-space floors, admission limits,
-and job deadlines still apply. The original frozen ENA records remain intact.
+with GENOMIC or METAGENOMIC source and PCR selection is a metadata conflict
+that needs method review; `python -m metainformant.rna.engine.exclusions`
+records a reviewed exclusion. All three fields are required; zero
+pseudoalignment alone does not classify an assay. Neither metadata nor the
+frozen task manifest is rewritten by this rule.
 
 ## Numerical input and result contracts
 
@@ -120,7 +93,7 @@ show recorded interval endpoints and the original estimate separately: a point
 outside its percentile interval must not extend the interval. Invalid interval
 bounds or non-finite values are rejected before figure output.
 
-Operational coverage plots describe the frozen eligible denominator and S3
+Operational coverage plots describe the frozen eligible denominator and
 receipt inventory at one checkpoint. They are not final expression results.
 Real-data diagnostic PCA uses a named subset with explicit input/selection
 provenance; it cannot stand in for the completed cohort.
@@ -161,11 +134,7 @@ pairs remain NaN with their overlap counts; malformed declared matrices fail.
 This is distinct from correlating each gene across aligned samples and from
 comparing native feature fingerprints.
 
-See the [project ownership map](../../projects/hymenoptera_amalgkit/doc/02_workflow/04_metainformant_methods.md)
-and its [dated fleet checkpoint](../../projects/hymenoptera_amalgkit/doc/01_infrastructure/completion_checkpoint_20261006.json).
-The earlier coverage snapshots retain their observation times and counts. Six-worker
-operation and a 64-vCPU quota are capacity facts, not evidence of sustained linear
-throughput or completed inference.
+See the [project ownership map](../../projects/hymenoptera_amalgkit/doc/02_workflow/04_metainformant_methods.md).
 
 ## Acquisition integrity retries
 
@@ -173,8 +142,7 @@ ENA transfers resume a gzip-invalid completed download only when its retained
 bytes are shorter than a known advertised remote size and a bounded resume
 attempt remains. Unknown-size or full-size corrupt transfers are preserved as
 diagnostic witnesses before a fresh retry. Exhausted attempts fail without
-certifying a corrupt FASTQ. This source repair does not replace immutable worker
-software already running in the AWS campaign.
+certifying a corrupt FASTQ.
 
 Fallback promotion also preserves the distinction between gzip integrity and
 library layout. For paired metadata with one unnumbered destination FASTQ, the
@@ -195,50 +163,49 @@ end-to-end throughput improvement; those require separate stage measurements.
 
 ## Concurrent local validation
 
-An isolated local snapshot can exercise downstream methods while AWS acquisition
+An isolated local snapshot can exercise downstream methods while acquisition
 continues. Its eligible run IDs, frozen configuration/index hashes and verified
 restoration witnesses must be explicit; completed subsets do not establish species
 completion. The [local validation guide](../../projects/hymenoptera_amalgkit/doc/02_workflow/05_local_downstream_validation.md)
 records the real count/filtered-metadata input contract, checkpoint reuse, preserved
 sanity warnings and remaining orthology/design release gates.
+
 ## Whole-sample acquisition admission
 
-The prepared local launcher selects four whole-sample acquisitions independently
-of twelve task workers, eight native ENA file connections and four quantifiers.
-The opt-in `AMALGKIT_PIPELINE_ACQUISITION_SLOTS` defaults to zero in the general
-orchestrator. `AMALGKIT_PIPELINE_ACQUISITION_QUEUE_TIMEOUT_SECONDS` bounds queue
-waiting separately (7,200 seconds in the local profile). Queue expiry preserves
-inputs and records deferral; the existing absolute first-pass clock starts after
-admission and is never reset while discovering metadata, waiting for file slots,
-transferring either mate, or validating reads. The acquisition lease releases
-before quantification and on errors. Queue and acquisition allowances add, so
-they must not be described as a single task wall-time limit. Native loopback
-controls can establish deadline behavior; useful live throughput still requires
-new restore-bound completions measured separately from checkpoint reuse.
+The producer's host profile bounds whole-sample acquisitions
+(`AMALGKIT_PIPELINE_ACQUISITION_SLOTS`, host default 8) independently of task
+workers, ENA file connections and quantifiers; without a host profile the
+orchestrator leaves admission unbounded (`0`).
+`AMALGKIT_PIPELINE_ACQUISITION_QUEUE_TIMEOUT_SECONDS` bounds queue waiting
+separately (default 7,200 seconds). Queue expiry preserves inputs and records
+deferral; the absolute first-pass clock starts after admission and is never
+reset while discovering metadata, waiting for file slots, transferring either
+mate, or validating reads. The acquisition lease releases before
+quantification and on errors. Queue and acquisition allowances add, so they
+must not be described as a single task wall-time limit. Native loopback
+controls can establish deadline behavior; useful live throughput requires new
+restore-bound completions measured separately from checkpoint reuse.
 
 ## Transient metadata recovery
 
-The local profile explicitly selects two ENA metadata retries. Bounded first
-passes retain this configured allowance instead of silently disabling retries.
-Requests and backoff share the existing acquisition deadline, and backoff holds
-no metadata lease. Explicit zero retries and earlier/expired deadlines remain
-effective. HTTP failures are still unavailable inputs unless a later request
-succeeds and all existing metadata, FASTQ and provenance checks pass.
+`ENADownloader` makes two ENA metadata retries by default (`api_retries`).
+Bounded first passes keep this allowance instead of silently disabling
+retries. Requests and backoff share the acquisition deadline, and backoff holds
+no metadata lease. Explicit zero retries and expired deadlines are honored.
+HTTP failures are unavailable inputs unless a later request succeeds and all
+metadata, FASTQ and provenance checks pass.
 
 ## Small-sample scheduling across species
 
-The local `size_bands` policy prioritizes known frozen size weights across all
-eligible species: up to 100 MiB, 500 MiB, 1/2/5/20 GiB, larger known samples,
-and finally unknown sizes. Species rotate inside each band. Checkpoint reuse
-stays interleaved, and already verified outputs need no new quantification.
-Every pending identity remains scheduled; held prerequisites retain their
-reasons and remain visible in the frozen cohort. This is not a scientific
+The producer's default `size_bands` order prioritizes known frozen size
+weights across all eligible species: up to 100 MiB, 500 MiB, 1/2/5/20 GiB,
+larger known samples, and finally unknown sizes. Species rotate inside each
+band, and verified outputs need no new quantification. Every pending identity
+stays scheduled and visible in the frozen cohort. This is not a scientific
 exclusion or a size-based biological selection.
 
 The policy can improve early completion counts by avoiding a large sample
 from one species ahead of many small samples elsewhere. It does not increase
 network bandwidth or prove a campaign-wide speedup. Size metadata may include
 fallback estimates; unknowns are never treated as zero-cost work. Retained
-FASTQ files and resumable parts stay intact. Reordering takes effect only in
-a newly bound phase after the normal reviewed preservation-aware cutover.
-
+FASTQ files and resumable parts stay intact.

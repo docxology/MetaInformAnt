@@ -57,7 +57,7 @@ End-to-end DNA workflows:
 
 ## Maintenance Notes
 - **Version**: Align releases with core module (semver tracked in `pyproject.toml`).
-- **Backwards compatibility**: Sequence API stable; alignment parameters may extend without breaking.
+- **API stability**: Sequence API stable; alignment parameters may extend without breaking.
 - **Test coverage**: Aim for 90%+ branch coverage; see `tests/coverage/`.
 - **Benchmarks**: Run `pytest tests/benchmark/` before major performance changes.
 

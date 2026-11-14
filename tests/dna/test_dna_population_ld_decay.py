@@ -1,8 +1,8 @@
 """calculate_ld_decay on sequences with missing data, and the F_ST of populations without comparable sites.
 
 Zero-mocks. The vectorized LD decay is checked against a plain loop over site pairs on random alignments, and
-against hand-computed values, including the case the old code got wrong: sequences with missing bases at
-different sites used to be paired by their position in a list of the calls that remained.
+against hand-computed values, including sequences with missing bases at different sites, which are paired by
+site, not by their position in a list of the calls that remain.
 """
 
 from __future__ import annotations
@@ -119,7 +119,7 @@ def test_unaligned_sequences_are_rejected_instead_of_read_past_their_end() -> No
 
 
 def test_hudson_fst_without_a_site_both_populations_call_is_undefined_not_zero() -> None:
-    """All-ambiguous sequences used to be reported as identical populations (F_ST of 0.0)."""
+    """All-ambiguous sequences are not reported as identical populations (F_ST of 0.0)."""
     with pytest.raises(ValueError, match="undefined"):
         core.hudson_fst(["NNNN", "NNNN"], ["ACGT", "ACGA"])
     with pytest.raises(ValueError, match="undefined"):

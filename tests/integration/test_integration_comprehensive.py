@@ -26,7 +26,7 @@ except ImportError:
     DNA_AVAILABLE = False
 
 try:
-    from metainformant.protein.sequence.sequences import parse_fasta as parse_protein_fasta
+    from metainformant.protein.sequence.sequences import read_fasta as read_protein_fasta
     from metainformant.protein.structure.general import compute_rmsd_kabsch
 
     _PROTEIN_IMPORT_PROBES = (compute_rmsd_kabsch,)
@@ -36,7 +36,8 @@ except ImportError:
 
 try:
     from metainformant.networks.analysis.community import detect_communities, modularity
-    from metainformant.networks.analysis.graph import add_edges_from_correlation, create_network, network_metrics
+    from metainformant.networks.analysis.graph_algorithms import network_metrics
+    from metainformant.networks.analysis.graph_core import add_edges_from_correlation, create_network
 
     NETWORKS_AVAILABLE = True
 except ImportError:
@@ -57,8 +58,8 @@ except ImportError:
     MULTIOMICS_AVAILABLE = False
 
 try:
-    from metainformant.math.popgen import hardy_weinberg_genotype_freqs
     from metainformant.math.population_genetics.coalescent import expected_time_to_mrca, watterson_theta
+    from metainformant.math.population_genetics.core import hardy_weinberg_genotype_freqs
 
     MATH_AVAILABLE = True
 except ImportError:
@@ -226,7 +227,9 @@ class TestBioinformaticsWorkflow:
         )
 
         # Create MultiOmicsData object
-        omics_data = MultiOmicsData(genomics=genomics_df, transcriptomics=transcr_df, proteomics=protein_df)
+        omics_data = MultiOmicsData(
+            data={"genomics": genomics_df, "transcriptomics": transcr_df, "proteomics": protein_df}
+        )
 
         # Verify data integration
         assert len(omics_data.layer_names) == 3
@@ -420,14 +423,14 @@ class TestModuleInteroperability:
     def test_sequence_analysis_integration(self, tmp_path):
         """Test integration between DNA and protein sequence analysis."""
         # Central dogma workflow: DNA -> RNA -> Protein
-        from metainformant.dna.transcription import transcribe_dna_to_rna
-        from metainformant.dna.translation import translate_dna
+        from metainformant.dna.expression.transcription import transcribe
+        from metainformant.dna.expression.translation import translate_dna
 
         # Start with DNA sequence
         dna_seq = "ATGAAATTTGGGCCCAAATAG"  # Start codon, some codons, stop codon
 
         # Transcribe to RNA
-        rna_seq = transcribe_dna_to_rna(dna_seq)
+        rna_seq = transcribe(dna_seq)
         assert rna_seq == dna_seq.replace("T", "U")
 
         # Translate to protein
@@ -454,7 +457,7 @@ class TestModuleInteroperability:
 
         # Analyze both with respective modules
         dna_sequences = read_fasta(str(dna_fasta))
-        protein_sequences = parse_protein_fasta(protein_fasta)
+        protein_sequences = read_protein_fasta(protein_fasta)
 
         assert len(dna_sequences) == 2
         assert len(protein_sequences) == 2
@@ -490,7 +493,7 @@ class TestModuleInteroperability:
         if MULTIOMICS_AVAILABLE:
             from metainformant.multiomics.analysis.integration import MultiOmicsData
 
-            omics_data = MultiOmicsData(transcriptomics=df)
+            omics_data = MultiOmicsData(data={"transcriptomics": df})
             assert omics_data.n_samples == 20
             assert len(omics_data.get_layer("transcriptomics").columns) == 30
 
@@ -563,7 +566,7 @@ class TestScalabilityAndPerformance:
         transcr_data = np.random.lognormal(0, 1, (n_samples, 100))
         transcr_df = pd.DataFrame(transcr_data, index=samples, columns=[f"Gene_{i}" for i in range(100)])
 
-        omics_data = MultiOmicsData(genomics=genomics_df, transcriptomics=transcr_df)
+        omics_data = MultiOmicsData(data={"genomics": genomics_df, "transcriptomics": transcr_df})
 
         # Joint PCA should handle different dimensionalities
         embeddings, loadings, explained_var = joint_pca(omics_data, n_components=10, standardize=True)
@@ -675,9 +678,11 @@ class TestEndToEndBiologicalScenarios:
 
         # Create multi-omics object
         omics_data = MultiOmicsData(
-            genomics=pd.DataFrame(snp_data, index=samples, columns=[f"SNP_{i}" for i in range(80)]),
-            transcriptomics=pd.DataFrame(mrna_data, index=samples, columns=[f"mRNA_{i}" for i in range(100)]),
-            proteomics=pd.DataFrame(protein_data, index=samples, columns=[f"Protein_{i}" for i in range(50)]),
+            data={
+                "genomics": pd.DataFrame(snp_data, index=samples, columns=[f"SNP_{i}" for i in range(80)]),
+                "transcriptomics": pd.DataFrame(mrna_data, index=samples, columns=[f"mRNA_{i}" for i in range(100)]),
+                "proteomics": pd.DataFrame(protein_data, index=samples, columns=[f"Protein_{i}" for i in range(50)]),
+            }
         )
 
         # Multi-omics integration
@@ -703,7 +708,7 @@ class TestEndToEndBiologicalScenarios:
 
         # Canonical correlation between transcriptomics and proteomics
         X_can, Y_can, _, _, correlations = canonical_correlation(
-            omics_data, layer_pair=("transcriptomics", "proteomics"), n_components=5, regularization=0.1
+            omics_data, layers=("transcriptomics", "proteomics"), n_components=5, regularization=0.1
         )
 
         # Verify results

@@ -21,6 +21,6 @@ From `AGENTS.md` (binding rules):
 
 ## AI Workflows
 
-- **New config**: start from `singlecell_template.yaml`. Sections: `input` (h5ad/csv/tsv), `qc` (`min_genes: 200`, `min_cells: 3`, `max_mito_percent: 5.0`, `max_ribo_percent: 50.0`), `normalization` (`method: log`, `target_sum: 10000`), `dimension_reduction` (50 PCA components, 15 UMAP neighbors), `clustering` (`leiden` or `louvain`, `resolution: 0.5`, `find_markers: true`), `output`, `performance`.
+- **New config**: start from `singlecell_template.yaml`. Sections: `input` (h5ad/csv/tsv), `qc` (`min_genes: 200`, `min_cells: 3`, `max_pct_mt: 5.0`, `max_ribo_percent: 50.0`), `normalization` (`method: log`, `target_sum: 10000`), `dimension_reduction` (50 PCA components, 15 UMAP neighbors), `clustering` (`leiden` or `louvain`, `resolution: 0.5`, `find_markers: true`), `output`, `performance`.
 - **Verification**: load the YAML with `metainformant.core.utils.config` helpers under `uv run python`; targeted singlecell tests only, never repo-wide (shared-instruction USB constraint).
 - **Scope discipline**: YAML here only; no edits to `src/metainformant/singlecell/` from config tasks.

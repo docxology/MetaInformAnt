@@ -65,7 +65,7 @@ class TestMergedPeakSummit:
 
         assert (merged.start, merged.end) == (100, 300)
         assert merged.signal_value == 20.0
-        assert merged.summit == 250  # it used to be 150, where the signal was only 5
+        assert merged.summit == 250  # not 150, where the signal is only 5
 
     def test_the_first_peak_keeps_its_summit_when_it_is_the_stronger_or_ties(self) -> None:
         first = ChIPPeak("chr1", 100, 200, summit=150, signal_value=20.0)

@@ -30,7 +30,6 @@ class TestConftestFixtures:
             "uv_cache_dir",
             "uv_project_env",
             "virtual_env",
-            "metainformant_venv",
             "python_path",
             "test_data_dir",
             "output_dir",
@@ -250,9 +249,9 @@ class TestUtilsModule:
 class TestTestScripts:
     """Test basic functionality of test scripts."""
 
-    def test_verify_deps_script_exists(self):
-        """Test that verify_test_deps.sh script exists and is executable."""
-        script_path = Path("scripts/package/verify_test_deps.sh")
+    def test_verify_script_exists(self):
+        """Test that the verify.sh script exists and is executable."""
+        script_path = Path("scripts/package/verify.sh")
         assert script_path.exists()
         assert script_path.stat().st_mode & 0o111  # Check if executable
 

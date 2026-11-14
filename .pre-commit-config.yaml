@@ -8,7 +8,7 @@ repos:
     rev: 26.10.1
     hooks:
       - id: black
-        language_version: python3.12
+        language_version: python3.14
         args: [--line-length=120]
         types: [python]
 
@@ -123,7 +123,7 @@ repos:
 
 # Configuration for specific hooks
 default_language_version:
-  python: python3.12
+  python: python3.14
 
 # Files to exclude from all hooks
 exclude: |

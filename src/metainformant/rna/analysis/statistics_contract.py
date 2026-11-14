@@ -291,8 +291,8 @@ class AnalysisProvenance:
     null_model: str
     # Multiplicity provenance defaults to None — the descriptive-role
     # representation (rendered ``not-applicable``). The fields stay optional
-    # at construction so legacy and descriptive-role callers keep working
-    # unchanged; :func:`validate_analysis_provenance` enforces the
+    # at construction so descriptive-role records omit them;
+    # :func:`validate_analysis_provenance` enforces the
     # ROLE-conditional requirement instead (an inferential record must
     # declare a real family, method, and tested-feature count, and a
     # descriptive record must declare none).

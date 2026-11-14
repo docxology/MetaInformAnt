@@ -3,8 +3,7 @@
 ``metainformant.ml.features.dimensionality`` keeps a single standardization
 path: ``pca_reduction`` and ``ica_reduction`` standardize through the shared
 ``_scale_features`` helper, and the ``reduce_dimensions_*`` functions are thin
-delegating wrappers (``standardize`` is only a deprecated alias of
-``scale_data``). Tests exercise real scikit-learn models on deterministic
+delegating wrappers. Tests exercise real scikit-learn models on deterministic
 data; no test doubles.
 """
 
@@ -102,13 +101,6 @@ class TestReduceDimensionsWrappers:
         assert np.allclose(X_reduced, X_pca)
         assert np.allclose(components, model.components_.T)
         assert np.allclose(explained_var, model.explained_variance_ratio_)
-
-    def test_standardize_alias_matches_scale_data(self) -> None:
-        X = _correlated_features()
-        X_scaled, _, _ = reduce_dimensions_pca(X, n_components=3, scale_data=False, random_state=0)
-        X_aliased, _, _ = reduce_dimensions_pca(X, n_components=3, standardize=False, random_state=0)
-
-        assert np.allclose(X_scaled, X_aliased)
 
     def test_default_component_count_is_capped(self) -> None:
         X = _correlated_features()

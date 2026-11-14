@@ -174,7 +174,7 @@ Samples categorically skipped entirely (if bypasses trigger) will be logged as:
 ### Download Slow or Failing
 
 ```bash
-# Check active acquisition workers
+# Check active downloads and extractions
 pgrep -af 'curl .*fastq|fasterq-dump' || true
 
 # Check ENA API availability

@@ -520,7 +520,7 @@ if item.metadata.get("_version") != "1.0":
     migrate_metadata(item)
 ```
 
-### Backward Compatibility
+### Adding New Keys
 
 When adding new keys, default to sensible values if missing:
 

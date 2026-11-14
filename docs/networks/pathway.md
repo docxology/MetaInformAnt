@@ -97,7 +97,7 @@ for pathway_id, result in ranked[:10]:  # Top 10 enriched pathways
     print(f"  Enrichment: {result['enrichment_ratio']:.2f}")
 ```
 
-Each result holds `overlap_size`, `pathway_size`, `query_size`, `background_size`, `p_value`, `enrichment_ratio`, `expected_overlap` and the overlapping genes (`overlap_genes`, also available as `overlapping_genes`). When a `correction` is requested, every result also carries the adjusted value as `corrected_p_value`.
+Each result holds `overlap_size`, `pathway_size`, `query_size`, `background_size`, `p_value`, `enrichment_ratio`, `expected_overlap` and the overlapping genes as `overlap_genes`. When a `correction` is requested, every result also carries the adjusted value as `corrected_p_value`.
 
 **Available methods** (any other name raises `ValueError`):
 - `'fisher'`: One-sided Fisher's exact test (default)
@@ -105,12 +105,12 @@ Each result holds `overlap_size`, `pathway_size`, `query_size`, `background_size
 
 Both methods report the one-sided enrichment p-value `P(X >= overlap)`, so they test the same upper tail. With scipy installed the p-value comes from `scipy.stats`; without scipy, `pathway_enrichment` computes the same upper tail exactly in integer arithmetic, so the result does not depend on whether scipy is available. `correction` is `'bonferroni'` (default), `'fdr'` (Benjamini-Hochberg) or `None`. Benjamini-Hochberg is pure Python, so `'fdr'` is applied with or without scipy. An unrecognised `correction` value copies the raw p-values into `corrected_p_value` unchanged.
 
-### network_enrichment_analysis()
+### Network-neighbourhood enrichment
 
-Network-based enrichment analysis. The function takes the same arguments as `pathway_enrichment` and simply forwards to it, so the network neighbourhood is whatever gene list you pass in. To enrich a 1-hop neighbourhood, expand the list from an interaction network first:
+`pathway_enrichment` tests whatever gene list you pass in. To enrich a 1-hop neighbourhood, expand the list from an interaction network first:
 
 ```python
-from metainformant.networks.analysis.pathway import network_enrichment_analysis
+from metainformant.networks.analysis.pathway import pathway_enrichment
 from metainformant.networks.interaction.ppi import ProteinNetwork
 
 # Protein interaction network
@@ -126,7 +126,7 @@ for gene in gene_list:
     neighborhood.update(ppi_network.get_protein_partners(gene))
 
 # Network-based enrichment
-network_enriched = network_enrichment_analysis(
+network_enriched = pathway_enrichment(
     sorted(neighborhood),
     pathway_network,
     method="fisher",

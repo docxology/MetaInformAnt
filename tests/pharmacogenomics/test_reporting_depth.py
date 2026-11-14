@@ -52,8 +52,8 @@ class TestGenerateClinicalReport:
             assert g["phenotype_abbreviation"]
 
     def test_unknown_gene_is_indeterminate_not_a_cyp2d6_like_normal(self) -> None:
-        # A gene CPIC defines no phenotype for used to score its unknown alleles 1.0 and take the
-        # CYP2D6 bands, so *99/*100 read as Normal (NM). It is Indeterminate (IND), with the reason.
+        # A gene CPIC defines no phenotype for does not score its unknown alleles 1.0 or take the
+        # CYP2D6 bands, so *99/*100 is Indeterminate (IND), with the reason, not Normal (NM).
         report = generate_clinical_report({}, {"NOTAGENE": {"diplotype": "*99/*100"}})
         result = report["genotype_results"][0]
         assert result["gene"] == "NOTAGENE"
@@ -145,7 +145,7 @@ class TestDrugRecommendations:
         assert report["clinical_actions"] == []
 
     def test_recommendation_follows_the_corrected_phenotype(self) -> None:
-        # *1/*4 is an intermediate metabolizer (it used to be reported as normal), and the codeine
+        # *1/*4 is an intermediate metabolizer (not normal), and the codeine
         # recommendation is the intermediate-metabolizer one.
         report = generate_clinical_report({}, {"CYP2D6": {"diplotype": "*1/*4"}}, drugs=["codeine"])
         assert report["genotype_results"][0]["phenotype_abbreviation"] == "IM"

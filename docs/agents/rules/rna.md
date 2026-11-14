@@ -51,8 +51,9 @@ bash projects/hymenoptera_amalgkit/scripts/run_full_campaign.sh
 `run_full_campaign.sh` exist only once it is checked out.
 
 For one species, use `scripts/rna/process_species.py --species <name>` with the
-same config directory and data root. Never start it while the full campaign
-lock (`$AMALGKIT_DATA_ROOT/results/.full_campaign.lock`) is held.
+same config directory and data root. Never start it while the campaign writer
+flock (`$AMALGKIT_DATA_ROOT/.campaign.flock`) is held; check it with
+`python -m metainformant.rna.engine.campaign_lock status --data-root "$AMALGKIT_DATA_ROOT"`.
 
 ## Public Python interfaces
 
@@ -105,7 +106,7 @@ Use `uv run pytest` with real implementations. Mark network and external-tool
 tests explicitly (`@pytest.mark.network`, `@pytest.mark.external_tool`), keep
 test artifacts under `tmp_path`, run the project docs validator
 (`projects/hymenoptera_amalgkit/scripts/validate_project_docs.py`), and run the
-RNA current-surface retirement guard (`tests/rna/test_rna_amalgkit_current.py`)
-before release. The guard fails when a retired entry-point file reappears or an
+RNA current-surface guard (`tests/rna/test_rna_amalgkit_current.py`)
+before release. The guard fails when a removed entry-point file reappears or an
 active RNA source, script, doc or config file (this page included) refers to a
-retired API.
+removed API.

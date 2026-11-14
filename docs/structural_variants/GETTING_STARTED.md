@@ -20,7 +20,7 @@ NumPy, SciPy, pandas, matplotlib and seaborn are core dependencies of the packag
 
 | Component | Version | Purpose |
 |-----------|---------|---------|
-| Python | 3.11+ | Core runtime |
+| Python | 3.14+ | Core runtime |
 | NumPy | ≥1.24 | Numerical operations |
 | SciPy | ≥1.11 | Installed with the package; the structural variant functions do not call it |
 | pysam | ≥0.21 (`external-tools` extra) | BAM/CRAM I/O |

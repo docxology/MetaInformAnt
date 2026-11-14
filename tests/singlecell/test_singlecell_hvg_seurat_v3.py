@@ -277,14 +277,6 @@ class TestSelectHvgsSeuratV3:
         )
         assert {"highly_variable", "means", "variances", "variances_norm", "dispersions"} <= set(result.var.columns)
 
-    def test_the_method_alias_gives_the_same_selection(self) -> None:
-        counts, _ = _poisson_counts_with_planted_genes()
-
-        by_flavor = select_hvgs(SingleCellData(counts), n_top_genes=30, flavor="seurat_v3")
-        by_method = select_hvgs(SingleCellData(counts), n_top_genes=30, method="seurat_v3")
-
-        np.testing.assert_array_equal(_flagged(by_flavor), _flagged(by_method))
-
     def test_sparse_counts_give_the_dense_selection(self) -> None:
         counts, _ = _poisson_counts_with_planted_genes()
 

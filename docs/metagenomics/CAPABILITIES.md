@@ -575,7 +575,7 @@ print(result.high_quality_bins)  # None: no marker_genes were given
 
 ---
 
-#### `assess_bin_quality(bins, contigs=None, marker_genes=None, marker_set=None) -> list[GenomeBin]`
+#### `assess_bin_quality(bins, *, marker_genes=None, marker_set=None) -> list[GenomeBin]`
 
 **Purpose**: Compute CheckM-style bin quality from single-copy marker gene annotations. Updates the bins in place and returns them.
 
@@ -586,7 +586,6 @@ For `M` expected markers (the size of `marker_set`, by default the 36 `BACTERIAL
 
 **Parameters**:
 - `bins` (list[GenomeBin])
-- `contigs`: accepted but unused (no marker search is performed on sequences)
 - `marker_genes` (Mapping[str, Sequence[str]] | None): contig ID → marker names found on that contig; a name listed twice counts as two copies, and contigs missing from the mapping carry no markers. The annotations must come from a real marker search (for example HMMER with TIGRFAM/Pfam marker profiles); annotation names outside the expected set are ignored
 - `marker_set` (Collection[str] | None): Expected markers, matching the annotation names (for example a lineage-specific CheckM or BUSCO set). An empty set raises `ValueError`
 

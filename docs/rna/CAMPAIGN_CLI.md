@@ -100,8 +100,7 @@ and `--species` also limits finalization.
 | `AMALGKIT_TEMP_ROOT` / `AMALGKIT_CACHE_ROOT` | `<data-root>/.tmp` / `.cache` | Producer `TMPDIR` / `XDG_CACHE_HOME`; uv's cache stays at its default unless `AMALGKIT_UV_CACHE_DIR` is set |
 | `AMALGKIT_CAFFEINATE` | `yes` | Re-execute under `caffeinate -dims` unless already under `caffeinate` |
 
-`AMALGKIT_PIPELINE_PROFILE` and `AMALGKIT_PIPELINE_HOST_CPUS` are retired (the
-launcher prints a note). One launch runs preflight, then the producer; exit 75
+One launch runs preflight, then the producer; exit 75
 leads to bounded retry passes, and only a drained producer (exit 0) is followed
 by merge → wsfilter → finalize → sanity under
 `python -m metainformant.rna.engine.campaign_lock run --kind finalization`. The

@@ -50,7 +50,6 @@ The `text` module is in `src/metainformant/core/utils/text.py`. It's part of the
 
 **Basic text processing**:
 - `normalize_whitespace()` — Collapse whitespace to single spaces
-- `clean_whitespace()` — Alias for `normalize_whitespace()`
 - `remove_control_chars()` — Strip control characters
 
 **Slugification & filename safety**:
@@ -105,18 +104,6 @@ print(normalize_whitespace(s))
 ```
 
 **Use case**: Cleaning free-text fields from samplesheets, metadata tables.
-
-#### `clean_whitespace(text: str) -> str`
-
-Alias for `normalize_whitespace()`. Maintained for backward compatibility.
-
-**Example**:
-```python
-# These are equivalent:
-a = normalize_whitespace(text)
-b = clean_whitespace(text)
-assert a == b
-```
 
 #### `remove_control_chars(text: str) -> str`
 
@@ -778,7 +765,7 @@ Text processing functions are generally safe, but be aware of:
 
 The module uses simple regex patterns without nested quantifiers, which are safe from catastrophic backtracking. When extending with custom regexes:
 - Avoid patterns like `(a+)+` on untrusted input
-- Use `re.compile()` with timeout (Python 3.11+ has `re.TEMPLATE` limits)
+- Bound the input length before matching; the standard `re` module has no match timeout
 
 ### Unicode Homoglyph Attacks
 

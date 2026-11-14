@@ -12,7 +12,6 @@ Task-oriented quick-reference documentation for common METAINFORMANT workflows.
 - **Files**:
   - `analyze_dna.md`: DNA sequence analysis tasks
   - `data_conversion.md`: Format conversion workflows
-  - `deploy_cloud.md`: GCP cloud deployment guide
   - `mcp_integration.md`: MCP tool integration
   - `performance_tuning.md`: Pipeline optimization
   - `run_gwas.md`: GWAS analysis workflow

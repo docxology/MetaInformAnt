@@ -6,8 +6,6 @@ Iterates through all verified `amalgkit_*.yaml` configs in the project config di
 excludes templates/tests, and performs:
 1. Downloads genome assets (FASTA/GTF/GFF) using `curl` from the FTP URL in config.
 2. Runs `kallisto index` to build the transcriptome index.
-
-This replaces the failed `amalgkit genome` approach.
 """
 
 import glob

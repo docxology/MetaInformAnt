@@ -65,7 +65,7 @@ summary_path = write_go_summary(onto)
 
 ```python
 from metainformant.ontology.core.go import load_go_obo
-from metainformant.ontology.query import (
+from metainformant.ontology.query.query import (
     ancestors, descendants, common_ancestors,
     path_to_root, distance, find_term_by_name,
     filter_by_namespace, get_roots, get_leaves

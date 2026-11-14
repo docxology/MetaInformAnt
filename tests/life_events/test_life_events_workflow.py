@@ -80,11 +80,9 @@ def test_compare_populations(tmp_path):
     output_dir = tmp_path / "comparison"
     comparison = compare_populations(group1, group2, output_dir=output_dir)
 
-    assert "group1" in comparison
-    assert "group2" in comparison
     assert "comparison" in comparison
-    assert comparison["group1"]["n_sequences"] == 1
-    assert comparison["group2"]["n_sequences"] == 1
+    assert comparison["group1_stats"]["total_sequences"] == 1
+    assert comparison["group2_stats"]["total_sequences"] == 1
 
 
 def test_intervention_analysis(tmp_path):
@@ -214,7 +212,7 @@ model:
 
 
 def test_analyze_life_course_with_dict_config(tmp_path):
-    """Test analyze_life_course with dict config (backward compatibility)."""
+    """Test analyze_life_course with a plain dict config."""
     events1 = [
         Event("degree", datetime(2010, 6, 1), "education"),
     ]

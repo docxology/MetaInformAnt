@@ -52,7 +52,7 @@ from metainformant.math.population_genetics.statistics import (
 
 class TestFamilySizeVariance:
     def test_integer_census_size_is_accepted(self) -> None:
-        """``effective_size_from_family_size_variance(1000, Vk=5)`` used to raise a bare AssertionError."""
+        """``effective_size_from_family_size_variance(1000, Vk=5)`` accepts an integer census size."""
         assert effective_size_from_family_size_variance(1000, Vk=5) == pytest.approx((4 * 1000 - 2) / (5 + 2))
 
     @pytest.mark.parametrize("census", [1000, 1000.0, np.int64(1000), np.float32(1000)])
@@ -101,30 +101,20 @@ class TestSexRatioEffectiveSize:
     def test_wright_formula(self, males: float, females: float) -> None:
         assert effective_size_sex_ratio(males, females) == pytest.approx(4 * males * females / (males + females))
 
-    def test_continuous_through_a_sex_ratio_of_one_half(self) -> None:
-        """Ne used to jump from 400.00001 at a sex ratio of 0.4999 to 200 at exactly 0.5."""
-        at_half = effective_size_sex_ratio(100, 100, sex_ratio=0.5)
-        assert at_half == pytest.approx(200.0)
-        for ratio in (0.4999, 0.49999999, 0.5001, 0.45, 0.3, 0.9):
-            assert effective_size_sex_ratio(100, 100, sex_ratio=ratio) == pytest.approx(at_half, rel=1e-9)
-
     def test_never_exceeds_the_census_size(self) -> None:
-        """Unequal sexes can only lower Ne; the old adjustment gave 800 for 100 males and 300 females."""
+        """Unequal sexes can only lower Ne (100 males and 300 females give 300, not more than 400)."""
         for males in (1, 5, 40, 100, 1000):
             for females in (1, 7, 60, 300, 5000):
-                for ratio in (0.01, 0.1, 0.25, 0.5, 0.75, 0.99):
-                    ne = effective_size_sex_ratio(males, females, sex_ratio=ratio)
-                    assert ne <= males + females + 1e-9, (males, females, ratio, ne)
+                ne = effective_size_sex_ratio(males, females)
+                assert ne <= males + females + 1e-9, (males, females, ne)
 
     def test_symmetric_in_the_two_sexes(self) -> None:
         assert effective_size_sex_ratio(10, 90) == pytest.approx(effective_size_sex_ratio(90, 10))
 
-    @pytest.mark.parametrize("ratio", [None, 0.1])
-    def test_matches_allele_frequency_drift_simulation(self, ratio: float | None) -> None:
+    def test_matches_allele_frequency_drift_simulation(self) -> None:
         """One generation of drift: p' = (p_m + p_f) / 2 with binomial samples from 2 Nm male and 2 Nf female genes.
 
-        Var(p') = p q / (2 Ne) defines the variance effective size. The sex ratio of the breeders is 0.1
-        here, so passing it (the consistent value) must not change the answer.
+        Var(p') = p q / (2 Ne) defines the variance effective size.
         """
         males, females, p, replicates = 10, 90, 0.5, 400_000
         rng = np.random.default_rng(3)
@@ -132,14 +122,11 @@ class TestSexRatioEffectiveSize:
         female_freq = rng.binomial(2 * females, p, replicates) / (2 * females)
         offspring = (male_freq + female_freq) / 2
         ne_from_drift = p * (1 - p) / (2 * offspring.var(ddof=1))
-        kwargs = {} if ratio is None else {"sex_ratio": ratio}
-        assert effective_size_sex_ratio(males, females, **kwargs) == pytest.approx(ne_from_drift, rel=0.02)
+        assert effective_size_sex_ratio(males, females) == pytest.approx(ne_from_drift, rel=0.02)
 
-    def test_validation_is_unchanged(self) -> None:
+    def test_validation(self) -> None:
         with pytest.raises(ValueError, match="positive"):
             effective_size_sex_ratio(0.0, 100.0)
-        with pytest.raises(ValueError, match="between 0 and 1"):
-            effective_size_sex_ratio(100.0, 100.0, sex_ratio=1.0)
 
 
 # ---------------------------------------------------------------------------
@@ -162,7 +149,7 @@ class TestFisherExactTest:
         assert p_value == 1.0
 
     def test_without_scipy_the_function_raises_instead_of_inventing_a_p_value(self, tmp_path: Path) -> None:
-        """A fallback branch used to return ``min(1.0, chi_square / 3.84)``, which grows as the evidence strengthens.
+        """No fallback returns ``min(1.0, chi_square / 3.84)``, which grows as the evidence strengthens.
 
         scipy is blocked after the package is imported (as an uninstalled scipy would be at call time) in a
         fresh interpreter; the function must fail loudly, never hand back a number.
@@ -452,10 +439,10 @@ class TestCoalescentSeeding:
             8, effective_size=1000.0, mutation_rate=1e-3, random_state=np.random.default_rng(5)
         )
         assert by_generator == by_seed
-        legacy = simulate_coalescent(
+        by_random_state = simulate_coalescent(
             8, effective_size=1000.0, mutation_rate=1e-3, random_state=np.random.RandomState(5)
         )
-        assert legacy["n_samples"] == 8 and len(legacy["coalescence_times"]) == 7
+        assert by_random_state["n_samples"] == 8 and len(by_random_state["coalescence_times"]) == 7
 
     def test_seeded_run_leaves_the_global_generator_untouched(self) -> None:
         np.random.seed(7)
@@ -560,7 +547,7 @@ class TestCompareStatisticsRunsTheRequestedTest:
         assert result["p_value"] == pytest.approx(float(expected.pvalue), rel=1e-12)
 
     def test_kruskal_is_the_kruskal_wallis_statistic_not_the_t_statistic(self) -> None:
-        """``test_type="kruskal"`` used to return Welch's t (about -3.71 here) under the name 'kruskal'."""
+        """``test_type="kruskal"`` returns the Kruskal-Wallis H, not Welch's t (about -3.71 here) named 'kruskal'."""
         result = compare_statistics(GROUP_A, GROUP_B, test_type="kruskal")
         h, p = _kruskal_by_hand(self.a, self.b)
         assert result["test_statistic"] == pytest.approx(h, rel=1e-12)
@@ -595,7 +582,7 @@ class TestCompareStatisticsRunsTheRequestedTest:
 
     @pytest.mark.parametrize("bad", ["anova", "Kruskal", "wilcoxon", "welch", ""])
     def test_unknown_test_type_raises(self, bad: str) -> None:
-        """An unknown name used to run Welch's t-test and be echoed back as if it had been run."""
+        """An unknown name raises; it does not run Welch's t-test and echo the name back as if it had been run."""
         with pytest.raises(ValueError, match="Unknown test_type"):
             compare_statistics(GROUP_A, GROUP_B, test_type=bad)
         with pytest.raises(ValueError, match="Unknown test_type"):
@@ -615,7 +602,7 @@ class TestCompareStatisticsRunsTheRequestedTest:
     def test_untestable_input_raises_instead_of_returning_a_p_value(
         self, test_type: str, first: list, second: list
     ) -> None:
-        """SciPy errors used to be swallowed into ``p_value = 1.0`` (and NaN data into a NaN p-value)."""
+        """SciPy errors are not swallowed into ``p_value = 1.0`` (nor NaN data into a NaN p-value)."""
         with pytest.raises(ValueError):
             compare_statistics(first, second, test_type=test_type)
 
@@ -662,7 +649,7 @@ class TestConfidenceIntervalsComeFromData:
 
     @pytest.mark.parametrize("points", [{"pi": 0.01, "theta": 0.01}, {"d": -0.5}, {"x": 0.0}, {"y": np.float64(0.25)}])
     def test_dictionary_of_point_values_is_rejected(self, points: dict) -> None:
-        """A lone estimate holds no sampling information; the +-10% band it used to get was invented."""
+        """A lone estimate holds no sampling information, so it gets no invented +-10% band."""
         with pytest.raises(ValueError, match="no sampling information"):
             calculate_confidence_intervals(points)
 
@@ -718,7 +705,7 @@ class TestConfidenceIntervalsComeFromData:
 
     @pytest.mark.parametrize("method", ["bootstrap", "normal", "percentile"])
     def test_array_input_gives_the_list_interval(self, method: str) -> None:
-        """A numpy array used to fail on the truth value of the array itself."""
+        """A numpy array works; it does not fail on the truth value of the array itself."""
         values = [1.0, 2.0, 3.5, 4.0, 5.5, 7.0]
         assert calculate_confidence_intervals(np.array(values), method=method) == calculate_confidence_intervals(
             values, method=method

@@ -16,7 +16,7 @@
 | `ValueError: Activity score must be a non-negative number, got nan` | A negative or NaN score reached `alleles.phenotype.predict_metabolizer_status` or `classify_metabolizer`, which refuse to map it to a phenotype | Compute the score from non-negative allele values; check for a missing value upstream |
 | Unknown allele produces Indeterminate and score `None` | The allele is absent from the applicable activity table; both phenotype front ends report its name in `unknown_alleles` | Check the name or supply sourced custom activity values; the strict `compute_activity_score` helper still raises for unknown alleles |
 | `ValueError: Unrecognised metabolizer phenotype: 'x'` | `MetabolizerPhenotype.from_string` got a label it does not know | Use a CPIC name (`'Poor Metabolizer'`), an abbreviation (`'PM'`) or a token (`'poor'`) |
-| CYP2D6 `*1/*4` is intermediate, not normal | Activity score 1.0 falls in CPIC's intermediate band (0 < AS < 1.25) | Nothing to fix: `classify_phenotype` and `predict_metabolizer` agree |
+| CYP2D6 `*1/*4` is intermediate, not normal | Activity score 1.0 falls in CPIC's intermediate band (0 < AS < 1.25) | Nothing to fix: `classify_phenotype` and `predict_metabolizer_status` agree |
 | A report shows `Indeterminate` (`IND`) | Unknown allele, malformed diplotype or unsupported phenotype gene, with no usable supplied phenotype | Inspect `unknown_alleles` and `clinical_significance`; correct the genotype or provide independently supported phenotype information |
 | `ImportError: matplotlib is required for pharmacogenomics visualization` | matplotlib is missing from the environment (it is a core dependency) | `uv pip install matplotlib` |
 

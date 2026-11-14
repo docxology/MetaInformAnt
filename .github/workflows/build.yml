@@ -27,9 +27,13 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      # The repository's .python-version selects 3.14; UV_PYTHON keeps the uv
+      # commands in this job on the matrix interpreter.
+      UV_PYTHON: ${{ matrix.python-version }}
     strategy:
       matrix:
-        python-version: ["3.11", "3.12"]
+        python-version: ["3.14", "3.15"]
 
     steps:
     - name: Checkout code
@@ -138,7 +142,7 @@ jobs:
     - name: Download build artifacts
       uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
       with:
-        name: metainformant-3.12-${{ github.sha }}
+        name: metainformant-3.14-${{ github.sha }}
         path: dist/
 
     - name: Install uv
@@ -146,13 +150,13 @@ jobs:
       with:
         version: "latest"
 
-    - name: Set up Python 3.12
-      run: uv python install 3.12
+    - name: Set up Python 3.14
+      run: uv python install 3.14
 
     - name: Install package and test
       run: |
         # Test installation in clean environment
-        uv venv --python 3.12 validation_env
+        uv venv --python 3.14 validation_env
 
         # Install from wheel
         if ls dist/*.whl >/dev/null 2>&1; then

@@ -728,14 +728,6 @@ class GridWorld:
         """
         return [(agent.x, agent.y) for agent in self.agents]
 
-    def get_agent_positions(self) -> List[Tuple[int, int]]:
-        """Get current positions of all agents (alias for positions()).
-
-        Returns:
-            List of (x, y) coordinate tuples
-        """
-        return self.positions()
-
     def get_agent_energies(self) -> List[float]:
         """Get current energy levels of all agents.
 

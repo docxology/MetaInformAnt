@@ -502,8 +502,8 @@ def calculate_biodiversity_indices(
     results: Dict[str, List[float]] = {}
 
     for index_name in indices:
-        # An unknown index or malformed abundances raise from here. They used to be caught and replaced by a
-        # list of zeros, which reads as "every community has zero diversity" rather than "this failed".
+        # An unknown index or malformed abundances raise from here: a list of zeros would read as "every community
+        # has zero diversity" rather than "this failed".
         values = calculate_diversity(community_data, index_name)
         if not isinstance(values, list):
             raise TypeError(
@@ -558,8 +558,8 @@ def alpha_beta_gamma_diversity(communities: List[List[float]]) -> Dict[str, floa
       true diversities, not to entropies). It is 1 when every community has the same composition and reaches the
       number of communities when they share no species and are equally large, e.g. 3.0 for three
       equally abundant single-species communities of different species. (The ratio ``gamma / alpha`` of the
-      entropies, which this used to return, is not a diversity partition; it was 0.0 whenever alpha was 0, even
-      for communities with nothing in common.)
+      entropies is not a diversity partition; it is 0.0 whenever alpha is 0, even for communities with nothing in
+      common.)
 
     Args:
         communities: List of community abundance vectors, aligned by species. Non-positive abundances

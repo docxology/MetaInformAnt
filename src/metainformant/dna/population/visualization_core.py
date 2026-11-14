@@ -163,15 +163,12 @@ def plot_selection_statistics(statistics: Dict[str, List[float]], output_file: O
     return fig
 
 
-def plot_population_diversity(
-    diversity_data: Dict[str, float], output_file: Optional[str] = None, output_path: Optional[str] = None
-) -> Optional[Any]:
+def plot_population_diversity(diversity_data: Dict[str, float], output_file: Optional[str] = None) -> Optional[Any]:
     """Plot population diversity comparison.
 
     Args:
         diversity_data: Dictionary mapping population names to diversity values
         output_file: Optional output file path
-        output_path: Alias for output_file
 
     Returns:
         Plot object if matplotlib available, None otherwise
@@ -180,7 +177,6 @@ def plot_population_diversity(
         >>> diversity = {"pop1": 0.01, "pop2": 0.015, "pop3": 0.008}
         >>> plot = plot_population_diversity(diversity)
     """
-    output = output_file or output_path
     try:
         import matplotlib.pyplot as plt
     except ImportError:
@@ -203,9 +199,9 @@ def plot_population_diversity(
 
     plt.grid(True, alpha=0.3, axis="y")
 
-    if output:
-        plt.savefig(output, dpi=300, bbox_inches="tight")
-        logger.info(f"Saved population diversity plot to {output}")
+    if output_file:
+        plt.savefig(output_file, dpi=300, bbox_inches="tight")
+        logger.info(f"Saved population diversity plot to {output_file}")
 
     fig = plt.gcf()
     plt.close(fig)

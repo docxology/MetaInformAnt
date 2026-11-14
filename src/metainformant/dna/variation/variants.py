@@ -463,7 +463,7 @@ def calculate_allele_frequency(vcf_data: Dict[str, Any], variant_index: int) -> 
                             allele = variant["alt"][allele_idx - 1]
 
                         allele_counts[allele] += 1
-                    except (ValueError, IndexError):
+                    except ValueError, IndexError:
                         continue
 
     # Convert to frequencies

@@ -29,18 +29,11 @@ from metainformant.information.metrics.advanced.channel import (
 # ============================================================
 # Information geometry imports
 # ============================================================
-from metainformant.information.metrics.advanced.geometry import (
-    channel_capacity as channel_capacity_geo,
-    entropy_power_inequality,
+from metainformant.information.metrics.advanced.fisher_rao import (
     exponential_family_entropy,
     fisher_rao_distance,
     hellinger_distance,
-    information_bottleneck as ib_geo,
-    information_dimension,
-    information_projection,
     natural_gradient,
-    rate_distortion_function,
-    statistical_divergence,
 )
 
 # ============================================================
@@ -52,6 +45,15 @@ from metainformant.information.metrics.advanced.hypothesis import (
     independence_test,
     information_significance_filter,
     mi_permutation_test,
+)
+from metainformant.information.metrics.advanced.information_projection import (
+    channel_capacity as channel_capacity_geo,
+    entropy_power_inequality,
+    information_bottleneck as ib_geo,
+    information_dimension,
+    information_projection,
+    rate_distortion_function,
+    statistical_divergence,
 )
 
 # ============================================================
@@ -621,13 +623,13 @@ class TestNoisyChannelCapacityCh:
 
 # ============================================================
 # ============================================================
-# INFORMATION GEOMETRY MODULE (geometry.py)
+# INFORMATION GEOMETRY MODULES (fisher_rao.py, information_projection.py)
 # ============================================================
 # ============================================================
 
 
 class TestFisherRaoDistance:
-    """Tests for geometry.fisher_rao_distance."""
+    """Tests for fisher_rao.fisher_rao_distance."""
 
     def test_identical_distributions_zero(self) -> None:
         """Distance between identical distributions is 0."""
@@ -670,7 +672,7 @@ class TestFisherRaoDistance:
 
 
 class TestNaturalGradient:
-    """Tests for geometry.natural_gradient."""
+    """Tests for fisher_rao.natural_gradient."""
 
     def test_identity_fim(self) -> None:
         """With identity FIM, natural gradient equals Euclidean gradient."""
@@ -707,7 +709,7 @@ class TestNaturalGradient:
 
 
 class TestInformationProjection:
-    """Tests for geometry.information_projection."""
+    """Tests for information_projection.information_projection."""
 
     def test_basic_projection(self) -> None:
         """Projection produces a valid distribution."""
@@ -747,7 +749,7 @@ class TestInformationProjection:
 
 
 class TestStatisticalDivergence:
-    """Tests for geometry.statistical_divergence (alpha-divergence)."""
+    """Tests for information_projection.statistical_divergence (alpha-divergence)."""
 
     def test_identical_distributions_zero(self) -> None:
         """Alpha-divergence between identical distributions is 0."""
@@ -784,7 +786,7 @@ class TestStatisticalDivergence:
 
 
 class TestExponentialFamilyEntropy:
-    """Tests for geometry.exponential_family_entropy."""
+    """Tests for fisher_rao.exponential_family_entropy."""
 
     def test_gaussian_entropy(self) -> None:
         """Exponential family entropy: H = -eta^T E[T] + A(eta).
@@ -826,7 +828,7 @@ class TestExponentialFamilyEntropy:
 
 
 class TestHellingerDistance:
-    """Tests for geometry.hellinger_distance."""
+    """Tests for fisher_rao.hellinger_distance."""
 
     def test_identical_distributions_zero(self) -> None:
         """Hellinger distance between identical distributions is 0."""
@@ -868,7 +870,7 @@ class TestHellingerDistance:
 
 
 class TestChannelCapacityGeo:
-    """Tests for geometry.channel_capacity (Blahut-Arimoto in geometry module)."""
+    """Tests for information_projection.channel_capacity (Blahut-Arimoto)."""
 
     def test_noiseless_channel(self) -> None:
         """Noiseless 2x2 channel has capacity = ln(2) nats."""
@@ -897,7 +899,7 @@ class TestChannelCapacityGeo:
 
 
 class TestRateDistortionFunction:
-    """Tests for geometry.rate_distortion_function."""
+    """Tests for information_projection.rate_distortion_function."""
 
     def test_binary_source_hamming(self) -> None:
         """Binary source with Hamming distortion produces valid R(D) curve."""
@@ -931,7 +933,7 @@ class TestRateDistortionFunction:
 
 
 class TestInformationBottleneckGeo:
-    """Tests for geometry.information_bottleneck."""
+    """Tests for information_projection.information_bottleneck."""
 
     def test_block_diagonal_joint(self) -> None:
         """Block-diagonal joint should cluster into 2 groups."""
@@ -968,7 +970,7 @@ class TestInformationBottleneckGeo:
 
 
 class TestEntropyPowerInequality:
-    """Tests for geometry.entropy_power_inequality."""
+    """Tests for information_projection.entropy_power_inequality."""
 
     def test_gaussian_variances(self) -> None:
         """EPI with Gaussian variances: N(X) = sigma^2."""
@@ -1004,7 +1006,7 @@ class TestEntropyPowerInequality:
 
 
 class TestInformationDimension:
-    """Tests for geometry.information_dimension (Grassberger-Procaccia)."""
+    """Tests for information_projection.information_dimension (Grassberger-Procaccia)."""
 
     def test_2d_gaussian_cloud(self) -> None:
         """2D Gaussian cloud should have dimension close to 2."""

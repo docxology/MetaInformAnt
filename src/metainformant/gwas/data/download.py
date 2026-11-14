@@ -334,8 +334,7 @@ def _download_1000genomes(output_dir: Path, chromosome: str | None = None) -> Pa
         chromosome: Specific chromosome to download (e.g., '1', '22'), or None for index
 
     The release VCFs hold every sample, so there is no per-population download: the sample panel
-    (``integrated_call_samples_v3.20130502.ALL.panel``) maps samples to populations. (A ``population``
-    argument was accepted and ignored.)
+    (``integrated_call_samples_v3.20130502.ALL.panel``) maps samples to populations.
 
     Returns:
         Path to downloaded 1000 Genomes directory
@@ -518,7 +517,7 @@ def _download_sra_with_toolkit(accession: str, output_dir: Path, threads: int) -
     # Check if fastq-dump is available
     try:
         subprocess.run(["fastq-dump", "--version"], capture_output=True, check=True)
-    except (subprocess.CalledProcessError, FileNotFoundError):
+    except subprocess.CalledProcessError, FileNotFoundError:
         raise RuntimeError("SRA toolkit (fastq-dump) not found")
 
     cmd = [
@@ -907,8 +906,8 @@ def decode_catalog_response(status_code: int, body: str, url: str) -> Dict[str, 
     """Decode a GWAS Catalog REST response, accepting only HTTP 200 with a JSON object as its body.
 
     This is the status check of every request :func:`download_variant_data` makes. Any other status, such as a
-    404 for an unknown study or a 5xx from the service, is an error: it used to be skipped, which left a
-    download that looked complete but held no association table.
+    404 for an unknown study or a 5xx from the service, is an error; skipping it would leave a download that
+    looks complete but holds no association table.
 
     Args:
         status_code: HTTP status of the response.

@@ -67,7 +67,7 @@ class TestSankeyFallbackOrder:
 
 
 class TestCircularManhattanSinglePositionChromosomes:
-    """A chromosome whose variants share one position used to be skipped (its position range was zero)."""
+    """A chromosome whose variants share one position is drawn, although its position range is zero."""
 
     @staticmethod
     def _frame() -> pd.DataFrame:

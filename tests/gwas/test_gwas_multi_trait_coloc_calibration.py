@@ -315,12 +315,6 @@ class TestInvariants:
         if strength >= 80.0:
             assert result["multi_trait_pp_shared"] == pytest.approx(1.0, abs=1e-9)
 
-    def test_ld_matrix_is_accepted_and_changes_nothing(self) -> None:
-        z = random_z(3, 2, 6, planted=2)
-        identity = np.eye(6).tolist()
-
-        assert coloc_module.multi_trait_coloc(z, ld_matrix=identity) == coloc_module.multi_trait_coloc(z)
-
 
 class TestInputs:
     @pytest.mark.parametrize("bad", [0.0, -1e-4, float("nan"), float("inf"), True, "1e-4", None])

@@ -17,13 +17,15 @@ except ImportError:
 
 requires_seaborn = pytest.mark.skipif(not _seaborn_available, reason="seaborn not installed")
 
-from metainformant.dna.population.visualization import (
+from metainformant.dna.population.visualization_core import (
     plot_allele_frequency_spectrum,
     plot_bootstrap_distribution,
+    plot_fst_matrix,
+)
+from metainformant.dna.population.visualization_stats import (
     plot_demographic_comparison,
     plot_diversity_comparison,
     plot_fst_comparison,
-    plot_fst_matrix,
     plot_hardy_weinberg_test,
     plot_heterozygosity_distribution,
     plot_kinship_matrix,
@@ -54,7 +56,7 @@ class TestPlotDiversityComparison:
         }
 
         output_path = tmp_path / "diversity.png"
-        fig = plot_diversity_comparison(diversity, output_path=str(output_path))
+        fig = plot_diversity_comparison(diversity, output_file=str(output_path))
 
         assert fig is not None
         assert output_path.exists()
@@ -79,7 +81,7 @@ class TestPlotTajimasDComparison:
         }
 
         output_path = tmp_path / "tajimas_d.png"
-        fig = plot_tajimas_d_comparison(tajimas_d, output_path=str(output_path))
+        fig = plot_tajimas_d_comparison(tajimas_d, output_file=str(output_path))
 
         assert fig is not None
         assert output_path.exists()
@@ -97,7 +99,7 @@ class TestPlotFstComparison:
         }
 
         output_path = tmp_path / "fst.png"
-        fig = plot_fst_comparison(fst_values, output_path=str(output_path))
+        fig = plot_fst_comparison(fst_values, output_file=str(output_path))
 
         assert fig is not None
         assert output_path.exists()
@@ -116,7 +118,7 @@ class TestPlotPCAResults:
         }
 
         output_path = tmp_path / "pca.png"
-        fig = plot_pca_results(pca_result, output_path=str(output_path), n_components=5)
+        fig = plot_pca_results(pca_result, output_file=str(output_path))
 
         assert fig is not None
         assert output_path.exists()
@@ -148,7 +150,7 @@ class TestPlotKinshipMatrix:
         }
 
         output_path = tmp_path / "kinship.png"
-        fig = plot_kinship_matrix(kinship_result, output_path=str(output_path), max_samples=20)
+        fig = plot_kinship_matrix(kinship_result, output_file=str(output_path), max_samples=20)
 
         assert fig is not None
         assert output_path.exists()
@@ -171,7 +173,7 @@ class TestPlotSiteFrequencySpectrum:
         sfs = [50, 30, 20, 10, 5]  # Counts per frequency bin
 
         output_path = tmp_path / "sfs.png"
-        fig = plot_site_frequency_spectrum(sfs, output_path=str(output_path))
+        fig = plot_site_frequency_spectrum(sfs, output_file=str(output_path))
 
         assert fig is not None
         assert output_path.exists()
@@ -198,7 +200,7 @@ class TestPlotNeutralityTestSummary:
         }
 
         output_path = tmp_path / "neutrality_summary.png"
-        fig = plot_neutrality_test_summary(neutrality_data, output_path=str(output_path))
+        fig = plot_neutrality_test_summary(neutrality_data, output_file=str(output_path))
 
         assert fig is not None
         assert output_path.exists()
@@ -222,7 +224,7 @@ class TestPlotDemographicComparison:
         }
 
         output_path = tmp_path / "demographic.png"
-        fig = plot_demographic_comparison(demographic_results, output_path=str(output_path))
+        fig = plot_demographic_comparison(demographic_results, output_file=str(output_path))
 
         assert fig is not None
         assert output_path.exists()
@@ -256,7 +258,7 @@ class TestPlotSummaryStatisticsGrid:
         }
 
         output_path = tmp_path / "summary_grid.png"
-        fig = plot_summary_statistics_grid(summary_stats, output_path=str(output_path))
+        fig = plot_summary_statistics_grid(summary_stats, output_file=str(output_path))
 
         assert fig is not None
         assert output_path.exists()
@@ -273,7 +275,7 @@ class TestPlotLinkageDisequilibriumDecay:
         distances = [0, 1, 2, 3, 4, 5]
 
         output_path = tmp_path / "ld_decay.png"
-        fig = plot_linkage_disequilibrium_decay(ld_values, distances=distances, output_path=str(output_path))
+        fig = plot_linkage_disequilibrium_decay(ld_values, distances=distances, output_file=str(output_path))
 
         assert fig is not None
         assert output_path.exists()
@@ -283,7 +285,7 @@ class TestPlotLinkageDisequilibriumDecay:
         """Test LD decay plot without distances."""
         ld_values = [0.5, 0.4, 0.3, 0.2]
 
-        fig = plot_linkage_disequilibrium_decay(ld_values, output_path=str(tmp_path / "ld_decay2.png"))
+        fig = plot_linkage_disequilibrium_decay(ld_values, output_file=str(tmp_path / "ld_decay2.png"))
 
         assert fig is not None
         assert fig.axes[0].lines
@@ -311,7 +313,7 @@ def test_plot_statistic_distribution():
         "scenario1": [1.0, 2.0, 3.0],
         "scenario2": [4.0, 5.0, 6.0],
     }
-    fig = plot_statistic_distribution(stats, plot_type="histogram")
+    fig = plot_statistic_distribution(stats)
 
     assert fig is not None
 

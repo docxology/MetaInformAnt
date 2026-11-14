@@ -11,9 +11,10 @@ import pytest
 
 from metainformant.rna.engine.campaign_lock import (
     LOCK_FILENAME as CAMPAIGN_LOCK_FILENAME,
+    CampaignLockBusy,
+    acquire_writer,
 )
 from metainformant.rna.engine.cohort import (
-    DataRootBusy,
     install_cohort,
     load_frozen_cohort,
 )
@@ -260,12 +261,12 @@ def test_receipt_rescues_missing_manifest_evidence_and_detects_tampering(world: 
     assert _by_accession(world.plan(receipt_stores=[store]))["SRR101"].reason == "receipt_mismatch"
 
 
-def test_execute_refuses_while_a_launcher_holds_the_root(world: World) -> None:
-    (world.dest.base / "results" / ".finalization.lock").mkdir(parents=True)
-    before = _tree(world.dest.base)
-    with pytest.raises(DataRootBusy):
-        execute_imports(world.cohort, world.dest.base, [world.source], workers=1)
-    assert _tree(world.dest.base) == before
+def test_execute_refuses_while_another_writer_holds_the_root(world: World) -> None:
+    with acquire_writer(world.dest.base, "finalization"):
+        before = _tree(world.dest.base)
+        with pytest.raises(CampaignLockBusy):
+            execute_imports(world.cohort, world.dest.base, [world.source], workers=1)
+        assert _tree(world.dest.base) == before
 
 
 def test_execute_can_adopt_into_the_destination_db(world: World) -> None:

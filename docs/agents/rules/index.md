@@ -2,7 +2,7 @@
 
 ## Role
 
-Module-specific Agent Rules for consistent development patterns across METAINFORMANT. These files serve as the authoritative source for coding conventions, domain-specific patterns, and integration guidelines for each of the 26 modules with rule files (popgen, eqtl, cloud, and mcp have no dedicated rule files).
+Module-specific Agent Rules for consistent development patterns across METAINFORMANT. These files serve as the authoritative source for coding conventions, domain-specific patterns, and integration guidelines for each of the 26 modules with rule files (popgen, eqtl, and mcp have no dedicated rule files).
 
 ## Contents
 
@@ -72,7 +72,7 @@ All rule files reinforce these universal project standards:
 | **Real Implementations** | Tests explicitly forbid runtime function replacement and test-double objects — use real implementations |
 | **Core I/O** | All file ops via `metainformant.core.io` (`load_json`, `dump_json`, etc.) |
 | **Structured Logging** | `from metainformant.core.utils.logging import get_logger` |
-| **Type Hints** | Python 3.11+, full annotations |
+| **Type Hints** | Python 3.14+, full annotations |
 | **Output Discipline** | Write only to `output/{module}/`, never `src/` |
 | **Absolute Imports** | `from metainformant.dna import alignment` (not `..core` relative) |
 
@@ -172,4 +172,4 @@ All rule files specify testing patterns:
 **Parent Hub**: [Agent Coordination Hub](../README.md)  
 **Specification**: [../SPEC.md](../SPEC.md)  
 
-*These rules are part of the METAINFORMANT Core layer. Stability: HIGH. Backwards-incompatible changes require deprecation period.*
+*These rules are part of the METAINFORMANT Core layer. Stability: HIGH. A breaking change updates every caller in the same change.*

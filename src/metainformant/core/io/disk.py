@@ -226,7 +226,7 @@ def cleanup_temp_files(
                     dir_path.rmdir()
                     logger.debug(f"Removed empty directory {dir_path}")
                 except OSError:
-                    pass  # Directory might not be empty anymore
+                    pass  # Another process may have added an entry since the check
 
     except Exception as e:
         logger.error(f"Error during temp file cleanup: {e}")

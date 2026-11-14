@@ -15,9 +15,9 @@ Network analysis module for METAINFORMANT.
 ```mermaid
 graph TD
     subgraph "Networks Module"
-        AG[analysis/graph.py] --> |BiologicalNetwork| NET[Network Construction]
-        AG --> |centrality_measures| ALG[Graph Algorithms]
-        AG --> |network_metrics| MET[Topology Metrics]
+        AG[analysis/graph_core.py] --> |BiologicalNetwork| NET[Network Construction]
+        AGA[analysis/graph_algorithms.py] --> |centrality_measures| ALG[Graph Algorithms]
+        AGA --> |network_metrics| MET[Topology Metrics]
 
         AC[analysis/community.py] --> |louvain_communities| LV[Louvain Detection]
         AC --> |label_propagation| LP[Label Propagation]
@@ -26,8 +26,8 @@ graph TD
 
         IP[interaction/ppi.py] --> |load_ppi_network| PPI[PPI Networks]
 
-        IR[interaction/regulatory.py] --> |GeneRegulatoryNetwork| GRN[Regulatory Networks]
-        IR --> |infer_grn| INF[GRN Inference]
+        IR[interaction/regulatory_core.py] --> |GeneRegulatoryNetwork| GRN[Regulatory Networks]
+        IRA[interaction/regulatory_analysis.py] --> |infer_grn| INF[GRN Inference]
     end
 ```
 

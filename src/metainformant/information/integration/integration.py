@@ -442,8 +442,7 @@ def ml_integration(
     Args:
         features: Feature matrix (numpy array or DataFrame)
         labels: Target labels (classification or regression)
-        method: Integration method ('feature_mi', 'mutual_info', 'feature_entropy',
-                'entropy', 'correlation')
+        method: Integration method ('feature_mi', 'feature_entropy' or 'correlation')
 
     Returns:
         Dictionary with ML-information integration results
@@ -469,7 +468,7 @@ def ml_integration(
     results: Dict[str, Any] = {"n_features": n_features, "n_samples": n_samples, "method": method}
 
     try:
-        if method in ("feature_mi", "mutual_info"):
+        if method == "feature_mi":
             # Mutual information between features and target
             if len(np.unique(y)) <= 10:
                 scores = mutual_info_classif(X, y)
@@ -483,7 +482,7 @@ def ml_integration(
             results["top_features"] = [{"index": int(idx), "mi": float(scores[idx])} for idx in top_indices]
             results["feature_scores"] = {f"feature_{i}": float(scores[i]) for i in top_indices}
 
-        elif method in ("feature_entropy", "entropy"):
+        elif method == "feature_entropy":
             feature_entropies = []
             for col in range(n_features):
                 feature_vals = X[:, col]
@@ -506,7 +505,7 @@ def ml_integration(
                     corr = np.corrcoef(feature_vals, y.astype(float))[0, 1]
                     if not np.isnan(corr):
                         correlations.append(abs(float(corr)))
-                except (ValueError, TypeError, FloatingPointError):
+                except ValueError, TypeError, FloatingPointError:
                     continue
 
             if correlations:

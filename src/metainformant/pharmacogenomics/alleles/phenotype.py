@@ -419,9 +419,6 @@ def get_phenotype_thresholds(
             - "upper_inclusive": Whether a score equal to the upper bound is in the band
             - "phenotype": MetabolizerPhenotype value
             - "abbreviation": Phenotype abbreviation (PM, IM, NM, RM, UM)
-            - "gene_specific": Always True. It used to be False for the default (CYP2D6) bands
-              returned for a gene with none of its own; such a gene now raises. The key is kept
-              so callers written before that still work.
 
     Raises:
         ValueError: If the gene has no CPIC phenotype definition; the message names the gene
@@ -440,7 +437,6 @@ def get_phenotype_thresholds(
                 "upper_inclusive": upper_inclusive,
                 "phenotype": phenotype,
                 "abbreviation": phenotype.abbreviation,
-                "gene_specific": True,
             }
         )
         lower, lower_inclusive = upper, not upper_inclusive

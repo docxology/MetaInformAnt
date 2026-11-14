@@ -39,19 +39,14 @@ import shutil
 import stat as stat_module
 import sys
 import tempfile
-from collections.abc import Iterable, Iterator, Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
 from typing import Any
 
 from metainformant.core.utils.hash import sha256_bytes, sha256_file
 from metainformant.rna.engine.acquisition_manifest import load_snapshot
-from metainformant.rna.engine.campaign_lock import (
-    LEGACY_DIRECTORY_LOCKS,
-    LOCK_FILENAME as CAMPAIGN_LOCK_FILENAME,
-    CampaignLockBusy,
-    acquire_writer,
-)
+from metainformant.rna.engine.campaign_lock import CampaignLockBusy, acquire_writer
 from metainformant.rna.engine.provenance import (
     REFERENCE_MANIFEST_NAME,
     CohortExpectation,
@@ -67,11 +62,6 @@ SNAPSHOT_FILENAME = "snapshot.json"
 MANIFEST_FILENAME = "manifest.jsonl"
 INVENTORY_FILENAME = "inventory.json"
 PERMANENT_DROP = "permanent_drop"
-# Maintenance commands that write into a data root (import, seal, DB migration) hold the campaign writer
-# flock, the same one the producer holds (see metainformant.rna.engine.campaign_lock).
-DATA_ROOT_LOCK_FILENAME = CAMPAIGN_LOCK_FILENAME
-# Directory locks created by the shell launchers; their presence means a producer may be writing.
-LEGACY_LAUNCHER_LOCKS = LEGACY_DIRECTORY_LOCKS
 
 _IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
 _SPECIES = re.compile(r"^[a-z0-9][a-z0-9_]*$")
@@ -293,8 +283,8 @@ def build_cohort_definition(
 ) -> dict[str, Any]:
     """Describe a frozen acquisition snapshot as a cohort definition, reading only.
 
-    ``source_root`` holds ``snapshot.json``, ``manifest.jsonl``, ``inventory.json``
-    and the ``inputs/`` tree written by the completion-inventory freeze. Every
+    ``source_root`` holds the frozen ``snapshot.json``, ``manifest.jsonl``,
+    ``inventory.json`` and ``inputs/`` tree. Every
     input file is hashed and the result is checked exactly as
     :func:`load_frozen_cohort` checks an installed cohort, so a definition is
     never produced for inconsistent inputs.
@@ -810,7 +800,7 @@ def quant_batch_run(metadata_path: str | Path, batch_index: int) -> str | None:
                 sampled += 1
                 if sampled == batch_index:
                     return str(row.get("run") or "").strip()
-    except (OSError, UnicodeDecodeError, csv.Error):
+    except OSError, UnicodeDecodeError, csv.Error:
         return None
     return None
 
@@ -855,35 +845,27 @@ def write_cohort_task_table(
 
 
 INSTALL_TEMP_SUFFIX = ".cohort-install.tmp"
-# mkstemp's random part (8 characters) after ".<name>." is how temps written before INSTALL_TEMP_SUFFIX look.
-_LEGACY_INSTALL_TEMP = re.compile(r"^\.(?P<name>.+)\.[A-Za-z0-9_]{8}$")
 
 
 def _remove_install_temporaries(target: Path, expected: Iterable[str]) -> list[str]:
     """Remove temp files a killed install left in ``target``; return their relative paths.
 
-    Only files this module names are touched: ``*.cohort-install.tmp`` temps,
-    and ``.<name>.<8 random characters>`` temps of a file the definition
-    lists in the same directory (the shape before the suffix existed).
+    Only files this module names are touched: ``*.cohort-install.tmp`` temps
+    in a directory the definition lists files in.
     """
 
     if not target.is_dir():
         return []
-    expected_by_dir: dict[Path, set[str]] = {}
-    for relpath in [*expected, COHORT_DEFINITION_FILENAME]:
-        path = target / relpath
-        expected_by_dir.setdefault(path.parent, set()).add(path.name)
+    directories = {(target / relpath).parent for relpath in [*expected, COHORT_DEFINITION_FILENAME]}
     removed: list[str] = []
-    for directory in sorted({target, *expected_by_dir}):
+    for directory in sorted({target, *directories}):
         if not directory.is_dir():
             continue
-        names = expected_by_dir.get(directory, set())
         with os.scandir(directory) as entries:
             for entry in entries:
                 if not entry.name.startswith(".") or not entry.is_file(follow_symlinks=False):
                     continue
-                legacy = _LEGACY_INSTALL_TEMP.match(entry.name)
-                if entry.name.endswith(INSTALL_TEMP_SUFFIX) or (legacy is not None and legacy["name"] in names):
+                if entry.name.endswith(INSTALL_TEMP_SUFFIX):
                     os.unlink(entry.path)
                     removed.append(str(Path(entry.path).relative_to(target)))
         if removed:
@@ -975,31 +957,6 @@ def install_cohort(source_root: str | Path, cohort_dir: str | Path, *, cohort_id
         **counts,
         "stale_temporaries_removed": stale,
     }
-
-
-# ---------------------------------------------------------------------------
-# Data-root maintenance lock
-# ---------------------------------------------------------------------------
-
-
-DataRootBusy = CampaignLockBusy
-"""Another process (producer, finalization or maintenance) may be writing the data root."""
-
-
-@contextlib.contextmanager
-def data_root_maintenance_lock(data_root: str | Path, *, purpose: str) -> Iterator[Path]:
-    """Hold the campaign writer lock of the data root for a maintenance write.
-
-    This is :func:`metainformant.rna.engine.campaign_lock.acquire_writer` with
-    ``kind=purpose``: it refuses while another writer (a producer, a live shell
-    launcher lock, the acquisition worker's flock, or another maintenance
-    command) holds the root. The kernel releases the flock when the process
-    dies, so a crash never leaves a stale lock behind. A command started under
-    ``campaign_lock run`` is inside its parent's lock.
-    """
-
-    with acquire_writer(data_root, purpose) as lock:
-        yield lock.path
 
 
 # ---------------------------------------------------------------------------
@@ -1174,15 +1131,15 @@ def main(argv: Sequence[str] | None = None) -> int:
             TRANSFER_RESET_CLASSES if args.reset_transfer_failures else frozenset()
         )
         extra = _read_exclusions_tsv(args.extra_exclusions) if args.extra_exclusions else []
-        # The maintenance lock is the producer's own writer lock: a running producer (or any other writer) makes
-        # it raise DataRootBusy before anything is read or written.
-        with data_root_maintenance_lock(db_path.parent, purpose="migrate-db"), ProgressDB(db_path) as db:
+        # The producer's own writer lock: a running producer (or any other writer) makes it raise
+        # CampaignLockBusy before anything is read or written.
+        with acquire_writer(db_path.parent, "migrate-db"), ProgressDB(db_path) as db:
             summary = db.migrate_to_cohort(
                 cohort, backup_path=backup, reset_classes=reset_classes, extra_exclusions=extra
             )
         print(json.dumps(summary, indent=2, sort_keys=True))
         return 0
-    except (CohortError, DataRootBusy, FileExistsError, OSError) as error:
+    except (CohortError, CampaignLockBusy, FileExistsError, OSError) as error:
         print(f"error: {error}", file=sys.stderr)
         return 2
 

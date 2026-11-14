@@ -432,8 +432,7 @@ def add_edges_from_dataframe(
         attribute_columns: Columns to use as edge attributes
         directed: Set to True to assert that the edges are directed. The edges go into ``graph`` as that graph holds
             them (a DiGraph keeps their direction, a Graph does not), so ``directed=True`` with an undirected
-            graph is an error. (The flag used to be ignored: edges meant to be directed were silently stored as
-            undirected ones.)
+            graph is an error, so edges meant to be directed are never silently stored as undirected ones.
 
     Raises:
         ImportError: If networkx or pandas not available
@@ -718,7 +717,7 @@ def get_network_summary(graph: Any) -> Dict[str, Any]:
             try:
                 clustering = nx.average_clustering(graph)
                 summary["average_clustering"] = clustering
-            except (nx.NetworkXError, ZeroDivisionError):
+            except nx.NetworkXError, ZeroDivisionError:
                 summary["average_clustering"] = None
 
     return summary
@@ -793,8 +792,6 @@ def add_edges_from_interactions(
     graph: Any,
     interactions: List[Tuple[str, str, float]] | list[dict[str, Any]],
     weight_threshold: float = 0.0,
-    *,
-    confidence_threshold: float | None = None,
 ) -> None:
     """Add edges to graph based on interaction data.
 
@@ -802,8 +799,8 @@ def add_edges_from_interactions(
         graph: NetworkX graph
         interactions: List of (source, target, weight) tuples or dictionaries
             with source/target/confidence fields
-        weight_threshold: Minimum interaction weight for edge creation
-        confidence_threshold: Alias for weight_threshold used by docs
+        weight_threshold: Minimum interaction weight (a dictionary's ``confidence`` when it has one) for edge
+            creation
 
     Raises:
         ImportError: If networkx not available
@@ -811,7 +808,6 @@ def add_edges_from_interactions(
     if not HAS_NETWORKX:
         raise ImportError("networkx required for graph operations")
 
-    threshold = weight_threshold if confidence_threshold is None else confidence_threshold
     normalized_interactions = []
     for interaction in interactions:
         if isinstance(interaction, dict):
@@ -841,10 +837,10 @@ def add_edges_from_interactions(
 
     # Add edges with weights above threshold
     for source, target, weight, interaction_type, attrs in normalized_interactions:
-        if abs(weight) >= threshold:
+        if abs(weight) >= weight_threshold:
             graph.add_edge(source, target, weight=weight, interaction_type=interaction_type, **attrs)
 
-    logger.info(f"Added {len(normalized_interactions)} interaction edges (threshold={threshold})")
+    logger.info(f"Added {len(normalized_interactions)} interaction edges (threshold={weight_threshold})")
 
 
 def add_edges_from_correlation(

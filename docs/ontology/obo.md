@@ -185,8 +185,8 @@ The parser produces objects from `metainformant.ontology.core.types`:
 | `Relationship` | source, target, relation_type |
 | `Ontology` | terms (dict), relationships (list), metadata (dict) |
 
-Factory functions `create_term`, `create_relationship`, `create_ontology` are
-used to construct these objects.
+Factory functions `create_term`, `create_relationship`, `create_ontology`
+construct these objects.
 
 ## Usage Example
 
@@ -205,7 +205,7 @@ print(f"Terms: {stats['term_count']}, Relationships: {stats['relationship_count'
 # Full parse
 ontology = parse_obo("data/go-basic.obo")
 term = ontology.terms["GO:0008150"]
-print(f"{term.id}: {term.name} ({term.namespace})")
+print(f"{term.term_id}: {term.name} ({term.namespace})")
 print(term.definition, term.metadata.get("definition_xrefs", []))
 ```
 

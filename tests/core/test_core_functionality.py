@@ -284,12 +284,12 @@ class TestErrorHandling:
         # Empty abundance data - test graceful handling
         try:
             shannon_diversity([])  # Might raise error or return special value
-        except (ValueError, ZeroDivisionError):
+        except ValueError, ZeroDivisionError:
             pass  # Acceptable to raise error for empty data
 
         try:
             p_distance("", "")  # Empty sequences
-        except (ValueError, ZeroDivisionError):
+        except ValueError, ZeroDivisionError:
             pass  # Acceptable to raise error
 
     def test_invalid_input_handling(self):

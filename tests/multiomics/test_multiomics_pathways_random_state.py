@@ -59,7 +59,7 @@ GENE_SCORES = {"S": 0.001, "T1": 0.02, "T2": 0.4, "U": 0.003, "V": 0.9, "W": 0.2
 
 
 class TestActiveModuleRandomState:
-    def test_the_parameter_exists_and_defaults_to_the_previously_fixed_seed(self) -> None:
+    def test_the_parameter_exists_and_defaults_to_seed_42(self) -> None:
         assert inspect.signature(active_module_detection).parameters["random_state"].default == 42
         assert inspect.signature(pathway_topology_analysis).parameters["random_state"].default == 42
 

@@ -283,8 +283,8 @@ def test_bonferroni_divides_by_the_tests_that_have_a_p_value(missing: Any) -> No
     assert result["n_tests"] == 3 and result["n_excluded"] == 2
     assert result["corrected_alpha"] == pytest.approx(0.05 / 3)  # not 0.05 / 5
     assert result["significant"] == [True, False, True, False, False]  # 0.01 <= 0.01666, 0.04 > 0.01666
-    flags, corrected_alpha = bonferroni_correction([0.001, missing, 0.01], alpha=0.05, return_dict=False)
-    assert flags == [True, False, True] and corrected_alpha == pytest.approx(0.025)
+    short = bonferroni_correction([0.001, missing, 0.01], alpha=0.05)
+    assert short["significant"] == [True, False, True] and short["corrected_alpha"] == pytest.approx(0.025)
 
 
 def test_qvalues_ignore_missing_p_values() -> None:
@@ -369,7 +369,7 @@ def test_full_correction_outputs_annotate_the_right_rows_and_exclude_failed_test
 
 
 def test_full_correction_outputs_do_not_shift_results_onto_the_wrong_rows() -> None:
-    """Rows without a p-value used to be filtered out of the list that the results were then indexed against."""
+    """Rows without a p-value stay in the list that the results are indexed against, so no result shifts rows."""
     rows = [{"p_value": 0.01}, {"p_value": None}, {"p_value": 0.04}, {"p_value": 0.03}]
 
     _apply_full_correction_outputs(rows, correction_method="fdr")

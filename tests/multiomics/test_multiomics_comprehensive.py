@@ -37,7 +37,7 @@ class TestMultiOmicsData:
         genomics = pd.DataFrame(np.random.randn(10, 50), index=[f"S{i}" for i in range(10)])
         transcriptomics = pd.DataFrame(np.random.randn(10, 100), index=[f"S{i}" for i in range(10)])
 
-        data = MultiOmicsData(genomics=genomics, transcriptomics=transcriptomics)
+        data = MultiOmicsData(data={"genomics": genomics, "transcriptomics": transcriptomics})
 
         assert data.n_samples == 10
         assert len(data.samples) == 10
@@ -49,7 +49,7 @@ class TestMultiOmicsData:
         genomics = pd.DataFrame(np.random.randn(5, 10), index=["S0", "S1", "S2", "S3", "S4"])
         transcriptomics = pd.DataFrame(np.random.randn(5, 10), index=["S1", "S2", "S3", "S4", "S5"])
 
-        data = MultiOmicsData(genomics=genomics, transcriptomics=transcriptomics)
+        data = MultiOmicsData(data={"genomics": genomics, "transcriptomics": transcriptomics})
 
         # Only common samples should be retained
         assert data.n_samples == 4
@@ -60,7 +60,7 @@ class TestMultiOmicsData:
         genomics = pd.DataFrame(np.random.randn(5, 10), index=[f"S{i}" for i in range(5)])
         transcriptomics = pd.DataFrame(np.random.randn(5, 20), index=[f"S{i}" for i in range(5)])
 
-        data = MultiOmicsData(genomics=genomics, transcriptomics=transcriptomics)
+        data = MultiOmicsData(data={"genomics": genomics, "transcriptomics": transcriptomics})
 
         genomics_retrieved = data.get_layer("genomics")
         assert genomics_retrieved.shape == (5, 10)
@@ -68,7 +68,7 @@ class TestMultiOmicsData:
 
     def test_get_layer_error(self):
         """Test error when requesting non-existent layer."""
-        data = MultiOmicsData(genomics=pd.DataFrame(np.random.randn(5, 10)))
+        data = MultiOmicsData(data={"genomics": pd.DataFrame(np.random.randn(5, 10))})
 
         with pytest.raises(KeyError, match="Layer 'transcriptomics' not available"):
             data.get_layer("transcriptomics")
@@ -78,7 +78,7 @@ class TestMultiOmicsData:
         genomics = pd.DataFrame(np.random.randn(10, 50), index=[f"S{i}" for i in range(10)])
         transcriptomics = pd.DataFrame(np.random.randn(10, 100), index=[f"S{i}" for i in range(10)])
 
-        data = MultiOmicsData(genomics=genomics, transcriptomics=transcriptomics)
+        data = MultiOmicsData(data={"genomics": genomics, "transcriptomics": transcriptomics})
 
         subset = data.subset_samples(["S0", "S1", "S2"])
 
@@ -95,7 +95,7 @@ class TestMultiOmicsData:
             np.random.randn(5, 20), index=[f"S{i}" for i in range(5)], columns=[f"GENE{i}" for i in range(20)]
         )
 
-        data = MultiOmicsData(genomics=genomics, transcriptomics=transcriptomics)
+        data = MultiOmicsData(data={"genomics": genomics, "transcriptomics": transcriptomics})
 
         subset = data.subset_features({"transcriptomics": ["GENE0", "GENE1", "GENE2"]})
 
@@ -109,7 +109,7 @@ class TestMultiOmicsData:
             {"age": [20, 30, 40, 50, 60], "sex": ["M", "F", "M", "F", "M"]}, index=[f"S{i}" for i in range(5)]
         )
 
-        data = MultiOmicsData(genomics=genomics, metadata=metadata)
+        data = MultiOmicsData(data={"genomics": genomics}, metadata=metadata)
 
         assert data.metadata is not None
         assert len(data.metadata) == 5
@@ -159,7 +159,7 @@ class TestJointPCA:
         genomics = pd.DataFrame(np.random.randn(10, 50), index=[f"S{i}" for i in range(10)])
         transcriptomics = pd.DataFrame(np.random.randn(10, 100), index=[f"S{i}" for i in range(10)])
 
-        data = MultiOmicsData(genomics=genomics, transcriptomics=transcriptomics)
+        data = MultiOmicsData(data={"genomics": genomics, "transcriptomics": transcriptomics})
 
         embeddings, loadings, variance = joint_pca(data, n_components=5)
 
@@ -174,7 +174,7 @@ class TestJointPCA:
         genomics = pd.DataFrame(np.random.randn(5, 10), index=[f"S{i}" for i in range(5)])
         transcriptomics = pd.DataFrame(np.random.randn(5, 20), index=[f"S{i}" for i in range(5)])
 
-        data = MultiOmicsData(genomics=genomics, transcriptomics=transcriptomics)
+        data = MultiOmicsData(data={"genomics": genomics, "transcriptomics": transcriptomics})
 
         embeddings, loadings, variance = joint_pca(
             data, n_components=3, layer_weights={"genomics": 2.0, "transcriptomics": 1.0}
@@ -189,7 +189,7 @@ class TestJointPCA:
         genomics = pd.DataFrame(np.random.randn(5, 10) * 10, index=[f"S{i}" for i in range(5)])
         transcriptomics = pd.DataFrame(np.random.randn(5, 20), index=[f"S{i}" for i in range(5)])
 
-        data = MultiOmicsData(genomics=genomics, transcriptomics=transcriptomics)
+        data = MultiOmicsData(data={"genomics": genomics, "transcriptomics": transcriptomics})
 
         # With standardization
         emb1, _, _ = joint_pca(data, n_components=3, standardize=True)
@@ -211,7 +211,7 @@ class TestJointNMF:
         genomics = pd.DataFrame(np.abs(np.random.randn(10, 50)), index=[f"S{i}" for i in range(10)])
         transcriptomics = pd.DataFrame(np.abs(np.random.randn(10, 100)), index=[f"S{i}" for i in range(10)])
 
-        data = MultiOmicsData(genomics=genomics, transcriptomics=transcriptomics)
+        data = MultiOmicsData(data={"genomics": genomics, "transcriptomics": transcriptomics})
 
         W, H = joint_nmf(data, n_components=5, max_iter=50, random_state=42)
 
@@ -230,7 +230,7 @@ class TestJointNMF:
         genomics = pd.DataFrame(np.abs(np.random.randn(5, 10)), index=[f"S{i}" for i in range(5)])
         transcriptomics = pd.DataFrame(np.abs(np.random.randn(5, 20)), index=[f"S{i}" for i in range(5)])
 
-        data = MultiOmicsData(genomics=genomics, transcriptomics=transcriptomics)
+        data = MultiOmicsData(data={"genomics": genomics, "transcriptomics": transcriptomics})
 
         W, H = joint_nmf(data, n_components=3, regularization=0.1, max_iter=30, random_state=42)
 
@@ -250,7 +250,7 @@ class TestCanonicalCorrelation:
             genomics.values[:, :20] * 0.7 + np.random.randn(20, 20) * 0.3, index=[f"S{i}" for i in range(20)]
         )
 
-        data = MultiOmicsData(genomics=genomics, transcriptomics=transcriptomics)
+        data = MultiOmicsData(data={"genomics": genomics, "transcriptomics": transcriptomics})
 
         # 30 features on 20 samples: a ridge is required (unregularized CCA would give all correlations 1)
         X_c, Y_c, X_w, Y_w, correlations = canonical_correlation(
@@ -267,7 +267,7 @@ class TestCanonicalCorrelation:
     def test_canonical_correlation_invalid_layer(self):
         """Test error handling for invalid layer names."""
         genomics = pd.DataFrame(np.random.randn(10, 20), index=[f"S{i}" for i in range(10)])
-        data = MultiOmicsData(genomics=genomics)
+        data = MultiOmicsData(data={"genomics": genomics})
 
         with pytest.raises(ValueError, match="Layer transcriptomics not found"):
             canonical_correlation(data, ("genomics", "transcriptomics"))
@@ -283,7 +283,7 @@ class TestCanonicalCorrelation:
             base_data[:, :20] * 0.95 + np.random.randn(15, 20) * 0.05, index=[f"S{i}" for i in range(15)]
         )
 
-        data = MultiOmicsData(genomics=genomics, transcriptomics=transcriptomics)
+        data = MultiOmicsData(data={"genomics": genomics, "transcriptomics": transcriptomics})
 
         _, _, _, _, correlations = canonical_correlation(
             data, ("genomics", "transcriptomics"), n_components=3, regularization=0.1

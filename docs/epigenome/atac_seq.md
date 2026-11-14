@@ -28,7 +28,7 @@ Class representing an ATAC-seq accessible region. The constructor requires a non
 | `q_value` | `float \| None` | Q-value (FDR) as a probability |
 | `summit` | `int \| None` | Absolute summit position (narrowPeak files store it as an offset from `start`) |
 
-Read-only properties: `length`, `center` and `accessibility_score` (the same as `signal_value`). Methods: `to_bed_format(format="narrowpeak")` (one line of a peak file in the given layout, named `atac_peak_<start>_<end>`), `overlaps_with(other, min_overlap=1)` and `to_dict()`.
+Read-only properties: `length` and `center`. Methods: `to_bed_format(format="narrowpeak")` (one line of a peak file in the given layout, named `atac_peak_<start>_<end>`), `overlaps_with(other, min_overlap=1)` and `to_dict()`.
 
 ## Function Reference
 

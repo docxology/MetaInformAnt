@@ -178,9 +178,7 @@ def multi_omic_clustering(
 
     Raises:
         ValueError: If method is unsupported, n_clusters < 2 or larger than the
-            number of samples (the spectral route used to return one cluster
-            per sample with a silhouette of 0.0 instead), or matrices are
-            incompatible.
+            number of samples, or matrices are incompatible.
         ImportError: If numpy is not available.
     """
     valid_methods = {"snf", "concatenation", "late_integration"}

@@ -21,7 +21,7 @@ Helper functions to extract structural features from DNA that might correlate wi
 from metainformant.dna.integration import rna
 
 # Find Transcription Start Sites (TSS) based on motifs
-tss_sites = rna.predict_transcription_start_sites(sequence, window_size=50)
+tss_sites = rna.predict_transcription_start_sites(sequence)
 
 # Parse TF binding sites
 tf_sites = rna.find_transcription_factor_binding_sites(sequence, {"SP1": "GGGCGG"})

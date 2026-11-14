@@ -10,8 +10,14 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from metainformant.networks.analysis.graph import BiologicalNetwork
-from metainformant.networks.interaction.regulatory import (
+from metainformant.networks.analysis.graph_core import BiologicalNetwork
+from metainformant.networks.interaction.regulatory_analysis import (
+    infer_grn,
+    infer_regulatory_network_from_expression,
+    pathway_regulation_analysis,
+    regulatory_motifs,
+)
+from metainformant.networks.interaction.regulatory_core import (
     GeneRegulatoryNetwork,
     analyze_regulatory_dynamics,
     analyze_regulatory_motifs,
@@ -19,10 +25,6 @@ from metainformant.networks.interaction.regulatory import (
     construct_regulatory_network,
     export_regulatory_network,
     identify_regulatory_hubs,
-    infer_grn,
-    infer_regulatory_network_from_expression,
-    pathway_regulation_analysis,
-    regulatory_motifs,
     regulatory_network_stability_analysis,
 )
 
@@ -147,15 +149,15 @@ class TestGeneRegulatoryNetwork:
 
     def test_get_regulators(self):
         """Test getting regulators of a gene."""
-        regulators_target2 = self.grn.get_regulators("TARGET2")
+        regulators_target2 = self.grn.get_target_regulators("TARGET2")
         expected_regulators = {"TF1", "TF2"}
         assert set(regulators_target2) == expected_regulators
 
-        regulators_target1 = self.grn.get_regulators("TARGET1")
+        regulators_target1 = self.grn.get_target_regulators("TARGET1")
         assert set(regulators_target1) == {"TF1"}
 
         # Test TF that is regulated by others
-        regulators_tf2 = self.grn.get_regulators("TF2")
+        regulators_tf2 = self.grn.get_target_regulators("TF2")
         assert set(regulators_tf2) == {"TARGET1"}
 
     def test_filter_by_confidence(self):
@@ -580,7 +582,7 @@ class TestRegulatoryNetworkEdgeCases:
         assert len(empty_grn.genes) == 0
         assert len(empty_grn.regulations) == 0
         assert len(empty_grn.get_targets("NONEXISTENT")) == 0
-        assert len(empty_grn.get_regulators("NONEXISTENT")) == 0
+        assert len(empty_grn.get_target_regulators("NONEXISTENT")) == 0
 
         # Statistics should handle empty network
         stats = empty_grn.get_network_statistics()
@@ -601,7 +603,7 @@ class TestRegulatoryNetworkEdgeCases:
 
         assert len(grn.regulations) == 1
         assert "AUTOREGULATOR" in grn.get_targets("AUTOREGULATOR")
-        assert "AUTOREGULATOR" in grn.get_regulators("AUTOREGULATOR")
+        assert "AUTOREGULATOR" in grn.get_target_regulators("AUTOREGULATOR")
 
         # Should handle in motif detection
         motifs = regulatory_motifs(grn)
@@ -696,7 +698,7 @@ class TestNewRegulatoryFunctions:
 
     def test_detect_regulatory_cascades(self):
         """Test regulatory cascade detection."""
-        from metainformant.networks.interaction.regulatory import detect_regulatory_cascades
+        from metainformant.networks.interaction.regulatory_analysis import detect_regulatory_cascades
 
         grn = GeneRegulatoryNetwork()
         grn.add_regulation("TF1", "TF2", confidence=0.8)
@@ -707,7 +709,7 @@ class TestNewRegulatoryFunctions:
 
     def test_validate_regulation(self):
         """Test regulation validation."""
-        from metainformant.networks.interaction.regulatory import validate_regulation
+        from metainformant.networks.interaction.regulatory_analysis import validate_regulation
 
         grn = GeneRegulatoryNetwork()
         grn.add_regulation("TF1", "GENE1", confidence=0.8, regulation_type="activation")
@@ -722,7 +724,7 @@ class TestNewRegulatoryFunctions:
 
 
 class TestRegulatoryCoreFunctions:
-    """Cover previously untested regulatory_core module-level functions."""
+    """Cover the regulatory_core module-level functions."""
 
     def _star_graph(self):
         return construct_regulatory_network(
@@ -838,7 +840,7 @@ class TestGeneRegulatoryNetworkIO:
     def test_from_interactions(self):
         grn = GeneRegulatoryNetwork.from_interactions([("TF1", "G1", 0.5), ("TF2", "G1", 0.7)], name="inter")
         assert grn.name == "inter"
-        assert sorted(grn.get_regulators("G1")) == ["TF1", "TF2"]
+        assert sorted(grn.get_target_regulators("G1")) == ["TF1", "TF2"]
         assert grn.metadata["n_tfs"] == 2
 
     def test_find_common_targets_and_shared_regulators(self):
@@ -924,7 +926,7 @@ class TestInferRegulatoryNetworkFromExpression:
             infer_regulatory_network_from_expression(self._expression_frame(), regulators=["TF1"], method="grnboost2")
 
     def test_infer_grn_mutual_info_skips_unknown_tf_genes(self):
-        # Regression: unknown TF names used to crash with ValueError from list.index()
+        # Regression: unknown TF names are skipped, not a ValueError from list.index()
         rng = np.random.default_rng(5)
         expression = rng.normal(size=(30, 4))
         gene_names = ["Gene_0", "Gene_1", "Gene_2", "Gene_3"]

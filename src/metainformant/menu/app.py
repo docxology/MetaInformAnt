@@ -44,7 +44,7 @@ class MenuApp:
                 self.display()
                 try:
                     choice = get_choice("Select option: ")
-                except (KeyboardInterrupt, EOFError):
+                except KeyboardInterrupt, EOFError:
                     print("\nGoodbye!")
                     return
 

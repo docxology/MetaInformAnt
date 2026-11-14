@@ -35,7 +35,6 @@ Documentation is organized by module domain:
 - `spatial/` - Spatial transcriptomics (Visium, MERFISH, Xenium)
 - `pharmacogenomics/` - Clinical variants (CPIC, PharmGKB, ACMG, star alleles)
 - `metabolomics/` - Metabolomics (mass spectrometry, pathway mapping, metabolite-gene integration)
-- `cloud/` - Cloud deployment (GCP VM lifecycle, Docker pipelines, genome prep)
 - `menu/` - Interactive menu and discovery system
 - `mcp/` - Model Context Protocol documentation (`src/metainformant/mcp/`, currently minimal minimal tool implementations)
 - `eqtl/` - eQTL integration docs (implementation lives under `gwas/finemapping/` and `scripts/eqtl/`)

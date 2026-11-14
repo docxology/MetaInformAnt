@@ -52,8 +52,8 @@ def _benjamini_hochberg(p_values: List[float]) -> List[float]:
 def _check_correction(correction: Optional[str]) -> Optional[str]:
     """Validate a multiple-testing correction name: ``'bonferroni'``, ``'fdr'`` or no correction.
 
-    ``None``, ``''`` and ``'none'`` mean no correction. Any other name raises: a name such as ``'holm'`` or ``'BH'``
-    used to be accepted and silently left the p-values uncorrected, under the heading "corrected".
+    ``None``, ``''`` and ``'none'`` mean no correction. Any other name raises: accepting a name such as ``'holm'`` or
+    ``'BH'`` would silently leave the p-values uncorrected, under the heading "corrected".
 
     Raises:
         ValueError: If ``correction`` is none of those.
@@ -273,14 +273,14 @@ def pathway_topology_analysis(pathway_graph: Any, **kwargs: Any) -> Dict[str, An
         try:
             clustering = nx.average_clustering(pathway_graph)
             analysis["average_clustering"] = clustering
-        except (nx.NetworkXError, ZeroDivisionError):
+        except nx.NetworkXError, ZeroDivisionError:
             analysis["average_clustering"] = None
 
     # Centrality measures
     try:
         betweenness = nx.betweenness_centrality(pathway_graph)
         analysis["betweenness_centrality"] = dict(betweenness)
-    except (nx.NetworkXError, ZeroDivisionError):
+    except nx.NetworkXError, ZeroDivisionError:
         analysis["betweenness_centrality"] = {}
 
     # Connected components
@@ -978,7 +978,6 @@ def pathway_enrichment(
             "p_value": p_value,
             "enrichment_ratio": enrichment_ratio,
             "overlap_genes": list(overlap),
-            "overlapping_genes": list(overlap),
             "expected_overlap": expected_overlap,
         }
 
@@ -1102,36 +1101,3 @@ def pathway_activity_score(
         return float(statistics.median(values))
     else:
         raise ValueError(f"Unknown method: {method}")
-
-
-def network_enrichment_analysis(
-    gene_list: List[str],
-    pathway_network: PathwayNetwork,
-    background_genes: Optional[List[str]] = None,
-    method: str = "fisher",
-    correction: str = "bonferroni",
-    min_overlap: int = 1,
-) -> Dict[str, Dict[str, Any]]:
-    """Perform network-based enrichment analysis.
-
-    This is an alias for pathway_enrichment with network-aware parameters.
-
-    Args:
-        gene_list: List of genes to test for enrichment
-        pathway_network: PathwayNetwork object containing pathway definitions
-        background_genes: Background gene set
-        method: Statistical test method
-        correction: Multiple testing correction
-        min_overlap: Minimum overlap size
-
-    Returns:
-        Dictionary mapping pathway IDs to enrichment results
-    """
-    return pathway_enrichment(
-        gene_list=gene_list,
-        pathway_network=pathway_network,
-        background_genes=background_genes,
-        method=method,
-        correction=correction,
-        min_overlap=min_overlap,
-    )

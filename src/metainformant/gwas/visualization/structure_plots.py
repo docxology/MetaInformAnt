@@ -6,8 +6,8 @@ Creates comprehensive visualizations for:
 - PCA scree plots (variance explained)
 - Population structure summaries
 
-Originally developed for the P. barbatus demonstration pipelines; the CLI
-wrappers in ``scripts/gwas/`` import these helpers from here.
+The CLI wrappers in ``scripts/gwas/`` (the P. barbatus demonstration
+pipelines) import these helpers from here.
 """
 
 from pathlib import Path

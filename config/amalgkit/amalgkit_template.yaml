@@ -21,9 +21,6 @@ log_dir: output/amalgkit/my_species/logs
 # Number of threads to use for parallel processing
 threads: 6
 
-# Automatically install amalgkit if not found on PATH
-auto_install_amalgkit: true
-
 # =============================================================================
 # SPECIES CONFIGURATION
 # =============================================================================
@@ -148,8 +145,8 @@ steps:
   # SELECT: Select samples based on metadata and filters
   # -------------------------------------------------------------------------
   select:
-    # Amalgkit 0.16.60 reads selection parameters and rules from this TSV.
-    # Do not place retired selection flags directly in this YAML map.
+    # Amalgkit 0.16.60 reads selection parameters and rules from this TSV,
+    # not from keys in this YAML map.
     select_rules_tsv: config/amalgkit/select_rules.tsv
 
   # -------------------------------------------------------------------------

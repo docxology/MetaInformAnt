@@ -8,7 +8,7 @@ This module provides functionality organized into the following structure:
 
 ## Subpackages
 
-- `analysis/` — exports: `clustering`, `dimensionality`, `nonlinear_methods`, `pca_methods`, `trajectory`
+- `analysis/` — exports: `clustering`, `nonlinear_methods`, `pca_methods`, `trajectory`
 - `celltyping/` — exports: `annotation`
 - `data/` — exports: `integration`, `preprocessing`
 - `differential/` — exports: `expression`

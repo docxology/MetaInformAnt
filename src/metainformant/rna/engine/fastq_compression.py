@@ -1,4 +1,4 @@
-"""Explicit lossless FASTQ compression settings for bounded acquisition workers."""
+"""Explicit lossless FASTQ compression settings for the streaming producer."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 def compression_level() -> int:
-    """Read a strict pigz level; retain level 6 unless an operator selects another."""
+    """Read a strict pigz level (default 6, set by ``AMALGKIT_PIPELINE_COMPRESSION_LEVEL``)."""
     raw = os.environ.get("AMALGKIT_PIPELINE_COMPRESSION_LEVEL", "6")
     try:
         level = int(raw)

@@ -426,7 +426,7 @@ def build_call_graph(entry_point: str | Path, repo_root: str | Path | None = Non
 
     try:
         tree = _cached_parse(entry_path)
-    except (SyntaxError, OSError):
+    except SyntaxError, OSError:
         return {}
 
     call_graph: dict[str, list[str]] = {}
@@ -501,7 +501,7 @@ def find_symbol_usage(symbol_name: str, repo_root: str | Path) -> list[SymbolUsa
 
             visitor = UsageVisitor()
             visitor.visit(tree)
-        except (OSError, UnicodeDecodeError):
+        except OSError, UnicodeDecodeError:
             continue
 
     return usages
@@ -522,7 +522,7 @@ def get_module_dependencies(module_path: str | Path) -> ModuleDependency:
 
     try:
         tree = _cached_parse(module_path)
-    except (SyntaxError, OSError):
+    except SyntaxError, OSError:
         return ModuleDependency(module=str(module_path), imports=[], from_imports={})
 
     imports: list[str] = []

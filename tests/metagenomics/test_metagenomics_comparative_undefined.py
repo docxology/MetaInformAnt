@@ -203,7 +203,7 @@ class TestAncomLikeReportsAWStatistic:
 
 
 class TestBiomarkerCrossValidation:
-    """``cv_accuracy`` is None, with a reason, when no cross-validation ran (it used to be 0.0)."""
+    """``cv_accuracy`` is None, with a reason, when no cross-validation ran (not 0.0)."""
 
     @pytest.fixture(autouse=True)
     def _require_sklearn(self) -> None:
@@ -264,7 +264,7 @@ class TestBiomarkerCrossValidation:
 
 
 class TestAldexWithoutNumpy:
-    """Without NumPy the Dirichlet Monte Carlo is still run (it used to become the deterministic CLR)."""
+    """Without NumPy the Dirichlet Monte Carlo still runs (it does not become the deterministic CLR)."""
 
     COUNTS = [
         [500, 10, 30],

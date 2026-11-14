@@ -10,7 +10,6 @@ This module provides functionality organized into the following structure:
 
 - `analysis/` — exports: `community`, `functional`, `indicators`, `macroecology`, `ordination`
 - `phylogenetic/` — exports: `diversity`
-- `traits/`
 - `visualization/` — exports: `visualization`
 
 ## Rules

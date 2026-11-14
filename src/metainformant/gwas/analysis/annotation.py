@@ -95,7 +95,7 @@ def annotate_variants_with_genes(
             continue
 
         chrom_genes = genes_by_chrom.get(chrom, [])
-        annotation = classify_variant_location(chrom, pos, chrom_genes, window_bp)
+        annotation = classify_variant_location(pos, chrom_genes, window_bp)
         result["annotation"] = annotation
         annotated += 1
 
@@ -104,7 +104,6 @@ def annotate_variants_with_genes(
 
 
 def classify_variant_location(
-    chrom: int,
     pos: int,
     genes: List[Dict[str, Any]],
     window_bp: int = 50000,
@@ -112,10 +111,9 @@ def classify_variant_location(
     """Classify a variant's location relative to nearby genes.
 
     Args:
-        chrom: Chromosome number. Not used: ``genes`` must already be the genes of this chromosome, and
-            the function does not check that they are.
         pos: Variant position (1-based)
-        genes: List of gene dictionaries (sorted by start) on this chromosome
+        genes: List of gene dictionaries (sorted by start) on the variant's chromosome; the function does not
+            check the chromosome
         window_bp: Search window in base pairs
 
     Returns:

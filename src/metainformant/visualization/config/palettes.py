@@ -66,9 +66,9 @@ def chromosome_palette(chromosomes: Sequence[str] | None = None) -> List[str]:
 # Colorblind-safe categorical palettes (Wong 2011, Tol, IBM)
 # ---------------------------------------------------------------------------
 
-# Wong 2011 palette: derived from the canonical Okabe-Ito definition in
-# conventions.py (same 8 hues, black first). Kept as a separate public name for
-# API compatibility; a test asserts the derivation.
+# Wong 2011 palette: the canonical Okabe-Ito hues of conventions.py in Wong's
+# order (black first), the "wong" entry of the palette map; a test asserts the
+# derivation.
 WONG: List[str] = sorted(_OKABE_ITO, key=lambda c: (c != "#000000",))
 
 TOL_BRIGHT: List[str] = [

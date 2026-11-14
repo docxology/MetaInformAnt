@@ -34,9 +34,8 @@ uv run python scripts/core_docs_cross_check.py --strict
 ```
 
 The generated inventory covers implementation modules that do not yet have a
-dedicated topic guide as well as the modules listed above. Compatibility
-facades remain supported, but are documented through their canonical package
-paths to avoid duplicate and divergent signatures.
+dedicated topic guide as well as the modules listed above. Names that a package
+`__init__.py` re-exports are documented through their implementation modules.
 
 ## Module Structure
 

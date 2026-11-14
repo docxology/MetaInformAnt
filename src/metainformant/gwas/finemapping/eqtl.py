@@ -341,13 +341,13 @@ def eqtl_effect_sizes(
             - status, error: ``"success"``, or ``"error"`` with the reason for a fit that could not
               be made; its ``beta``, ``se``, ``pvalue`` and ``r_squared`` are NaN (missing). An
               association whose gene is not in ``expression_matrix`` or whose variant is not in
-              ``genotype_matrix`` is such a row, with that reason; it used to be dropped without a word.
+              ``genotype_matrix`` is such a row, with that reason; it is never dropped silently.
 
     Raises:
         ValueError: If a gene id repeats in the index of ``expression_matrix``, a variant id in the index
-            of ``genotype_matrix``, or a sample id in the columns of either. A repeated id used to be
-            resolved by taking its first row, so an association could be computed on the wrong gene or
-            variant without any sign of it, exactly the case :func:`cis_eqtl_scan` rejects.
+            of ``genotype_matrix``, or a sample id in the columns of either. Resolving a repeated id by
+            taking its first row could compute an association on the wrong gene or variant without any
+            sign of it, exactly the case :func:`cis_eqtl_scan` rejects.
     """
     _require_matrix_ids(expression_matrix, genotype_matrix)
     common_samples = _common_samples(expression_matrix, genotype_matrix)

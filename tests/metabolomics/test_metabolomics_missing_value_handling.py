@@ -1,15 +1,15 @@
 """Missing values (NaN) stay honest through the analysis steps that follow ``read_csv``.
 
-``read_csv`` now returns NaN for a missing cell (it used to return 0.0). Two steps of
-``metainformant.metabolomics.analysis.identification`` would have turned that NaN into silently wrong numbers:
+``read_csv`` returns NaN for a missing cell, not 0.0. Two steps of
+``metainformant.metabolomics.analysis.identification`` could turn that NaN into silently wrong numbers:
 
-* ``normalize_intensities`` with ``total_ion_count`` or ``median``: the NaN total of the sample that contained it
-  was replaced by 1.0 (``np.where(total > 0, total, 1.0)``), so that sample was multiplied by the median total
-  instead of being scaled, and, because the replaced 1.0 entered the median, every other sample got a wrong factor;
-* ``fold_change``: a NaN group mean was floored at 1e-10 like a genuine zero, a fabricated log2 fold change of about
+* ``normalize_intensities`` with ``total_ion_count`` or ``median``: replacing the NaN total of the sample that
+  contains it by 1.0 (``np.where(total > 0, total, 1.0)``) would multiply that sample by the median total instead of
+  scaling it, and, because the replaced 1.0 enters the median, give every other sample a wrong factor;
+* ``fold_change``: flooring a NaN group mean at 1e-10 like a genuine zero would fabricate a log2 fold change of about
   -40 for what is really unknown.
 
-Now the scale-based normalisations refuse NaN (impute first) and the fold change of such a metabolite is NaN.
+So the scale-based normalisations refuse NaN (impute first) and the fold change of such a metabolite is NaN.
 
 Real computation; no test doubles.
 """

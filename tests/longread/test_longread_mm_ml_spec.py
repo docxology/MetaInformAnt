@@ -370,7 +370,7 @@ class TestAlignedPairsFromCigar:
 
 
 class TestWorkflowMethylationFeatures:
-    """``_extract_methylation_features`` decodes with the same rules and no longer invents positions or signal."""
+    """``_extract_methylation_features`` decodes with the same rules and invents no positions or signal."""
 
     @staticmethod
     def _read(sequence: str, mm: str, ml: list[int], *, reverse: bool = False, cigar: str = "12M") -> dict[str, Any]:

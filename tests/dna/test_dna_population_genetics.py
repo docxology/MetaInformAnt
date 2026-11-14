@@ -14,7 +14,7 @@ def test_snp_allele_frequencies_basic() -> None:
     try:
         result = population.allele_frequencies(seqs)
         assert isinstance(result, (list, dict))
-    except (TypeError, AttributeError):
+    except TypeError, AttributeError:
         # Function may have different signature
         pytest.skip("allele_frequencies API differs from genotype matrix")
 

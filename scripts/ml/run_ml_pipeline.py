@@ -214,9 +214,7 @@ def run_workflow(args):
                 from metainformant.ml.models.classification import cross_validate_biological
 
                 # cross_validate_biological builds its own estimator, so request the same random forest
-                cv_results = cross_validate_biological(
-                    X, y, algorithm="random_forest", cv_folds=args.cv_folds, random_state=42
-                )
+                cv_results = cross_validate_biological(X, y, method="rf", cv_folds=args.cv_folds, random_state=42)
                 workflow_results["analyses"]["classification"]["cv_results"] = cv_results
                 cv_accuracy = cv_results.get("mean_accuracy")
                 if cv_accuracy is None:

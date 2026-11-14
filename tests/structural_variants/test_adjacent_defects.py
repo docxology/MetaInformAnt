@@ -107,7 +107,7 @@ class TestAlleleFrequencyInputs:
 
     @pytest.mark.parametrize("bad", [-1, 3, 0.5, float("nan")])
     def test_a_value_that_is_not_a_genotype_is_refused(self, bad: float) -> None:
-        # -1 (a missing call) used to be summed as an allele count and binned into the last SFS bin; 0.5 was cut to 0.
+        # -1 (a missing call) is not summed as an allele count into the last SFS bin, and 0.5 is not cut to 0.
         with pytest.raises(ValueError, match="0, 1 and 2"):
             sv_allele_frequency([[0, 1, bad, 2]])
 
@@ -129,7 +129,7 @@ class TestLdAnalysisInputs:
         assert result["ld_matrix"][0][1] == pytest.approx(1.0)
 
     def test_snp_positions_must_cover_every_snp(self) -> None:
-        # The tag SNP (index 1) used to be reported at position 0 when the list was short.
+        # A short list is refused rather than reporting the tag SNP (index 1) at position 0.
         with pytest.raises(ValueError, match="snp_positions has 1 entries for 2 SNPs"):
             sv_ld_analysis(self.SV, self.SNPS, [10_000], [5_000])
 

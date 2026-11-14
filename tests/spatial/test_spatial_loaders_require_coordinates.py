@@ -1,8 +1,8 @@
 """Xenium and MERFISH loaders refuse to invent [0, 0] coordinates.
 
-A cell without a position used to be placed at the origin (silently when cells.csv / cell_metadata.csv was
-missing, and per cell when an id had no row), which downstream spatial statistics read as a real
-location. Real files on disk and real loaders only.
+A cell without a position is not placed at the origin (when cells.csv / cell_metadata.csv is missing, or per cell
+when an id has no row), which downstream spatial statistics would read as a real location. Real files on disk and
+real loaders only.
 """
 
 from __future__ import annotations

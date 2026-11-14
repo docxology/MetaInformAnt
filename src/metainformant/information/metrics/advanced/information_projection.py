@@ -454,7 +454,6 @@ def rate_distortion_function(
             whose rate exceeds this value: every returned point has
             ``R <= max_rate`` and fewer than ``n_points`` points come back
             when the curve reaches ``max_rate`` before the sweep ends.
-            (Earlier versions ignored this argument.)
         n_points: Number of (R, D) points to compute along the curve (at
             most; see ``max_rate``).
 

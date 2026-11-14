@@ -422,7 +422,7 @@ uv run pytest tests/ -v
 
 ### Q: Which Python versions are supported?
 
-**A:** METAINFORMANT requires Python 3.11+. Python 3.12+ is recommended for optimal performance.
+**A:** METAINFORMANT requires Python 3.14 or newer. CI runs every lane on Python 3.14 and a fast lane on 3.15; the full extras do not install on 3.15 because `ray` has no cp315 wheels.
 
 ### Q: Does METAINFORMANT work on Windows/Mac/Linux?
 
@@ -433,7 +433,7 @@ uv run pytest tests/ -v
 **A:** Use the provided Dockerfile or build your own:
 
 ```dockerfile
-FROM python:3.12-slim
+FROM python:3.14-slim
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \

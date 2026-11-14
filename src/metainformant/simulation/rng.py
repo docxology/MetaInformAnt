@@ -2,13 +2,9 @@
 
 Every simulator in ``metainformant.simulation.models`` accepts an optional
 ``random.Random`` and needs a deterministic numpy seed derived from it. This
-module centralizes that boilerplate so the seeding contract has one
-implementation (duplication across 18 call sites was the drift risk).
-
-Behavior is API-preserving: ``coerce_rng(None)`` returns a fresh unseeded
-``random.Random`` exactly as the previous inline ``if rng is None`` blocks did,
-and the numpy seed derivation is byte-identical to the previous
-``np.random.seed(rng.randint(0, 2**32))`` idiom.
+module holds that boilerplate so the seeding contract has one implementation:
+``coerce_rng(None)`` returns a fresh unseeded ``random.Random``, and numpy is
+seeded with ``np.random.seed(rng.randint(0, 2**32))`` (2**32 mapped to 0).
 """
 
 from __future__ import annotations
@@ -37,9 +33,8 @@ def _numpy_seed(value: int) -> int:
 def seed_numpy_from_rng(rng: random.Random) -> None:
     """Seed the legacy global numpy RNG deterministically from *rng*.
 
-    Draws ``rng.randint(0, 2**32)`` — identical to the previous inline idiom at
-    every call site — so simulated streams are unchanged for a given rng state.
-    The one draw numpy cannot accept, ``2**32``, maps to 0.
+    Draws ``rng.randint(0, 2**32)``, so a given rng state always gives the same
+    simulated stream. The one draw numpy cannot accept, ``2**32``, maps to 0.
     """
     np.random.seed(_numpy_seed(rng.randint(0, 2**32)))
 
@@ -47,8 +42,7 @@ def seed_numpy_from_rng(rng: random.Random) -> None:
 def coerce_and_seed(rng: random.Random | None) -> random.Random:
     """Coerce *rng* (None -> fresh Random) and seed numpy from it.
 
-    Returns the coerced rng. Equivalent to the previous two-line inline idiom
-    ``if rng is None: rng = random.Random()`` followed by
+    Returns the coerced rng: ``if rng is None: rng = random.Random()`` followed by
     ``np.random.seed(rng.randint(0, 2**32))``.
     """
     rng = coerce_rng(rng)

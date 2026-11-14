@@ -8,7 +8,7 @@ DNA annotation submodule for gene prediction and functional annotation.
 - **Component Type**: Source Code
 
 ## 💾 Data Structures
-- **Modules**: 5 Python modules
+- **Modules**: 4 Python modules
 - **Key Concepts**: Refer to Pydantic models in source.
 
 ## 🔌 API Definition
@@ -17,4 +17,3 @@ DNA annotation submodule for gene prediction and functional annotation.
 - `functional.py`
 - `gene_annotation.py`
 - `gene_finding.py`
-- `gene_prediction.py`

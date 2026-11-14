@@ -6,7 +6,7 @@ from typing import Any
 
 
 def _handle_translate(sequence: str, genetic_code: int = 1, to_stop: bool = False) -> dict:
-    from metainformant.dna.translation import translate_dna
+    from metainformant.dna.expression.translation import translate_dna
 
     protein = translate_dna(sequence, genetic_code=genetic_code, to_stop=to_stop)
     return {"protein": protein, "length_aa": len(protein.replace("*", ""))}

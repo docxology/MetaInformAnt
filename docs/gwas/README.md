@@ -139,10 +139,7 @@ dna_data = integration.from_dna_variants(gwas_sumstats)
 rna_data = integration.from_rna_expression(expression_matrix)
 
 # Run integrated analysis
-integrated = integration.integrate_omics_data(
-    dna_data=dna_data,
-    rna_data=rna_data,
-)
+integrated = integration.integrate_omics_data(data={"dna": dna_data, "rna": rna_data})
 ```
 
 ## 🔗 Related
@@ -157,8 +154,8 @@ integrated = integration.integrate_omics_data(
   synthetic-validation notes: `projects/apis_gwas/doc/current/`
   (gitlinked submodule — checkout that submodule to read them;
   `doc/current/` files were not present in this checkout at audit time)
-- Real-cohort QC reporter: `scripts/gwas/pipelines/analyze_beewas_2026_real.py`
-- Genomic-estimator validator: `scripts/gwas/pipelines/validate_beewas_genomic_estimators.py`
-- Shared BeeWAS reporting helpers: `scripts/gwas/pipelines/beewas_reporting.py`
+- Real-cohort QC reporter: `beewas.real.analysis` in `projects/apis_gwas`
+- Genomic-estimator validator: `beewas.validation.genomic_estimators` in `projects/apis_gwas`
+- Shared BeeWAS reporting helpers: `beewas.reporting` in `projects/apis_gwas`
 - Real guarded config: `projects/apis_gwas/config/beewas_2026_full_guarded.yaml`
 - Generated/demo config: `config/gwas/gwas_amellifera.yaml`

@@ -285,9 +285,9 @@ def _binomial_test_pvalue(k: int, n: int, p: float) -> float:
     """Exact one-sided binomial test p-value (upper tail) ``P(X >= k)`` for ``X ~ Binomial(n, p)``.
 
     Equals ``scipy.stats.binom.sf(k - 1, n, p)``. The probabilities are formed in log space and summed after factoring
-    out the largest term. (An earlier version used the normal approximation without continuity correction, which
-    halves the tail for few trials: with 8 hits in 10 iterations it reported 0.029 for the exact 0.055, so Boruta
-    confirmed a feature that the exact test at 0.05 does not.)
+    out the largest term. (The normal approximation without continuity correction halves the tail for few trials:
+    with 8 hits in 10 iterations it gives 0.029 for the exact 0.055, so Boruta would confirm a feature that the exact
+    test at 0.05 does not.)
 
     Args:
         k: Number of successes.
@@ -319,9 +319,9 @@ def _binomial_test_pvalue(k: int, n: int, p: float) -> float:
 def _validate_model_contract(model: Any) -> None:
     """Raise TypeError if the model does not expose the fit/predict contract.
 
-    A model object without callable ``fit`` and ``predict`` methods would
-    previously degrade recursive_elimination into silent correlation-based
-    ranking; failing fast surfaces the caller error instead.
+    A model object without callable ``fit`` and ``predict`` methods is a
+    caller error; failing fast surfaces it instead of degrading
+    recursive_elimination into silent correlation-based ranking.
     """
     if not (callable(getattr(model, "fit", None)) and callable(getattr(model, "predict", None))):
         raise TypeError(
@@ -529,8 +529,8 @@ def _cross_validate_simple(
 
     Raises:
         ValueError: If ``cv`` leaves no fold with both training and test samples. Errors from fitting or predicting
-            propagate: a fold that failed used to be scored 0.0 and averaged in, so a model that could not be fitted
-            looked like one that was merely inaccurate.
+            propagate: a failed fold is not scored 0.0 and averaged in, so a model that cannot be fitted does not
+            look like one that is merely inaccurate.
     """
     n = len(y_list)
     fold_size = n // cv

@@ -134,7 +134,7 @@ def _git(repo: Path, *args: str) -> str | None:
             timeout=10,
             check=False,
         )
-    except (OSError, subprocess.SubprocessError):
+    except OSError, subprocess.SubprocessError:
         return None
     output = result.stdout.strip()
     return output or None
@@ -205,7 +205,6 @@ def write_synthetic_configs(config_dir: Path, species: Sequence[str]) -> None:
                     f"work_dir: {work}",
                     f"log_dir: output/amalgkit/{name}/logs",
                     "threads: 8",
-                    "auto_install_amalgkit: false",
                     "filters:",
                     "  require_tissue: false",
                     "species_list:",

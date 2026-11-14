@@ -114,7 +114,7 @@ def run_workflow(args):
             logger.info(f"Analyzing FASTQ quality from {args.fastq}...")
             from metainformant.quality.io.fastq import analyze_fastq_quality
 
-            # n_reads analyzes the first N reads (there is no random subsampling or seed any more)
+            # n_reads analyzes the first N reads (no random subsampling, so no seed)
             quality_results = analyze_fastq_quality(args.fastq, n_reads=args.subsample)
 
             output_file = output_dir / "fastq_quality_analysis.json"
@@ -161,7 +161,7 @@ def run_workflow(args):
             quality_data = workflow_results["analyses"].get("fastq_quality", {})
 
             if "basic_statistics" in quality_data:
-                # The report no longer takes a sample name, so record it as a header line
+                # generate_quality_report takes no sample name, so record it as a header line
                 sample_name = args.fastq.stem if args.fastq else "Unknown"
                 report_text = f"Sample: {sample_name}\n" + generate_quality_report(quality_data, data_type="fastq")
 

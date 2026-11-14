@@ -662,7 +662,7 @@ def generate_all_plots(
         if kinship_matrix is not None:
             # Kinship dendrogram
             try:
-                from ..population.population import kinship_dendrogram
+                from ..population.population_admixture import kinship_dendrogram
 
                 dendro_file = output_dir / "kinship_dendrogram.png"
                 dendro_result = kinship_dendrogram(
@@ -677,7 +677,7 @@ def generate_all_plots(
 
             # Kinship clustermap
             try:
-                from ..population.population import kinship_clustermap
+                from ..population.population_admixture import kinship_clustermap
 
                 clustermap_file = output_dir / "kinship_clustermap.png"
                 cm_result = kinship_clustermap(

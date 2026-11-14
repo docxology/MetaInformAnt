@@ -176,7 +176,7 @@ The built-in adapters, with the edits each tolerates at the default rate (`min_i
 | `PacBio_SMRTbell` | 45 | 5 |
 | `Illumina_Nextera_read1` | 33 | 3 |
 
-`PacBio_barcoded` is a deprecated lookup alias for `Illumina_Nextera_read1`; the sequence is an Illumina adapter, not a PacBio adapter.
+`Illumina_Nextera_read1` is an Illumina adapter that can occur in Tn5-tagmented long-read libraries; it is not a PacBio adapter.
 
 ## Usage Examples
 

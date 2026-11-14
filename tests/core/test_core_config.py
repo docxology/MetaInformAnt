@@ -64,19 +64,6 @@ class TestLoadPostgresConfigFromEnv:
         # (depends on implementation)
 
 
-class TestLoadConfigFile:
-    """Tests for load_config_file function."""
-
-    def test_load_config_file_json(self, tmp_path: Path) -> None:
-        """Test loading JSON config."""
-        config_path = tmp_path / "config.json"
-        config_data = {"key1": "value1", "nested": {"key2": 123}}
-        config_path.write_text(json.dumps(config_data))
-
-        loaded = core_config.load_config_file(config_path)
-        assert loaded == config_data
-
-
 class TestGetEnvOrDefault:
     """Tests for get_env_or_default function."""
 

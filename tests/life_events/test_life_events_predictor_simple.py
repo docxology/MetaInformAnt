@@ -152,15 +152,15 @@ def test_simple_regression_round_trip_keeps_the_length_model(tmp_path: Path):
 
 
 def test_loading_a_simple_model_file_without_a_length_table_fails_loudly(tmp_path: Path):
-    """Files written before the table was saved (regression models) cannot predict; do not pretend."""
-    path = tmp_path / "legacy_regression.json"
+    """A simple model file without its sequence-length table cannot predict; do not pretend."""
+    path = tmp_path / "no_length_table.json"
     path.write_text(
         json.dumps(
             {
                 "model_type": "simple",
                 "task_type": "regression",
                 "embedding_dim": 100,
-                "random_seed": 42,
+                "random_state": 42,
                 "is_fitted": True,
                 "event_embeddings": {},
                 "vocab": {"event_0": 0},
@@ -172,32 +172,6 @@ def test_loading_a_simple_model_file_without_a_length_table_fails_loudly(tmp_pat
 
     with pytest.raises(ValueError, match="sequence-length table"):
         EventSequencePredictor.load_model(path)
-
-
-def test_loading_a_legacy_simple_classification_file_recovers_the_table_from_the_classifier(tmp_path: Path):
-    path = tmp_path / "legacy_classification.json"
-    path.write_text(
-        json.dumps(
-            {
-                "model_type": "simple",
-                "task_type": "classification",
-                "embedding_dim": 100,
-                "random_seed": 42,
-                "is_fitted": True,
-                "event_embeddings": {},
-                "vocab": {"event_0": 0},
-                "event_vocab": {"event_0": 0},
-                "reverse_vocab": {},
-                "classes_": [0, 1],
-                "classifier": {"type": "simple", "model": {"1": 0.0, "6": 1.0}},
-            }
-        )
-    )
-
-    loaded = EventSequencePredictor.load_model(path)
-
-    assert loaded.sequence_length_model == {1: 0.0, 6: 1.0}
-    assert loaded.predict(sequences_of_lengths([1, 6])).tolist() == [0, 1]
 
 
 def test_embedding_model_classification_is_unchanged():

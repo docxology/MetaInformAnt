@@ -54,8 +54,8 @@ def plot_event_embeddings(
         actually drawn: ``method='umap'`` without the umap package falls back to PCA, and says so.
 
     Raises:
-        ValueError: If ``method`` is not 'pca', 'tsne' or 'umap' (an unknown name used to be drawn as PCA under
-            that name's label).
+        ValueError: If ``method`` is not 'pca', 'tsne' or 'umap' (an unknown name is not drawn as PCA under that
+            name's label).
     """
     if not HAS_MATPLOTLIB:
         logger.warning("matplotlib not available for embedding plotting")

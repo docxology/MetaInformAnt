@@ -1,9 +1,8 @@
 """Round trips and column layout of the peak-file readers and writers (ChIP-seq and ATAC-seq).
 
-``save_*_peaks`` used to write the summit in the seventh column and the signal value in the eighth, while
-``load_*_peaks`` read the signal value from the seventh and the summit offset from the tenth, so a saved narrowPeak
-file loaded back as an empty list (and a broadPeak file loaded back with the summit as the signal value and the
-signal as the p-value). Both sides now use the ENCODE layouts:
+``save_*_peaks`` and ``load_*_peaks`` agree on the column layout, so a saved narrowPeak file loads back as the
+same peaks, not as an empty list, and a broadPeak file does not load back with the summit as the signal value and
+the signal as the p-value. Both sides use the ENCODE layouts:
 
     narrowPeak: chrom, chromStart, chromEnd, name, score, strand, signalValue, pValue, qValue, peak (offset from start)
     broadPeak:  the first nine of those
@@ -439,7 +438,7 @@ class TestBedRoundTrip:
 class TestFormatNames:
     @pytest.mark.parametrize("assay", [CHIP, ATAC], ids=["chipseq", "atacseq"])
     def test_names_are_case_insensitive(self, tmp_path: Path, assay: Any) -> None:
-        # "narrowPeak" is the standard spelling; it used to match no parser and give an empty list
+        # "narrowPeak" is the standard spelling; it matches its parser instead of giving an empty list
         make_peaks, save, load = assay
         path = tmp_path / "peaks.narrowPeak"
 

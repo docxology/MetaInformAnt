@@ -11,7 +11,7 @@ from __future__ import annotations
 import pytest
 
 from metainformant.core.utils.errors import ValidationError
-from metainformant.dna.alignment.distances import jc69_distance, kimura_2p_distance, kmer_distance, p_distance
+from metainformant.dna.alignment.distances import jukes_cantor_distance, kimura_distance, kmer_distance, p_distance
 from metainformant.dna.io.fastq import average_phred_by_position, iter_fastq
 
 # Import gc_content from core functionality tests since it's working there
@@ -159,18 +159,18 @@ class TestDNADistances:
         # Small differences should be similar to p-distance
         seq1 = "ATGCATGCATGC"
         seq2 = "ATGCATGCATGC"
-        assert jc69_distance(seq1, seq2) == 0.0
+        assert jukes_cantor_distance(seq1, seq2) == 0.0
 
         # Test with moderate divergence
         seq3 = "ATGCATGCATGG"  # One change
-        jc_dist = jc69_distance(seq1, seq3)
+        jc_dist = jukes_cantor_distance(seq1, seq3)
         p_dist = p_distance(seq1, seq3)
         assert jc_dist > p_dist  # JC correction should be larger
 
         # Test edge case - maximum correctable distance
         seq4 = "AAAAAAAA"
         seq5 = "GGGGGGGG"
-        jc_dist = jc69_distance(seq4, seq5)
+        jc_dist = jukes_cantor_distance(seq4, seq5)
         assert jc_dist > 0.75  # Should be close to saturation
 
     def test_kimura_2p_distance(self):
@@ -178,15 +178,15 @@ class TestDNADistances:
         # Identical sequences
         seq1 = "ATGC"
         seq2 = "ATGC"
-        assert kimura_2p_distance(seq1, seq2) == 0.0
+        assert kimura_distance(seq1, seq2) == 0.0
 
         # Test transitions vs transversions
         seq_orig = "ATGCATGC"
         seq_transition = "GTGCATGC"  # A->G (transition)
         seq_transversion = "TTGCATGC"  # A->T (transversion)
 
-        k2p_trans = kimura_2p_distance(seq_orig, seq_transition)
-        k2p_transv = kimura_2p_distance(seq_orig, seq_transversion)
+        k2p_trans = kimura_distance(seq_orig, seq_transition)
+        k2p_transv = kimura_distance(seq_orig, seq_transversion)
 
         # Kimura model accounts for different rates
         assert k2p_trans != k2p_transv

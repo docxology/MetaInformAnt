@@ -102,8 +102,8 @@ python3 scripts/phenotype/scrape_antwiki.py --species Formica_rufa --config scra
 | Setting | Default | Meaning |
 |---------|---------|---------|
 | `base_url` | `https://www.antwiki.org/wiki/` | Prefix that species page names are appended to |
-| `delay_seconds` (alias `delay_between_requests`) | `2.0` | Minimum seconds between requests; values below 0.1 raise `ValidationError` |
-| `timeout_seconds` (alias `timeout`) | `30` | Request timeout in seconds |
+| `delay_seconds` | `2.0` | Minimum seconds between requests; values below 0.1 raise `ValidationError` |
+| `timeout_seconds` | `30` | Request timeout in seconds |
 | `max_retries` | `3` | Retries of failed requests |
 | `user_agent` | `MetaInformant/1.0 (research@metainformant.org)` | Sent with every request; robots.txt groups are matched against its leading product token (the text before the first `/`), so keep the token that identifies the scraper first |
 | `check_robots` | `True` | Consult robots.txt (see below) |

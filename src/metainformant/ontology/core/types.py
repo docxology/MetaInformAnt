@@ -34,16 +34,6 @@ class Term:
     subsets: List[str] = field(default_factory=list)
     is_obsolete: bool = False
     metadata: Dict[str, Any] = field(default_factory=dict)
-    # Backward compatibility alias
-    id: str = ""  # Alias for term_id
-
-    def __post_init__(self) -> None:
-        """Validate term after initialization."""
-        # Handle id/term_id aliases - prefer term_id
-        if self.term_id and not self.id:
-            self.id = self.term_id
-        elif self.id and not self.term_id:
-            self.term_id = self.id
 
     def add_synonym(self, synonym: str) -> None:
         """Add a synonym to this term."""
@@ -274,7 +264,7 @@ class Ontology:
     def get_roots(self, relation_type: str = "is_a") -> Set[str]:
         """Get all root terms: terms with no parent under ``relation_type`` (``is_a`` unless told otherwise).
 
-        ``relation_type`` used to be ignored, so ``get_roots("part_of")`` answered with the ``is_a`` roots.
+        ``get_roots("part_of")`` answers with the ``part_of`` roots, not the ``is_a`` ones.
         """
         if relation_type == "is_a":
             with_parents = {term_id for term_id, parents in self.parents_of.items() if parents}
@@ -285,7 +275,7 @@ class Ontology:
     def get_leaves(self, relation_type: str = "is_a") -> Set[str]:
         """Get all leaf terms: terms with no child under ``relation_type`` (``is_a`` unless told otherwise).
 
-        ``relation_type`` used to be ignored, so ``get_leaves("part_of")`` answered with the ``is_a`` leaves.
+        ``get_leaves("part_of")`` answers with the ``part_of`` leaves, not the ``is_a`` ones.
         """
         if relation_type == "is_a":
             with_children = {term_id for term_id, children in self.children_of.items() if children}

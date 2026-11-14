@@ -147,12 +147,11 @@ class TestTsallis:
             1.0, abs=1e-12
         )  # zero-probability states drop out
 
-    def test_general_order_and_the_base_has_no_effect(self) -> None:
+    def test_general_order(self) -> None:
         probs = [0.5, 0.3, 0.2]
         expected = (1.0 - sum(p**2 for p in probs)) / (2.0 - 1.0)
 
         assert tsallis_entropy(probs, q=2.0) == pytest.approx(expected, abs=1e-12)
-        assert tsallis_entropy(probs, q=2.0, base=10.0) == pytest.approx(expected, abs=1e-12)
 
 
 class TestKlDivergenceEstimator:

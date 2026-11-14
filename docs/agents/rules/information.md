@@ -12,9 +12,15 @@ src/metainformant/information/
  integration/
  integration.py, networks.py
  metrics/
- advanced.py, analysis.py, channel.py, continuous.py
- decomposition.py, estimation.py, geometry.py
- hypothesis.py, semantic.py, syntactic.py
+ advanced/
+ channel.py, decomposition.py, fisher_rao.py, hypothesis.py
+ information_projection.py, semantic.py
+ analysis/
+ advanced_analysis.py, analysis.py
+ core/
+ continuous.py, estimation.py, syntactic.py
+ network_info/
+ information_flow.py
  workflow/
  workflows.py
 ```

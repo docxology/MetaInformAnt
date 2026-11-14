@@ -6,7 +6,7 @@ Querying, traversal, and serialization of ontology data structures. Provides anc
 
 | File | Purpose |
 |------|---------|
-| `__init__.py` | Re-exports the `query` and `serialize` modules and every public function of both, so `from metainformant.ontology.query import ancestors` works |
+| `__init__.py` | Exports the `query` and `serialize` modules |
 | `query.py` | Ontology graph traversal, search, statistics, and validation |
 | `serialize.py` | Save/load ontologies in OBO, JSON, and NetworkX graph formats |
 
@@ -45,10 +45,11 @@ The `ancestors` and `descendants` results are cached per ontology object. An ent
 ontology, so it is dropped with the ontology, and it is refreshed when `add_term` or `add_relationship` changes the
 ontology's structure; only an in-place edit of the parent or child sets needs `clear_cache()`.
 
-Every public function is also importable from the package itself:
+Import the functions from their modules:
 
 ```python
-from metainformant.ontology.query import ancestors, descendants, load_ontology, save_ontology
+from metainformant.ontology.query.query import ancestors, descendants
+from metainformant.ontology.query.serialize import load_ontology, save_ontology
 
 anc = ancestors(ontology, "GO:0008150")
 ```

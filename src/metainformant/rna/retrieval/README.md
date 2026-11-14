@@ -41,7 +41,7 @@ are retained after failure. Reuse preserves validated file bytes and timestamps.
 
 `AMALGKIT_ENA_MAX_CONNECTIONS` and `AMALGKIT_ENA_API_CONNECTIONS` bound native
 file requests (including HEAD probes) and metadata requests per origin in this
-process. Zero preserves unlimited legacy behavior; explicit limits accept 1–256.
+process. Zero means unlimited; explicit limits accept 1–256.
 Queue waits consume the absolute deadline and retry sleeps release the lease.
 `last_metadata_error` distinguishes failed discovery from an empty ENA record;
 transfer errors include the native curl exit code and HTTP status when available.
@@ -67,7 +67,7 @@ quality, and mate identity/order/count checks to bulk reuse/resume as well.
 The bounded chunk parser retains at most one input block and incomplete record
 per stream. Raw validation witnesses use exclusively owned temporary files;
 unsafe, nonregular and oversized witness objects are refused. Set
-`AMALGKIT_PRESERVE_RESUMABLE_PARTS=yes` to disable legacy age-based partial
+`AMALGKIT_PRESERVE_RESUMABLE_PARTS=yes` to disable the default age-based partial
 eviction, including when the extra first-pass deadline is disabled for retry.
 ## Metadata retries inside bounded acquisition
 

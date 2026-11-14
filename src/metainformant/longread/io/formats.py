@@ -108,7 +108,7 @@ def convert_pod5_to_fast5(
     """Convert a POD5 file to FAST5 format.
 
     Reads signal data from POD5 format and writes it to multi-read FAST5
-    (HDF5) format for compatibility with legacy tools.
+    (HDF5) format, for tools that read FAST5 rather than POD5.
 
     Args:
         pod5_path: Path to input POD5 file.

@@ -22,8 +22,8 @@ def _expand_workflow_config_values(value: Any) -> Any:
     """Expand environment variables and the external Amalgkit data root.
 
     Species YAML files use paths such as
-    ``output/amalgkit/<species>/work``.  The large production tree now lives
-    on a separate volume, so ``AMALGKIT_DATA_ROOT`` remaps that prefix while
+    ``output/amalgkit/<species>/work``.  The large production tree lives on
+    a separate volume; ``AMALGKIT_DATA_ROOT`` remaps that prefix while
     leaving repository-relative paths such as ``config/config_base`` intact.
     The recursive implementation also handles nested step and genome maps.
     """
@@ -106,7 +106,6 @@ class AmalgkitWorkflowConfig:
         max_samples: Optional[int] = None,
         genome: Optional[Dict[str, Any]] = None,
         taxon_id: Optional[str] = None,
-        auto_install_amalgkit: bool = False,
         log_dir: Optional[str] = None,
         source_path: Optional[Union[str, Path]] = None,
         **kwargs: Any,
@@ -129,7 +128,6 @@ class AmalgkitWorkflowConfig:
         self.max_samples = max_samples
         self.genome = genome or {}
         self.taxon_id = taxon_id
-        self.auto_install_amalgkit = auto_install_amalgkit
         self.log_dir = Path(log_dir) if log_dir else self.work_dir / "logs"
         # Retain the source configuration path when the object was loaded from
         # disk.  Per-sample provenance can then bind current workflow execution
@@ -162,7 +160,6 @@ class AmalgkitWorkflowConfig:
             "max_samples": self.max_samples,
             "genome": self.genome,
             "taxon_id": self.taxon_id,
-            "auto_install_amalgkit": self.auto_install_amalgkit,
             "log_dir": str(self.log_dir),
             "per_step": self.per_step,
             "filters": self.filters,

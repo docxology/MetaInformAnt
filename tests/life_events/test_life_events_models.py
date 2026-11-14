@@ -412,9 +412,9 @@ def test_ensemble_predictor(tmp_path):
 def test_survival_predictor(tmp_path):
     """Test survival predictor: it learns from the data, so predictions follow the events and the curves are real.
 
-    Without PyTorch this test used to pass on a constant: ``fit`` did nothing and ``predict`` returned 365.0
-    for every sequence, which satisfies "positive and one value per sequence". The data below make a diagnosis
-    shorten survival, so a model that really fitted them must separate the diagnosed from the others.
+    A constant prediction (365.0 for every sequence) would satisfy "positive and one value per sequence", so
+    the data below make a diagnosis shorten survival: a model that really fitted them must separate the
+    diagnosed from the others.
     """
     sequences = [
         ["health:diagnosis", "occupation:job_change"],
@@ -429,7 +429,7 @@ def test_survival_predictor(tmp_path):
     event_times = np.array([200, 900, 365, 1200, 150, 1100, 250, 1300])
     event_occurred = np.array([1, 1, 1, 1, 1, 0, 1, 1])  # the person censored at 1100 is still alive
 
-    model = SurvivalPredictor(method="cox", random_state=42)
+    model = SurvivalPredictor(method="cox")
     model.fit(sequences, event_times, event_occurred)
 
     predicted_times = model.predict(sequences)

@@ -1,6 +1,6 @@
 """Semantics of ``ancestors`` / ``descendants``: the term itself is excluded, and the documentation says so.
 
-The docstrings used to promise "including the term itself" while the code (and every caller and test) excludes it:
+The docstrings must not promise "including the term itself", because the code and every caller and test exclude it:
 ``Ontology.get_ancestors`` / ``get_descendants`` never return the start term, ``get_subontology`` and
 ``validate_go_ontology`` add their roots separately, and the query tests assert ``"C" not in ancestors(onto, "C")``.
 """

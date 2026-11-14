@@ -1,8 +1,8 @@
 """Tests for core.utils.optional_deps and core.utils.progress.
 
 Real implementations only: exercises the actual warning-state machine and the
-real progress logging helpers (no tqdm mocked; fallback shim used when tqdm is
-absent).
+real progress logging helpers (no tqdm mocked; the built-in fallback runs when
+tqdm is absent).
 """
 
 from __future__ import annotations

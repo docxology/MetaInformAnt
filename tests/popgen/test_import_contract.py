@@ -1,9 +1,7 @@
-"""Tests that scripts/popgen imports resolve against the new src module.
+"""Tests that scripts/popgen imports resolve against the src modules.
 
 Guards the thin-orchestrator contract: every metainformant.* import used
-by the scripts must exist (this regressed when
-``metainformant.dna.population_analysis`` and
-``metainformant.simulation.popgen`` were refactored away).
+by the scripts must exist.
 """
 
 from __future__ import annotations
@@ -31,8 +29,8 @@ def test_script_dependency_module_imports(module_name: str) -> None:
     importlib.import_module(module_name)
 
 
-def test_renamed_symbols_exist() -> None:
-    """Symbols scripts/popgen previously imported from dead paths."""
+def test_script_symbols_exist() -> None:
+    """The functions scripts/popgen imports exist at their src paths."""
     from metainformant.dna.population.analysis import (
         calculate_summary_statistics,
         compare_populations,

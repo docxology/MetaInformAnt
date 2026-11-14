@@ -81,7 +81,6 @@ class EventSequence:
 def extract_phenotypes_from_events(
     event_sequence: Any,
     phenotype_categories: Optional[Dict[str, List[str]]] = None,
-    trait_mapping: Optional[Dict[str, List[str]]] = None,
 ) -> Dict[str, Any]:
     """Extract phenotypic traits from an event sequence.
 
@@ -92,7 +91,6 @@ def extract_phenotypes_from_events(
     Args:
         event_sequence: EventSequence to analyze (from life_events or local)
         phenotype_categories: Optional mapping from category names to event types for custom counting
-        trait_mapping: Alias for phenotype_categories (backward compat)
 
     Returns:
         Dictionary of extracted phenotypes
@@ -103,8 +101,7 @@ def extract_phenotypes_from_events(
     if event_sequence is None:
         raise errors.ValidationError("event_sequence cannot be None")
 
-    # Accept either kwarg name
-    categories = phenotype_categories or trait_mapping
+    categories = phenotype_categories
 
     # Validate custom categories if provided
     if categories is not None:
@@ -160,7 +157,7 @@ def extract_phenotypes_from_events(
             # Handle both datetime and numeric timestamps
             try:
                 span = (last - first).days / 365.25
-            except (TypeError, AttributeError):
+            except TypeError, AttributeError:
                 span = float(last - first)
             phenotypes["event_span_years"] = span
 
@@ -171,7 +168,7 @@ def extract_phenotypes_from_events(
             phenotypes[f"{cat_name}_count"] = len(matching)
             phenotypes[f"{cat_name}_events"] = [getattr(e, "event_type", "") for e in matching]
 
-    # Event-type-based backward-compatible analysis (for local EventSequence without domain)
+    # Event-type summaries, available for sequences whose events carry no domain
     job_end_events = [e for e in events if getattr(e, "event_type", "") == "job_end"]
     if job_end_events:
         phenotypes["career_changes"] = len(job_end_events)
@@ -264,7 +261,7 @@ def aggregate_temporal_phenotypes(
         last = max(timestamps)
         try:
             time_span = (last - first).days / 365.25
-        except (TypeError, AttributeError):
+        except TypeError, AttributeError:
             time_span = float(last - first)
     else:
         time_span = 0.0
@@ -330,14 +327,12 @@ def aggregate_temporal_phenotypes(
 def map_events_to_traits(
     event_sequence: Any,
     trait_mapping: Optional[Dict[str, List[str]]] = None,
-    trait_definitions: Optional[Dict[str, List[str]]] = None,
 ) -> Dict[str, Any]:
     """Map events to phenotypic traits based on definitions.
 
     Args:
         event_sequence: EventSequence to analyze (from life_events or local)
         trait_mapping: Dictionary mapping trait names to event types
-        trait_definitions: Alias for trait_mapping (backward compat)
 
     Returns:
         Dictionary mapping trait names to {count, events, timestamps} dicts
@@ -348,7 +343,7 @@ def map_events_to_traits(
     if event_sequence is None:
         raise errors.ValidationError("event_sequence cannot be None")
 
-    mapping = trait_mapping or trait_definitions
+    mapping = trait_mapping
     if mapping is None:
         # Default domain-based trait mapping
         mapping = {
@@ -399,8 +394,7 @@ def analyze_life_course_trajectories(
         Dictionary with trajectory analysis results
 
     Raises:
-        ValueError: If an outcome measure is not one of the three above (an unknown name used to be skipped
-            without a word, leaving it out of the result).
+        ValueError: If an outcome measure is not one of the three above.
     """
     supported_outcomes = ("career_success", "health_outcomes", "social_stability")
     if outcome_measures is None:

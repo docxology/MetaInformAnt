@@ -23,7 +23,7 @@ def test_tajimas_D_zero_when_pi_matches_S_over_a1():
     S = 12
     const = tajima_constants(n)
     pi = S / const["a1"] if const["a1"] > 0 else 0.0
-    D = tajimas_D(S, pi, n)
+    D = tajimas_D(pi, S, n)
     assert abs(D) < 1e-9
 
 

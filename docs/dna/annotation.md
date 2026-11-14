@@ -19,9 +19,9 @@ flowchart TD
 
 ---
 
-## Gene Prediction (`dna.annotation.gene_prediction`)
+## Gene Prediction (`dna.annotation.gene_finding` and `dna.annotation.gene_annotation`)
 
-`gene_prediction.py` integrates tools from `gene_finding.py` and `gene_annotation.py`.
+ORF prediction lives in `gene_finding.py`; coding-region, CpG-island, regulatory-element, splice-site, codon-usage and repeat-masking annotation live in `gene_annotation.py`.
 
 ### `predict_orfs`
 

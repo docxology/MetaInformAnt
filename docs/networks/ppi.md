@@ -2,7 +2,7 @@
 
 The protein-protein interaction (PPI) module provides tools for analyzing protein interaction networks, including data loading, network construction, and functional analysis.
 
-The PPI classes and functions below are importable from `metainformant.networks.interaction.ppi`, the public facade over the implementation module.
+The PPI classes and functions below are importable from `metainformant.networks.interaction.ppi`.
 
 ## Network Construction
 
@@ -118,8 +118,8 @@ for target, candidates in predicted.items():
 ```
 
 **Available prediction methods** (any other value raises `ValueError`):
-- `'similarity'`: Jaccard similarity of network neighbours (needs `known_network`; a target that is not in the network gets an empty list). `'domain'` is accepted as an alias
-- `'correlation'`: absolute Pearson correlation between per-protein feature vectors (needs `features={protein: [values, ...]}`). `'coexpression'` is accepted as an alias
+- `'similarity'`: Jaccard similarity of network neighbours (needs `known_network`; a target that is not in the network gets an empty list).
+- `'correlation'`: absolute Pearson correlation between per-protein feature vectors (needs `features={protein: [values, ...]}`).
 - `'guilt-by-association'`: second-degree neighbours scored by shared neighbours (needs `known_network`)
 - `'ml'`: placeholder that logs a warning and falls back to the `'correlation'` method (needs `features` and `known_network`)
 

@@ -194,10 +194,10 @@ def run_workflow(args):
     if args.pca:
         try:
             logger.info(f"Computing PCA with {args.n_components} components...")
-            from metainformant.singlecell.analysis.pca_methods import compute_pca, select_hvgs
+            from metainformant.singlecell.analysis.pca_methods import pca_reduction, select_hvgs
 
             data = select_hvgs(data, n_top_genes=2000)
-            data = compute_pca(data, n_components=args.n_components)
+            data = pca_reduction(data, n_components=args.n_components)
 
             workflow_results["analyses"]["pca"] = {
                 "n_components": args.n_components,
@@ -211,16 +211,16 @@ def run_workflow(args):
     if args.umap:
         try:
             logger.info("Computing UMAP...")
-            from metainformant.singlecell.analysis.nonlinear_methods import compute_neighbors, compute_umap
-            from metainformant.singlecell.analysis.pca_methods import compute_pca, select_hvgs
+            from metainformant.singlecell.analysis.nonlinear_methods import compute_neighbors, umap_reduction
+            from metainformant.singlecell.analysis.pca_methods import pca_reduction, select_hvgs
 
             if "X_pca" not in data.obsm:
                 # Need PCA first
                 data = select_hvgs(data, n_top_genes=2000)
-                data = compute_pca(data, n_components=50)
+                data = pca_reduction(data, n_components=50)
 
             data = compute_neighbors(data, n_neighbors=15)
-            data = compute_umap(data, min_dist=0.1)
+            data = umap_reduction(data, min_dist=0.1)
 
             workflow_results["analyses"]["umap"] = {"status": "completed"}
         except Exception as e:

@@ -1,8 +1,8 @@
 """Descriptive species mean-profile distances across mapped orthogroups.
 
 This estimand differs from correlating a gene across aligned samples. Mapping
-cells select their first recorded transcript, preserving the project's legacy
-policy. Unsupported pairs remain NaN, accompanied by shared-orthogroup counts.
+cells select their first recorded transcript, the project's mapping policy.
+Unsupported pairs remain NaN, accompanied by shared-orthogroup counts.
 """
 
 from __future__ import annotations

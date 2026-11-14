@@ -66,7 +66,7 @@ from metainformant.singlecell.analysis.trajectory import compute_pseudotime_from
 
 data = compute_pseudotime_from_dimensionality_reduction(
     data,
-    dim_red_cols=["UMAP1", "UMAP2"],   # obs columns written by compute_umap
+    dim_red_cols=["UMAP1", "UMAP2"],   # obs columns written by umap_reduction
     root_cell=0,                       # default: the cell closest to the embedding origin
 )
 pseudotime = data.obs["embedding_pseudotime"]
@@ -203,7 +203,7 @@ from metainformant.singlecell.data.preprocessing import (
     log_transform,
     normalize_counts,
 )
-from metainformant.singlecell.analysis.pca_methods import compute_pca, select_hvgs
+from metainformant.singlecell.analysis.pca_methods import pca_reduction, select_hvgs
 from metainformant.singlecell.analysis.nonlinear_methods import compute_diffusion_map, compute_neighbors
 from metainformant.singlecell.analysis.trajectory import compute_diffusion_pseudotime
 
@@ -215,7 +215,7 @@ data = log_transform(data)
 
 # 2. Feature selection and dimensionality reduction
 data = select_hvgs(data, n_top_genes=2000)
-data = compute_pca(data, n_components=50, use_hvgs=True)
+data = pca_reduction(data, n_components=50, use_hvgs=True)
 
 # 3. Neighbor graph (after filtering, so that it matches the remaining cells)
 data = compute_neighbors(data, n_neighbors=30, n_pcs=30)      # more neighbors for trajectories

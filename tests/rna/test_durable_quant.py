@@ -9,16 +9,13 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.rna.engine.durable_quant import (
-    DirectoryStore,
-    lock_quantification,
-    restore_quantification,
-)
+from metainformant.rna.engine.durable_quant import lock_quantification, restore_quantification
 from metainformant.rna.engine.provenance import (
     QUANT_PROVENANCE_FILENAME,
     sync_sample_outputs,
     write_quant_provenance,
 )
+from metainformant.rna.engine.quant_storage import DirectoryStore
 from metainformant.rna.engine.streaming_orchestrator import (
     build_pipeline_resource_profile,
 )
@@ -191,8 +188,8 @@ def test_wrong_actual_index_cannot_lock(tmp_path: Path) -> None:
 def test_bound_lock_migrates_without_overwriting_recovery_receipt(
     tmp_path: Path,
 ) -> None:
-    from metainformant.rna.engine.aws_completion import verify_locked_campaign
-    from metainformant.rna.engine.durable_quant import bound_receipt_key, receipt_key
+    from metainformant.rna.engine.durable_quant import bound_receipt_key
+    from metainformant.rna.engine.quant_storage import receipt_key
 
     quant, config, index_hash = reference_sample(tmp_path)
     config_hash = hashlib.sha256(config.read_bytes()).hexdigest()
@@ -243,52 +240,6 @@ def test_bound_lock_migrates_without_overwriting_recovery_receipt(
         with pytest.raises(ValueError):
             restore_quantification(store, "cohort", "test_species", "SRR123", tmp_path / "bad", **kwargs)
         assert not (tmp_path / "bad").exists()
-    inventory = {
-        "task_count": 1,
-        "species": [
-            {
-                "species": "test_species",
-                "config_sha256": config_hash,
-                "index_sha256": index_hash,
-                "tasks": [
-                    {
-                        "accession": "SRR123",
-                        "task_id": "test_species/SRR123",
-                        "reference_index_sha256": index_hash,
-                    }
-                ],
-            }
-        ],
-    }
-    assert verify_locked_campaign(inventory, store, "cohort", tmp_path / "complete")["all_quant_locked"]
-
-
-def test_unbound_receipt_never_certifies_frozen_inventory(tmp_path: Path) -> None:
-    from metainformant.rna.engine.aws_completion import verify_locked_campaign
-
-    quant, config = sample(tmp_path)
-    store = DirectoryStore(tmp_path / "store")
-    lock_quantification(store, "cohort", "test_species", "SRR123", quant)
-    inventory = {
-        "task_count": 1,
-        "species": [
-            {
-                "species": "test_species",
-                "config_sha256": hashlib.sha256(config.read_bytes()).hexdigest(),
-                "index_sha256": "a" * 64,
-                "tasks": [
-                    {
-                        "accession": "SRR123",
-                        "task_id": "test_species/SRR123",
-                        "reference_index_sha256": "a" * 64,
-                    }
-                ],
-            }
-        ],
-    }
-    with pytest.raises(FileNotFoundError):
-        verify_locked_campaign(inventory, store, "cohort", tmp_path / "complete")
-    assert not (tmp_path / "complete" / "quant_completion_certificate.json").exists()
 
 
 def test_portable_restore_keeps_original_sidecar_and_validates_local_inputs(
@@ -325,31 +276,6 @@ def test_portable_restore_keeps_original_sidecar_and_validates_local_inputs(
     assert (destination / QUANT_PROVENANCE_FILENAME).read_bytes() == original
     assert classify_quantification(destination, "SRR123", verify_content=True)["status"] == "current"
     restore_quantification(store, "cohort", "test_species", "SRR123", destination, **kwargs)
-    from metainformant.rna.engine.aws_completion import verify_locked_campaign
-
-    inventory = {
-        "task_count": 1,
-        "species": [
-            {
-                "species": "test_species",
-                "config_name": frozen.name,
-                "config_sha256": receipt["config_sha256"],
-                "index_sha256": index_hash,
-                "tasks": [
-                    {
-                        "task_id": "test_species/SRR123",
-                        "accession": "SRR123",
-                        "reference_index_sha256": index_hash,
-                    }
-                ],
-            }
-        ],
-    }
-    certificate_root = tmp_path / "certified"
-    certificate = verify_locked_campaign(inventory, store, "cohort", certificate_root, config_dir=frozen.parent)
-    assert certificate["verified_tasks"] == 1
-    certified = certificate_root / "test_species/work/quant/SRR123"
-    assert classify_quantification(certified, "SRR123", verify_content=True)["status"] == "current"
     (destination / RESTORED_INPUTS_DIR / "config.yaml").write_text("tampered\n")
     assert classify_quantification(destination, "SRR123")["status"] == "invalid"
     with pytest.raises(FileExistsError, match="witness"):
@@ -464,44 +390,6 @@ def test_restored_quant_cannot_checkpoint_under_different_configuration(
             strict=True,
         )
     assert not (work / ".metainformant_downstream_provenance.json").exists()
-
-
-@pytest.mark.parametrize("name", ["../config.yaml", "/tmp/config.yaml", "..", "nested\\config.yaml"])
-def test_campaign_restore_rejects_unsafe_configuration_names(tmp_path: Path, name: str) -> None:
-    from metainformant.rna.engine.aws_completion import verify_locked_campaign
-
-    quant, config, index_hash = reference_sample(tmp_path)
-    store = DirectoryStore(tmp_path / "store")
-    lock_quantification(
-        store,
-        "cohort",
-        "test_species",
-        "SRR123",
-        quant,
-        expected_reference_index_sha256=index_hash,
-    )
-    inventory = {
-        "task_count": 1,
-        "species": [
-            {
-                "species": "test_species",
-                "config_name": name,
-                "config_sha256": hashlib.sha256(config.read_bytes()).hexdigest(),
-                "index_sha256": index_hash,
-                "tasks": [
-                    {
-                        "accession": "SRR123",
-                        "task_id": "test_species/SRR123",
-                        "reference_index_sha256": index_hash,
-                    }
-                ],
-            }
-        ],
-    }
-    destination = tmp_path / "must_not_exist"
-    with pytest.raises(ValueError, match="unsafe frozen configuration"):
-        verify_locked_campaign(inventory, store, "cohort", destination, config_dir=tmp_path)
-    assert not destination.exists()
 
 
 @pytest.mark.skipif(os.geteuid() == 0, reason="root opens files without read permission")

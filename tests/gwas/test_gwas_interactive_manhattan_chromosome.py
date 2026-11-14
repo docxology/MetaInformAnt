@@ -140,7 +140,7 @@ class TestInteractiveManhattanEndToEnd:
 
     @pytest.mark.skipif(HAS_PLOTLY, reason="asserts on the fallback table; the Plotly path uses the same records")
     def test_fallback_table_shows_the_assigned_chromosomes(self, tmp_path: Path) -> None:
-        """Regression: every row used to read chromosome 1."""
+        """Regression: every row shows its own chromosome, not chromosome 1."""
         results = [
             {"chrom": "1", "pos": 100, "p_value": 1e-3, "variant_id": "a"},
             {"chrom": "2", "pos": 100, "p_value": 1e-4, "variant_id": "b"},

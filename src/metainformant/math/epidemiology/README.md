@@ -33,4 +33,4 @@ threshold = herd_immunity_threshold(r0)
 s, i, r = sir_step(susceptible=990, infected=10, recovered=0, transmission_rate=0.3, recovery_rate=0.1, dt=0.1)
 ```
 
-`sir_step` also accepts the keyword-only aliases `beta` and `gamma` for `transmission_rate` and `recovery_rate`; the compartment arguments are `susceptible`, `infected` and `recovered`, in that order.
+The `sir_step` compartment arguments are `susceptible`, `infected` and `recovered`, in that order, followed by `transmission_rate` and `recovery_rate`.

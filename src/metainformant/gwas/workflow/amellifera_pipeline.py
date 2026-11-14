@@ -99,8 +99,6 @@ DEFAULT_SUBSPECIES: Dict[str, Dict[str, Any]] = {
     "A.m.caucasica": {"label": "Caucasian", "n_samples": 10, "pop_effect": 0.1},
     "A.m.scutellata": {"label": "African", "n_samples": 10, "pop_effect": -0.5},
 }
-# Backward compatibility alias
-SUBSPECIES = DEFAULT_SUBSPECIES
 
 
 def load_data_generation_config(config: dict | None = None) -> dict:
@@ -133,7 +131,7 @@ def _check_manifest(vcf_path: Path, params: dict) -> bool:
         with open(manifest) as f:
             existing = json.load(f)
         return bool(existing == json.loads(json.dumps(params, default=str)))
-    except (json.JSONDecodeError, OSError):
+    except json.JSONDecodeError, OSError:
         return False
 
 
@@ -179,7 +177,7 @@ def download_genome_annotation(output_dir: Path) -> Path | None:
                             dst.write(src.read())
                         logger.info(f"Extracted GFF3: {gff_path}")
                         return gff_path
-    except (FileNotFoundError, subprocess.TimeoutExpired):
+    except FileNotFoundError, subprocess.TimeoutExpired:
         logger.info("NCBI datasets CLI not available, trying FTP download")
 
     # Try direct FTP/HTTPS download
@@ -574,7 +572,7 @@ def generate_metadata(
 
 def run_full_gwas(vcf_path: Path, pheno_path: Path, gff_path: Path | None, output_dir: Path) -> dict:
     """Run the complete GWAS pipeline using metainformant's infrastructure."""
-    from metainformant.gwas.workflow.workflow import run_gwas
+    from metainformant.gwas.workflow.workflow_execution import run_gwas
 
     config = {
         "work_dir": str(output_dir / "work"),
@@ -714,10 +712,7 @@ def generate_visualizations(gwas_results: dict, output_dir: Path) -> dict:
     from metainformant.gwas.analysis.correction import as_p_value
     from metainformant.gwas.visualization.general import kinship_heatmap, manhattan_plot, qq_plot
     from metainformant.gwas.visualization.genomic.variants import variant_density_plot
-    from metainformant.gwas.visualization.population.population import (
-        pca_plot,
-        pca_scree_plot,
-    )
+    from metainformant.gwas.visualization.population.population_pca import pca_plot, pca_scree_plot
     from metainformant.gwas.visualization.statistical.statistical import (
         power_plot,
         volcano_plot,
@@ -945,7 +940,7 @@ def main(argv: list[str] | None = None) -> tuple[dict, dict]:
     # Step 5: Run full GWAS (multi-trait if specified)
     if traits and len(traits) > 1:
         print(f"\n[5/6] Running multi-trait GWAS pipeline ({len(traits)} traits)...")
-        from metainformant.gwas.workflow.workflow import run_multi_trait_gwas
+        from metainformant.gwas.workflow.workflow_execution import run_multi_trait_gwas
 
         multi_config = {
             "work_dir": str(output_base / "work"),

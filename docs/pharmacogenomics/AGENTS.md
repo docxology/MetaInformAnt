@@ -4,7 +4,7 @@
 
 | Layer | Package | Responsibility |
 |-------|---------|----------------|
-| Public API | `__init__.py` | the submodules plus `predict_metabolizer`; every other function is imported from the submodule that defines it |
+| Public API | `__init__.py` | the submodules plus `predict_metabolizer_status`; every other function is imported from the submodule that defines it |
 | Core logic | `alleles/` | star-allele matching, diplotype scoring, phenotype assignment; owns the allele values and the phenotype definitions |
 | Front end | `metabolism/` | string and dict front end over `alleles`, plus the dose-guideline table; holds no allele or phenotype data of its own |
 | Annotations | `annotations/` | bundled CPIC, PharmGKB and drug-label data with file loaders (no network code) |
@@ -78,7 +78,7 @@ Never import `annotations` from inside `alleles` to avoid a circular dependency.
   or allele value that drifts from CPIC fails a test. For CYP2C19, SLCO1B1 and UGT1A1 the
   allele-function rules are the reference, and a diplotype's activity score alone does not
   determine the phenotype (CYP2C19 `*9/*17` and `*1/*1` both score 2.0 and differ).
-- `predict_metabolizer` and `classify_phenotype` must return the same phenotype and
+- `predict_metabolizer_status` and `classify_phenotype` must return the same phenotype and
   activity score for every diplotype of every gene in the allele table.
 - Reports: assert the report dictionary (genotype results, recommendations, actions) and
   that recommendations reach the exported text.

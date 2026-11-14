@@ -2,12 +2,12 @@
 
 A translocation (``TRA``, or a ``BND`` breakend pair) is a zero-length record: ``chrom``/``start`` is its first
 breakpoint, ``chrom2``/``pos2`` its second, and ``end`` repeats ``start``. The merge, deduplication, frequency,
-blacklist, annotation and TAD functions used to read ``chrom``/``start``/``end`` alone:
+blacklist, annotation and TAD functions read both breakpoints, not ``chrom``/``start``/``end`` alone:
 
 * reciprocal overlap of two zero-length records is always 0, so ``merge_callsets``, ``deduplicate_variants`` and
-  ``filter_by_frequency`` never matched a translocation to anything, and ``survivor_merge`` joined two of them on
-  their first breakpoints whatever their partners were, and never joined a junction written from its other side;
-* ``predict_tad_disruption`` looked at the first breakpoint only, and only at boundaries on its chromosome.
+  ``filter_by_frequency`` cannot match a translocation by overlap, and ``survivor_merge`` must not join two of them
+  on their first breakpoints whatever their partners are, nor miss a junction written from its other side;
+* ``predict_tad_disruption`` checks both breakpoints, against the boundaries on each one's chromosome.
 
 A junction is the same event when the breakpoints agree on both chromosomes, each pair of positions within the
 merge distance, in either orientation. Every expected value below is worked out by hand from the coordinates.
@@ -324,8 +324,8 @@ class TestSurvivorMerge:
 
 class TestSurvivorMergeInputs:
     def test_a_dict_without_a_caller_is_refused_rather_than_counted_as_a_caller_of_its_own(self) -> None:
-        # Two calls of one caller, untagged: each used to become "caller_<index>", so a lone caller's duplicate
-        # pair passed min_callers=2 as if two callers agreed.
+        # Two calls of one caller, untagged: naming each "caller_<index>" would let a lone caller's duplicate
+        # pair pass min_callers=2 as if two callers agreed.
         calls = [
             {"chrom": "chr1", "start": 1_000, "end": 5_000, "sv_type": "DEL"},
             {"chrom": "chr1", "start": 1_010, "end": 5_010, "sv_type": "DEL"},
@@ -456,7 +456,7 @@ class TestFilterByFrequency:
         assert filter_by_frequency([deletion], population_db=self.DB, max_af=0.01)[0] == []
 
     def test_a_database_of_only_translocations_is_readable(self) -> None:
-        # Its entries have no 'end': they used to count as unreadable and the whole database was refused.
+        # Its entries have no 'end', which does not make them unreadable or the whole database refused.
         database = [self.DB[0]]
         kept, _ = filter_by_frequency([tra("chr1", 1_000, "chr2", 5_000)], population_db=database, max_af=0.01)
         assert kept == []

@@ -188,7 +188,7 @@ def test_quant_sample_refuses_a_batch_that_selects_another_run(
     orchestrator.db.close()
 
 
-def test_legacy_discovery_refuses_ncbi_refresh_unless_allowed(campaign: Campaign) -> None:
+def test_non_cohort_discovery_refuses_ncbi_refresh_unless_allowed(campaign: Campaign) -> None:
     campaign.selected.unlink()
     orchestrator = campaign.orchestrator(cohort=None, allow_metadata_refresh=False)
     with pytest.raises(RuntimeError, match="metadata refresh is disabled"):
@@ -233,7 +233,7 @@ def test_scripts_resolve_species_from_the_cohort(tmp_path: Path, monkeypatch: py
     assert unknown.returncode == 2 and "not in cohort" in unknown.stderr
     project_configs = REPO_ROOT / "projects" / "hymenoptera_amalgkit" / "config" / "amalgkit"
     if project_configs.is_dir():
-        legacy = _run(
+        non_cohort = _run(
             script,
             "--config-dir",
             str(project_configs),
@@ -243,5 +243,5 @@ def test_scripts_resolve_species_from_the_cohort(tmp_path: Path, monkeypatch: py
             "--species",
             "apis_mellifera",
         )
-        assert legacy.returncode == 0, legacy.stderr
-        assert "Metadata refresh (NCBI): refused" in legacy.stdout
+        assert non_cohort.returncode == 0, non_cohort.stderr
+        assert "Metadata refresh (NCBI): refused" in non_cohort.stdout

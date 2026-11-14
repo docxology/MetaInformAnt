@@ -1,9 +1,9 @@
-"""``filter_cells`` never leaves a neighbor graph that describes cells which are no longer there.
+"""``filter_cells`` never leaves a neighbor graph that describes cells which it removed.
 
-``uns["neighbors"]`` (indices, distances and connectivities, one row per cell) used to be copied unchanged into
-the filtered object, so its rows no longer matched its cells: the diffusion map then crashed or, with luck,
-quietly used the wrong cells' neighbors. A k-nearest-neighbor graph of the retained cells is not a subset of the
-old graph, so when any cell is removed the graph is dropped and the reason recorded; consumers rebuild it. Real
+``uns["neighbors"]`` (indices, distances and connectivities, one row per cell) is not copied unchanged into the
+filtered object, where its rows would not match its cells and the diffusion map would crash or quietly use the
+wrong cells' neighbors. A k-nearest-neighbor graph of the retained cells is not a subset of the unfiltered graph,
+so when any cell is removed the graph is dropped and the reason recorded; consumers rebuild it. Real
 data and real calls only.
 """
 

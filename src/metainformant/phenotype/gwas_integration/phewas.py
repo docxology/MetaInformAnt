@@ -22,8 +22,6 @@ from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
-HAS_NUMPY = True  # NumPy is a hard dependency of the package; the flag is kept for callers that test it
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -230,7 +228,7 @@ def run_phewas(
                         values.extend(float(c) for c in covariates[i])
                     if not any(math.isnan(v) for v in values):
                         valid_indices.append(i)
-                except (TypeError, ValueError):
+                except TypeError, ValueError:
                     continue
 
         if len(valid_indices) < 3:
@@ -323,7 +321,7 @@ def phenotype_correlation_matrix(phenotypes: dict) -> dict:
                         if not math.isnan(fi) and not math.isnan(fj):
                             xi.append(fi)
                             xj.append(fj)
-                    except (TypeError, ValueError):
+                    except TypeError, ValueError:
                         continue
 
             if len(xi) < 3 or len(set(xi)) < 2 or len(set(xj)) < 2:
@@ -382,7 +380,7 @@ def genetic_risk_score(
         ValueError: If dimensions are inconsistent.
     """
     # Convert to list-of-lists if needed
-    if HAS_NUMPY and isinstance(genotypes, np.ndarray):
+    if isinstance(genotypes, np.ndarray):
         geno_list = genotypes.tolist()
     else:
         geno_list = [list(row) for row in genotypes]
@@ -479,7 +477,7 @@ def phenotype_heritability_screen(
         non-missing values, are skipped.
     """
     # Convert kinship to list-of-lists
-    if HAS_NUMPY and isinstance(kinship_matrix, np.ndarray):
+    if isinstance(kinship_matrix, np.ndarray):
         kin = kinship_matrix.tolist()
     else:
         kin = [list(row) for row in kinship_matrix]

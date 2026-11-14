@@ -16,7 +16,7 @@ This module provides functionality organized into the following structure:
 - `quality/` — exports: `metrics`, `filtering`
 - `utils/` — exports: `batch`, `summary`
 - `visualization/` — exports: `plots`
-- `workflow/` — exports: `orchestrator`, `orchestrator_core`, `pipeline_stages`, `pipelines`, `reporting`
+- `workflow/` — exports: `orchestrator_core`, `pipeline_stages`, `pipelines`, `reporting`
 
 ## Rules
 

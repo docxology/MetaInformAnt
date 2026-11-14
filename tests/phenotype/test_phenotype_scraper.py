@@ -92,7 +92,7 @@ def test_scraper_config_loading(tmp_path: Path) -> None:
 
 @pytest.mark.network
 def test_scraper_initialization() -> None:
-    """Test scraper initialization and configuration aliases."""
+    """Test scraper initialization and configuration."""
     config = AntWikiScraperConfig(
         base_url="https://www.antwiki.org/wiki/",
         delay_seconds=1.0,

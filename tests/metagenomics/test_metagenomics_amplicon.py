@@ -515,7 +515,7 @@ def _environment(**values: str | None) -> Iterator[None]:
 
 
 class TestOtuPrefilterIsConservative:
-    """The k-mer prefilter used to reject pairs that are above the identity threshold."""
+    """The k-mer prefilter does not reject pairs that are above the identity threshold."""
 
     def test_98_percent_pair_forms_one_otu_with_and_without_prefilter(self) -> None:
         base = _random_dna(400, random.Random(7))
@@ -609,7 +609,7 @@ class TestOtuThresholdResolution:
 
 
 class TestFilterChimerasMinDivergence:
-    """min_divergence (percentage points over the closest parent) used to be ignored."""
+    """min_divergence (percentage points over the closest parent) is applied."""
 
     @staticmethod
     def _parents_and_chimera() -> tuple[dict[str, str], str]:
@@ -814,7 +814,7 @@ class TestAmpliconWithoutScipy:
 
 
 class TestBuildTaxonomyTreeCountsEachSequenceOnce:
-    """Lineages ending in "unclassified" used to be counted twice."""
+    """Lineages ending in "unclassified" are counted once."""
 
     def test_total_equals_number_of_assignments(self) -> None:
         assignments = [

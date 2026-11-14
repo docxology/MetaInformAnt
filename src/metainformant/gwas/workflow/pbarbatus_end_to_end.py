@@ -29,7 +29,7 @@ from metainformant.gwas.analysis.correction import bonferroni_correction, fdr_co
 from metainformant.gwas.analysis.quality import apply_qc_filters, parse_vcf_full
 from metainformant.gwas.analysis.structure import compute_kinship_matrix, compute_pca
 from metainformant.gwas.data.config import load_gwas_config
-from metainformant.gwas.visualization._general_impl import manhattan_plot, qq_plot
+from metainformant.gwas.visualization.general import manhattan_plot, qq_plot
 from metainformant.gwas.visualization.structure_plots import (
     plot_kinship_heatmap,
     plot_pca_scatter,
@@ -313,8 +313,8 @@ def run(config_path: str = "config/gwas/gwas_pbarbatus_synthetic.yaml") -> None:
             bonf_result = bonferroni_correction(p_values, alpha=0.05)
             fdr_result = fdr_correction(p_values, alpha=0.05)
 
-            n_bonf_sig = bonf_result.get("significant_count", 0)
-            n_fdr_sig = fdr_result.get("significant_count", 0)
+            n_bonf_sig = bonf_result.get("n_significant", 0)
+            n_fdr_sig = fdr_result.get("n_significant", 0)
 
             print(f"    Bonferroni significant (α=0.05): {n_bonf_sig}")
             print(f"    FDR significant (α=0.05): {n_fdr_sig}")
@@ -323,7 +323,7 @@ def run(config_path: str = "config/gwas/gwas_pbarbatus_synthetic.yaml") -> None:
             bonf_flags = bonf_result.get("significant", [])
             fdr_flags = fdr_result.get("significant", [])
             bonf_adjusted = [min(1.0, r["p_value"] * len(p_values)) for r in assoc_results]
-            fdr_adjusted = fdr_result.get("corrected_pvalues", p_values)
+            fdr_adjusted = fdr_result.get("adjusted_p_values", p_values)
 
             for i, r in enumerate(assoc_results):
                 r["bonferroni_sig"] = bool(bonf_flags[i])

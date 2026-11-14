@@ -1,6 +1,5 @@
 """Regression tests for dna.population plotting defects fixed in round 3.
 
-* ``plot_population_diversity`` ignored its documented ``output_path`` alias.
 * ``plot_pca_results`` returned ``None`` for the bare coordinate array its docstring promises to accept.
 * ``plot_summary_statistics_grid`` / ``plot_neutrality_test_summary`` silently dropped every entry beyond
   the sixth / fourth.
@@ -19,22 +18,15 @@ import pytest  # noqa: E402
 from metainformant.dna.population import visualization_core as vizcore, visualization_stats as vizstats  # noqa: E402
 
 
-class TestPopulationDiversityOutputPath:
-    def test_output_path_alias_writes_the_figure(self, tmp_path):
-        out = tmp_path / "diversity_alias.png"
+class TestPopulationDiversityOutputFile:
+    def test_output_file_writes_the_figure(self, tmp_path):
+        out = tmp_path / "diversity_file.png"
 
-        fig = vizcore.plot_population_diversity({"pop1": 0.01, "pop2": 0.02}, output_path=str(out))
+        fig = vizcore.plot_population_diversity({"pop1": 0.01, "pop2": 0.02}, output_file=str(out))
 
         assert fig is not None
         assert out.exists() and out.stat().st_size > 0
         assert len(plt.get_fignums()) == 0  # the figure is closed, not leaked into pyplot
-
-    def test_output_file_still_writes_the_figure(self, tmp_path):
-        out = tmp_path / "diversity_file.png"
-
-        vizcore.plot_population_diversity({"pop1": 0.01, "pop2": 0.02}, output_file=str(out))
-
-        assert out.exists() and out.stat().st_size > 0
 
     def test_no_file_is_written_without_a_path(self, tmp_path):
         fig = vizcore.plot_population_diversity({"pop1": 0.01})
@@ -43,7 +35,7 @@ class TestPopulationDiversityOutputPath:
         assert list(tmp_path.iterdir()) == []
 
     def test_bars_carry_the_supplied_values(self, tmp_path):
-        fig = vizcore.plot_population_diversity({"pop1": 0.01, "pop2": 0.02}, output_path=str(tmp_path / "d.png"))
+        fig = vizcore.plot_population_diversity({"pop1": 0.01, "pop2": 0.02}, output_file=str(tmp_path / "d.png"))
 
         heights = [patch.get_height() for patch in fig.axes[0].patches]
         assert heights == pytest.approx([0.01, 0.02])
@@ -78,7 +70,7 @@ class TestPcaResultsBareArray:
     def test_bare_array_is_saved_when_a_path_is_given(self, tmp_path):
         out = tmp_path / "pca.png"
 
-        fig = vizstats.plot_pca_results(self.COORDS, output_path=str(out))
+        fig = vizstats.plot_pca_results(self.COORDS, output_file=str(out))
 
         assert fig is not None
         assert out.exists() and out.stat().st_size > 0
@@ -135,7 +127,7 @@ class TestSummaryStatisticsGrid:
     def test_grid_is_saved(self, tmp_path):
         out = tmp_path / "grid.png"
 
-        vizstats.plot_summary_statistics_grid(_stats(8), output_path=str(out))
+        vizstats.plot_summary_statistics_grid(_stats(8), output_file=str(out))
 
         assert out.exists() and out.stat().st_size > 0
 

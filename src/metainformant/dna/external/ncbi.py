@@ -4,7 +4,7 @@ This module provides tools for interacting with NCBI databases including
 Entrez, BLAST, and other NCBI services for genomic data retrieval.
 
 A request that fails raises :class:`NCBIRequestError` (a
-``requests.RequestException``); it no longer returns an empty list or ``None``,
+``requests.RequestException``) rather than returning an empty list or ``None``,
 which a caller could not tell from "no hits".  Fields NCBI leaves out of a
 record are ``None``, not an invented ``""`` or ``0``.
 """

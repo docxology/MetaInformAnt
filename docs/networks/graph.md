@@ -67,7 +67,7 @@ interactions = [
     {"source": "gene1", "target": "gene2", "type": "interaction", "confidence": 0.7}
 ]
 
-add_edges_from_interactions(network, interactions, confidence_threshold=0.5)
+add_edges_from_interactions(network, interactions, weight_threshold=0.5)
 ```
 
 ## Network Metrics

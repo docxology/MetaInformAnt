@@ -4,7 +4,7 @@ Get started with metainformant in minutes.
 
 ## Prerequisites
 
-- **Python 3.11+**
+- **Python 3.14+**
 - **`uv`** - Fast Python package manager (**REQUIRED**)
   - Install: `curl -LsSf https://astral.sh/uv/install.sh | sh`
   - Verify: `uv --version`
@@ -226,7 +226,7 @@ Some workflows require external tools:
 - **amalgkit**: RNA-seq workflow orchestration
 
   ```bash
-  # Install via UV (automatic with setup.sh --with-amalgkit)
+  # Installed by default by scripts/package/setup.sh (pass --skip-amalgkit to skip it)
   uv sync --frozen --extra rna  # exact Amalgkit 0.16.108 (commit 1d1566638abe)
   ```
 
@@ -300,7 +300,6 @@ echo 'export NCBI_EMAIL="your.email@example.com"' >> ~/.bashrc
 - **[Pharmacogenomics](docs/pharmacogenomics/index.md)** - Drug-gene interactions
 - **[Metabolomics](docs/metabolomics/index.md)** - MS data processing, pathway mapping
 - **[Menu](docs/menu/index.md)** - Interactive CLI navigation
-- **[Cloud](docs/cloud/index.md)** - GCP deployment, Docker pipelines
 - **[eQTL](docs/eqtl/index.md)** - Expression QTL integration pipeline
 
 ### Workflow Scripts

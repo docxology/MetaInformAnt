@@ -57,7 +57,7 @@ Calculate cross-entropy H(p, q) = -sum(p_i * log(q_i)). Returns infinity if q as
 
 Calculate Renyi entropy of order alpha. Supports special cases: alpha=0 (Hartley entropy), alpha=inf (min-entropy). Raises ValueError if alpha=1 (use Shannon entropy instead, since Renyi converges to Shannon at alpha=1).
 
-### `tsallis_entropy(probs, q=2.0, base=2.0) -> float`
+### `tsallis_entropy(probs, q=2.0) -> float`
 
 Calculate Tsallis entropy of order q. Non-extensive generalisation: S_q = (1 - sum(p_i^q)) / (q - 1). Raises ValueError if q=1.
 
@@ -111,4 +111,4 @@ Environment variable prefix: `INFO_`
 - `metainformant.information.metrics.core.estimation` -- bias-corrected entropy estimation
 - `metainformant.information.metrics.core.syntactic` -- mutual information, KL divergence
 - `metainformant.information.metrics.advanced.decomposition` -- multivariate decomposition
-- `metainformant.information.metrics.advanced.geometry` -- information geometry
+- `metainformant.information.metrics.advanced.fisher_rao` and `metainformant.information.metrics.advanced.information_projection` -- information geometry

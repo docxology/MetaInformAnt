@@ -42,15 +42,15 @@ def gwas_hits_to_genes(
 ) -> list[str]:
     """Extract gene names from GWAS top hits.
 
-    Derives gene names from step-8g Ensembl annotations when available,
+    Derives gene names from NCBI gene annotations when available,
     falling back to SNP IDs for unannotated hits.
 
     Args:
         association_results: List of GWAS result dicts with at least
             ``p_value``, ``snp``, ``chrom``, ``pos`` keys.
         top_n: Maximum number of top hits to extract genes from.
-        gene_annotations: List of annotation dicts from step 8g
-            (``annotate_top_hits_ensembl``), each with ``snp``,
+        gene_annotations: List of annotation dicts from
+            ``annotate_top_hits_ncbi``, each with ``snp``,
             ``nearest_gene``, ``nearby_genes``.
         pvalue_threshold: Soft threshold; hits above this are deprioritised
             (all top_n are still taken from sorted results).
@@ -66,7 +66,7 @@ def gwas_hits_to_genes(
     # Sort by p-value ascending
     sorted_hits = sorted(association_results, key=lambda r: r.get("p_value", 1.0))
 
-    # Build SNP -> nearest_gene map from step-8g annotations
+    # Build SNP -> nearest_gene map from the gene annotations
     snp_to_genes: dict[str, list[str]] = {}
     for ann in gene_annotations or []:
         snp = ann.get("snp", "")
@@ -94,7 +94,7 @@ def gwas_hits_to_genes(
                     seen.add(gname)
                     genes.append(gname)
         # If no gene annotation, skip this hit — no positional labels, no SNP-id placeholders.
-        # Real gene annotations come from step 8g (NCBI/Ensembl API).
+        # Real gene annotations come from step 8g (NCBI API).
 
     logger.info(
         "gwas_hits_to_genes: %d unique genes from top %d hits " "(pvalue_threshold=%.2e)",
@@ -119,7 +119,7 @@ def rank_genes_by_pvalue(
 
     Args:
         association_results: GWAS result dicts.
-        gene_annotations: Step-8g Ensembl annotation list.
+        gene_annotations: Step-8g NCBI annotation list.
         min_neg_log_p: Minimum ``-log10(p)`` to include (filters near-null).
 
     Returns:
@@ -312,7 +312,7 @@ def build_background_from_vcf_genes(
     Used to build an unbiased background gene set for ORA.
 
     Args:
-        gene_annotations: Ensembl step-8g annotation list.
+        gene_annotations: NCBI step-8g annotation list.
 
     Returns:
         Deduplicated list of all annotated gene names.

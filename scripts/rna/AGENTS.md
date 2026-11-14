@@ -15,12 +15,12 @@ RNA-seq analysis and amalgkit workflow scripts.
 - `validate_all_species_workflow.py` - Cross-species validation
 - `validate_configs.py` - Config YAML validation
 - `_setup_utils.py` - Shared setup utilities
-- `install_r_deps.R` - R dependency installation
+- `install_r_packages.R` - R dependency installation
 - `install_r_packages.sh` - R package installation script
 - `run_rna_tests.sh` - RNA test runner
 
 ## ENA Contributions
-- **ENA-First Strategy**: Robust ENA download logic (`download_ena_robust`) integrated into orchestrators.
+- **ENA-First Strategy**: `retrieval.ena_downloader.ENADownloader` and the streaming producer download from ENA first.
 - **Failover**: Automatic failover to `fasterq-dump` from NCBI SRA.
 
 ## Usage

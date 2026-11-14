@@ -101,13 +101,13 @@ graph TD
 ## Quick Start
 
 ```python
-from metainformant.pharmacogenomics import predict_metabolizer
+from metainformant.pharmacogenomics import predict_metabolizer_status
 from metainformant.pharmacogenomics.annotations.cpic import get_dosing_recommendation
 from metainformant.pharmacogenomics.clinical.reporting import generate_clinical_report
 
 
 # Predict metabolizer status from a diplotype string
-result = predict_metabolizer(
+result = predict_metabolizer_status(
     {"diplotype": "*1/*4"},
     gene="CYP2D6",
 )

@@ -290,7 +290,7 @@ The quality values come entirely from the `marker_genes` annotation you supply, 
 
 | Component | Version | Purpose |
 |-----------|---------|---------|
-| Python | 3.11+ | Core |
+| Python | 3.14+ | Core |
 | NumPy | ≥1.24 | PCoA eigendecomposition, Dirichlet Monte Carlo in `aldex2_like` (pure-Python fallbacks exist) |
 | SciPy | ≥1.11 | Welch's t-test, Kruskal-Wallis, Poisson tail in `denoise_sequences` (pure-Python fallbacks exist; only Welch's t-test falls back to an approximation, a normal one) |
 | scikit-learn | ≥1.3 | Random forest in `biomarker_discovery` (not used for binning, which has its own k-means) |

@@ -93,7 +93,7 @@ heatmap(np.asarray(res["genotype_matrix"]), output_path="output/sv_genotypes.png
 | I/O | `core.io` | Not imported by the module itself; the examples use `io.load_json` / `io.dump_json` for inputs and results |
 | Config | `core.utils.config` | Not used: the module reads only the `SV_*` environment variables listed in [CONFIGURATION.md](CONFIGURATION.md) |
 | Caching | `core.io.cache` | Not used by the module; `JsonCache` can cache intermediate results such as depth arrays (see [PERFORMANCE.md](PERFORMANCE.md)) |
-| DB | `core.db` | Not used |
+| DB | `core.data.db` | Not used |
 
 ## Data Contract
 There is no shared result class. Each stage returns its own container:

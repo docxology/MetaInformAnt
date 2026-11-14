@@ -2,8 +2,8 @@
 
 * ``pathway_enrichment`` computed ``max(0.001, 1 / (overlap / expected))`` as its p-value whenever scipy could not be
   imported. That is not a Fisher or hypergeometric test (it is floored at 0.001, ignores the pathway and background
-  sizes beyond the expected count, and returns 1.0 for every overlap at or below the expectation). The fallback now
-  computes the exact upper-tail probability, and ``correction="fdr"`` no longer silently returns the raw p-values when
+  sizes beyond the expected count, and returns 1.0 for every overlap at or below the expectation). The fallback
+  computes the exact upper-tail probability, and ``correction="fdr"`` does not silently return the raw p-values when
   scipy is missing (Benjamini-Hochberg is pure Python).
 * ``pathway_enrichment`` ran any ``method`` other than ``"fisher"`` as the hypergeometric test, so a misspelt method
   produced results instead of an error.
@@ -33,7 +33,6 @@ from metainformant.networks.analysis import pathway as pathway_module
 from metainformant.networks.analysis.pathway import (
     PathwayNetwork,
     create_pathway_network,
-    network_enrichment_analysis,
     pathway_enrichment,
 )
 
@@ -196,13 +195,6 @@ def test_unknown_method_raises_instead_of_running_as_hypergeometric(method: str)
 
     with pytest.raises(ValueError, match="Unknown method"):
         pathway_enrichment(BACKGROUND[:5], network, background_genes=BACKGROUND, method=method)
-
-
-def test_network_enrichment_alias_rejects_an_unknown_method_too() -> None:
-    network = PathwayNetwork("n", {"P1": BACKGROUND[:6]})
-
-    with pytest.raises(ValueError, match="Unknown method"):
-        network_enrichment_analysis(BACKGROUND[:5], network, background_genes=BACKGROUND, method="bogus")
 
 
 def test_unknown_method_is_rejected_even_for_an_empty_network() -> None:

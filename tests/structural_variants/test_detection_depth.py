@@ -226,8 +226,8 @@ class TestNearestGene:
         result = find_nearest_gene({"chrom": "chr1", "start": 10000, "end": 10100}, self.GENE_DB)
         assert result["nearest_gene"] == "GENE_B"
         # The variant [10000, 10100) starts 10000 - 9000 = 1000 bp after GENE_B [6000, 9000) ends. The distance runs
-        # from the variant interval to the gene interval; the 1050 this test used to pin was measured from the
-        # variant's midpoint (10050).
+        # from the variant interval to the gene interval, not from the variant's midpoint (10050), which would
+        # give 1050.
         assert result["distance"] == 1000
         assert result["direction"] == "downstream"
 

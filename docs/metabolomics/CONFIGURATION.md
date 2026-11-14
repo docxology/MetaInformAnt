@@ -99,7 +99,7 @@ enriched = enrichment_with_fdr(query_metabolites, pathway_db, fdr_threshold=cfg[
 | `differential_abundance` | O(n × s) | 2–10 ms (5000 metabolites × 100 samples) | Yes — per-metabolite |
 | `metabolite_set_enrichment` | O(q × p) | 60–95 ms (q=100 query metabolites, p=500 pathways of 20 metabolites) | Yes — per-pathway |
 
-Times are best-to-median wall-clock values from one arm64 machine (Python 3.12, NumPy 2.5); expect different absolute numbers elsewhere.
+Times are best-to-median wall-clock values from one arm64 machine (NumPy 2.5); expect different absolute numbers elsewhere.
 
 **Parallelization**: All per-metabolite or per-peak operations can be parallelized across CPU cores using `concurrent.futures` or `joblib`. Not yet built-in but easily scriptable.
 
@@ -368,7 +368,7 @@ if __name__ == "__main__":  # required where processes are spawned (macOS, Windo
 
 | Component | Version | Python |
 |-----------|---------|--------|
-| metainformant | 0.4.0 (`metainformant.__version__`) | 3.11+ |
+| metainformant | 0.4.0 (`metainformant.__version__`) | 3.14+ |
 | NumPy | ≥1.24 declared; every function runs on any supported version (`detect_chromatographic_peaks` integrates peaks with its own trapezoidal rule, because neither `np.trapz` nor `np.trapezoid` exists on all supported versions) | — |
 | SciPy | ≥1.11 declared; optional for the metabolomics module itself (normal-approximation p-values without it) | — |
 

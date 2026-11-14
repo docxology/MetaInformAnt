@@ -28,7 +28,7 @@ import pytest
 from metainformant.longread.analysis.structural import detect_sv_from_long_reads
 from metainformant.longread.utils.summary import generate_sv_summary
 from metainformant.longread.visualization.plots import plot_read_length_histogram
-from metainformant.longread.workflow.orchestrator import LongReadOrchestrator
+from metainformant.longread.workflow.orchestrator_core import LongReadOrchestrator
 from metainformant.longread.workflow.pipelines import get_sv_pipeline_config
 
 matplotlib.use("Agg")

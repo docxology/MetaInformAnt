@@ -187,15 +187,14 @@ def _build_position_weight_matrix(
         if seq == backbone:
             continue
 
-        # Align sequence to backbone using banded DP
-        alignment = _banded_semiglobal_align(
+        # Align sequence to backbone
+        alignment = _semiglobal_align(
             backbone.upper(),
             seq.upper(),
             match_score,
             mismatch_penalty,
             gap_open,
             gap_extend,
-            bandwidth=min(500, max(50, abs(len(backbone) - len(seq)) + 50)),
         )
 
         # Add aligned bases to PWM
@@ -270,18 +269,17 @@ def _consensus_from_pwm(
     return "".join(consensus), qualities, coverages
 
 
-def _banded_semiglobal_align(
+def _semiglobal_align(
     ref: str,
     query: str,
     match_score: int = 2,
     mismatch_penalty: int = -4,
     gap_open: int = -4,
     gap_extend: int = -2,
-    bandwidth: int = 100,
 ) -> dict[str, Any]:
     """Semi-global alignment of query to reference.
 
-    Despite the name this is not banded: ``bandwidth`` is accepted and ignored. Up to 10^8 matrix
+    The alignment is not banded. Up to 10^8 matrix
     cells (and 50 kb per sequence) the full dynamic-programming matrix is filled; beyond that a k-mer anchored
     approximation is used. Gaps cost ``gap_extend`` per base (``gap_open`` only sets the first query
     gap of the first row). The reference is aligned end to end; the query may end early (free trailing gap).
@@ -293,7 +291,6 @@ def _banded_semiglobal_align(
         mismatch_penalty: Penalty for mismatches.
         gap_open: Gap opening penalty.
         gap_extend: Gap extension penalty.
-        bandwidth: Ignored (kept for compatibility).
 
     Returns:
         Dictionary with alignment results: ref_aligned, query_aligned, ref_start, score.
@@ -308,17 +305,11 @@ def _banded_semiglobal_align(
     if ref_len > 50000 or query_len > 50000:
         return _simple_align(ref, query)
 
-    # Banded DP
-    # Only compute cells within bandwidth of the main diagonal
-
-    # Initialize score matrix (only band)
-    # Score at (i, j) stored as band_matrix[i][j - (i + diagonal_offset - bandwidth)]
-
-    # Use simple DP for manageable sizes
+    # Full DP for manageable sizes
     if ref_len * query_len < 100_000_000:  # 100M cells threshold
         return _full_dp_align(ref, query, match_score, mismatch_penalty, gap_open, gap_extend)
 
-    # For larger sequences, use simplified banded approach
+    # For larger sequences, use the k-mer anchored approximation
     return _simple_align(ref, query)
 
 

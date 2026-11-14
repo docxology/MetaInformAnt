@@ -115,7 +115,7 @@ def calculate_consensus_quality(consensus: str | ConsensusResult, reads: Sequenc
 
 ```python-snippet
 def hybrid_assemble(long_reads: Sequence[str | dict[str, Any]], short_reads: Sequence[str | dict[str, Any]], min_long_read_length: int=2000, kmer_size: int=21, min_overlap: int=1000) -> HybridAssemblyResult
-def correct_with_short_reads(long_reads: Sequence[str | dict[str, Any]], short_reads: Sequence[str | dict[str, Any]], kmer_size: int=21, min_kmer_support: int=3, window_size: int=50) -> list[CorrectedRead]
+def correct_with_short_reads(long_reads: Sequence[str | dict[str, Any]], short_reads: Sequence[str | dict[str, Any]], kmer_size: int=21, min_kmer_support: int=3) -> list[CorrectedRead]
 def scaffold_with_long_reads(contigs: Sequence[str | dict[str, Any]], long_reads: Sequence[str | dict[str, Any]], min_alignment_length: int=1000, min_bridge_reads: int=2) -> list[Scaffold]
 ```
 

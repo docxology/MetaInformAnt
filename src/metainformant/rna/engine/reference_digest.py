@@ -65,5 +65,5 @@ class IndexDigestCache:
 
         try:
             return self.digest(path)
-        except (OSError, ValueError, RuntimeError):
+        except OSError, ValueError, RuntimeError:
             return None

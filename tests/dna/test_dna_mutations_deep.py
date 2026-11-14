@@ -106,7 +106,7 @@ class TestDetectSelectionSignatures:
         assert result["conservation"] == pytest.approx(1.0)
 
     def test_empty_refs_raise(self) -> None:
-        # No reference means the divergence is undefined; it used to be reported as perfect conservation
+        # No reference means the divergence is undefined, not perfect conservation
         with pytest.raises(ValueError, match="same length"):
             mutations.detect_selection_signatures("ATCG", [])
 

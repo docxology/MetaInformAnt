@@ -9,7 +9,7 @@ For user-oriented quick start, see [GETTING_STARTED.md](GETTING_STARTED.md). For
 ## Development Environment
 
 ### Prerequisites
-- **Python 3.11 or 3.12** (managed by `uv`)
+- **Python 3.14+** (managed by `uv`; `.python-version` selects 3.14)
 - **Git**
 - **uv** – fast Python package manager and resolver ([install](https://docs.astral.sh/uv/))
 
@@ -50,7 +50,7 @@ The `dev` group includes pytest, black, isort, mypy, pre-commit, and Sphinx.
 #### Verify Installation
 
 ```bash
-uv run python -V                   # Should be >=3.11
+uv run python -V                   # Should be >=3.14
 uv run pytest -q                   # Quick test sanity check
 uv run metainformant --help         # CLI entry point
 ```
@@ -262,7 +262,7 @@ Users install extras as needed: `uv pip install -e ".[ml,singlecell]"`.
 
 ### Using pdb / breakpoint()
 
-Python 3.11+ includes built-in `breakpoint()`:
+Python includes the built-in `breakpoint()`:
 
 ```python
 def my_function(x: int) -> int:
@@ -334,7 +334,7 @@ uv run scripts/package/test.sh
 ## CI/CD
 
 GitHub Actions runs on every push/PR:
-- **Python 3.11, 3.12** test matrix
+- **Python 3.14** for every lane and **3.15** for a fast lane (the full extras do not install on 3.15: `ray` has no cp315 wheels)
 - **Lint**: black, isort, flake8
 - **Type check**: mypy
 - **Tests**: pytest with coverage

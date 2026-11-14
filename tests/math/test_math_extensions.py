@@ -10,7 +10,7 @@ def test_ld_decay_and_watterson_theta_and_realized_h2():
     # (1-0.1)^(10) = 0.9^10 ≈ 0.34867844; 0.8 * that ≈ 0.27894275
     assert abs(r2t - 0.8 * (0.9**10)) < 1e-12
 
-    theta = watterson_theta(num_segregating_sites=10, sample_size=5)
+    theta = watterson_theta(10, 5)
     # a1 = 1 + 1/2 + 1/3 + 1/4 = 2.083333...
     assert abs(theta - (10.0 / (1 + 0.5 + 1 / 3 + 0.25))) < 1e-12
 

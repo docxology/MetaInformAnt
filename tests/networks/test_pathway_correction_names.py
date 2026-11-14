@@ -1,10 +1,10 @@
-"""An unknown multiple-testing correction is an error; it no longer leaves p-values uncorrected.
+"""An unknown multiple-testing correction is an error; it does not leave p-values uncorrected.
 
-``pathway_enrichment_analysis`` and ``pathway_enrichment`` applied Bonferroni for ``"bonferroni"``,
-Benjamini-Hochberg for ``"fdr"`` and, for any other string (``"holm"``, ``"BH"``, a typo), nothing at all, then
-published the unchanged p-values as ``p_value_corrected`` / ``corrected_p_value``. They now raise ``ValueError`` for
-any name but ``'bonferroni'``, ``'fdr'`` and the no-correction spellings (``None``, ``'none'``). The oracles are the
-Bonferroni and Benjamini-Hochberg formulas written out in the test. No test doubles.
+``pathway_enrichment_analysis`` and ``pathway_enrichment`` apply Bonferroni for ``"bonferroni"`` and
+Benjamini-Hochberg for ``"fdr"``. Any other string (``"holm"``, ``"BH"``, a typo) must not publish the unchanged
+p-values as ``p_value_corrected`` / ``corrected_p_value``: they raise ``ValueError`` for any name but
+``'bonferroni'``, ``'fdr'`` and the no-correction spellings (``None``, ``'none'``). The oracles are the Bonferroni
+and Benjamini-Hochberg formulas written out in the test. No test doubles.
 """
 
 from __future__ import annotations

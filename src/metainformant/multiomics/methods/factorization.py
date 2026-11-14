@@ -19,7 +19,6 @@ from __future__ import annotations
 
 import math
 import random
-import warnings
 from typing import Any
 
 from metainformant.core.utils.logging import get_logger
@@ -642,7 +641,6 @@ def similarity_network_fusion(
     networks: list[list[list[float]]] | list[Any],
     k_neighbors: int = 20,
     n_iter: int = 20,
-    alpha: float = 0.5,
 ) -> dict[str, Any]:
     """Similarity Network Fusion (SNF) for multi-omic patient networks.
 
@@ -662,11 +660,8 @@ def similarity_network_fusion(
             Each matrix is n_patients x n_patients as a numpy array or
             list-of-lists.
         k_neighbors: Number of neighbours for local kernel construction.
-        n_iter: Number of diffusion iterations.
-        alpha: Has no effect and is kept only so that existing calls still run.  In published SNF the
-            hyper-parameter scales the heat kernel that turns distances into similarities; this function
-            receives similarity matrices that are already computed, so there is no kernel to scale.  A
-            value other than the default 0.5 raises a ``UserWarning``.
+        n_iter: Number of diffusion iterations. The similarity matrices are taken as given: there
+            is no heat-kernel bandwidth (the ``alpha`` of published SNF) to set here.
 
     Returns:
         Dictionary with keys:
@@ -681,13 +676,6 @@ def similarity_network_fusion(
     """
     if len(networks) < 2:
         raise ValueError("SNF requires at least 2 networks to fuse")
-    if alpha != 0.5:
-        warnings.warn(
-            f"similarity_network_fusion: alpha={alpha!r} has no effect (the similarity matrices are given, so "
-            "there is no kernel to scale); the argument is accepted only for backward compatibility",
-            UserWarning,
-            stacklevel=2,
-        )
 
     logger.info("Running SNF with %d networks, k=%d, n_iter=%d", len(networks), k_neighbors, n_iter)
 
@@ -1023,7 +1011,7 @@ def _checked_ridge(value: Any) -> float:
     """``value`` as a float if it is a finite real number >= 0 (text is not a number), else a ValueError."""
     try:
         ridge = math.nan if isinstance(value, (str, bytes)) else float(value)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         ridge = math.nan
     if not (math.isfinite(ridge) and ridge >= 0):
         raise ValueError(f"regularization must be a finite number >= 0, got {value!r}")

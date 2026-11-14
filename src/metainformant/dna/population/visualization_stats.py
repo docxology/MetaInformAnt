@@ -23,7 +23,6 @@ def plot_demographic_comparison(
     pop1_data: Dict[str, Any],
     pop2_data: Optional[Dict[str, Any]] = None,
     output_file: Optional[str] = None,
-    output_path: Optional[str] = None,
 ) -> Optional[Any]:
     """Compare demographic histories between populations.
 
@@ -31,12 +30,10 @@ def plot_demographic_comparison(
         pop1_data: Demographic data for population 1
         pop2_data: Demographic data for population 2
         output_file: Optional output file path
-        output_path: Alias for output_file
 
     Returns:
         Plot object if matplotlib available, None otherwise
     """
-    output = output_file or output_path
     try:
         import matplotlib.pyplot as plt
     except ImportError:
@@ -93,28 +90,24 @@ def plot_demographic_comparison(
 
     fig.tight_layout()
 
-    if output:
-        plt.savefig(output, dpi=300, bbox_inches="tight")
-        logger.info(f"Saved demographic comparison plot to {output}")
+    if output_file:
+        plt.savefig(output_file, dpi=300, bbox_inches="tight")
+        logger.info(f"Saved demographic comparison plot to {output_file}")
 
     plt.close(fig)
     return fig
 
 
-def plot_diversity_comparison(
-    diversity_data: Dict[str, float], output_file: Optional[str] = None, output_path: Optional[str] = None
-) -> Optional[Any]:
+def plot_diversity_comparison(diversity_data: Dict[str, float], output_file: Optional[str] = None) -> Optional[Any]:
     """Compare diversity metrics across populations.
 
     Args:
         diversity_data: Dictionary mapping population names to diversity values
         output_file: Optional output file path
-        output_path: Alias for output_file
 
     Returns:
         Plot object if matplotlib available, None otherwise
     """
-    output = output_file or output_path
     try:
         import matplotlib.pyplot as plt
     except ImportError:
@@ -147,29 +140,25 @@ def plot_diversity_comparison(
 
     plt.grid(True, alpha=0.3, axis="y")
 
-    if output:
-        plt.savefig(output, dpi=300, bbox_inches="tight")
-        logger.info(f"Saved diversity comparison plot to {output}")
+    if output_file:
+        plt.savefig(output_file, dpi=300, bbox_inches="tight")
+        logger.info(f"Saved diversity comparison plot to {output_file}")
 
     fig = plt.gcf()
     plt.close(fig)
     return fig
 
 
-def plot_fst_comparison(
-    fst_data: Dict[str, float], output_file: Optional[str] = None, output_path: Optional[str] = None
-) -> Optional[Any]:
+def plot_fst_comparison(fst_data: Dict[str, float], output_file: Optional[str] = None) -> Optional[Any]:
     """Compare F_ST values across loci or populations.
 
     Args:
         fst_data: Dictionary mapping locus/population names to F_ST values
         output_file: Optional output file path
-        output_path: Alias for output_file
 
     Returns:
         Plot object if matplotlib available, None otherwise
     """
-    output = output_file or output_path
     try:
         import matplotlib.pyplot as plt
     except ImportError:
@@ -195,9 +184,9 @@ def plot_fst_comparison(
     plt.axhline(y=0.05, color="red", linestyle="--", alpha=0.7, label="Significance threshold (0.05)")
     plt.legend()
 
-    if output:
-        plt.savefig(output, dpi=300, bbox_inches="tight")
-        logger.info(f"Saved F_ST comparison plot to {output}")
+    if output_file:
+        plt.savefig(output_file, dpi=300, bbox_inches="tight")
+        logger.info(f"Saved F_ST comparison plot to {output_file}")
 
     fig = plt.gcf()
     plt.close(fig)
@@ -297,7 +286,6 @@ def plot_kinship_matrix(
     kinship_matrix: np.ndarray | Dict[str, Any],
     sample_names: Optional[List[str]] = None,
     output_file: Optional[str] = None,
-    output_path: Optional[str] = None,
     max_samples: Optional[int] = None,
 ) -> Optional[Any]:
     """Plot kinship matrix as heatmap.
@@ -306,13 +294,11 @@ def plot_kinship_matrix(
         kinship_matrix: Kinship coefficient matrix (or result dict)
         sample_names: Optional sample names for axis labels
         output_file: Optional output file path
-        output_path: Alias for output_file
         max_samples: Optional limit on number of samples
 
     Returns:
         Plot object if matplotlib available, None otherwise
     """
-    output = output_file or output_path
 
     if isinstance(kinship_matrix, dict) and kinship_matrix.get("status") == "failed":
         from metainformant.core.utils.errors import ValidationError
@@ -344,9 +330,9 @@ def plot_kinship_matrix(
     plt.xticks(rotation=45, ha="right")
     plt.yticks(rotation=0)
 
-    if output:
-        plt.savefig(output, dpi=300, bbox_inches="tight")
-        logger.info(f"Saved kinship matrix plot to {output}")
+    if output_file:
+        plt.savefig(output_file, dpi=300, bbox_inches="tight")
+        logger.info(f"Saved kinship matrix plot to {output_file}")
 
     fig = plt.gcf()
     plt.close(fig)
@@ -358,10 +344,8 @@ def plot_linkage_disequilibrium_decay(
     ld_data: List[Tuple[int, float]] | List[float],
     distances: Optional[List[float]] = None,
     output_file: Optional[str] = None,
-    output_path: Optional[str] = None,
 ) -> Optional[Any]:
     """Plot linkage disequilibrium decay with distance."""
-    output = output_file or output_path
     try:
         import matplotlib.pyplot as plt
     except ImportError:
@@ -386,17 +370,15 @@ def plot_linkage_disequilibrium_decay(
     plt.ylabel("LD (r²)")
     plt.grid(True, alpha=0.3)
 
-    if output:
-        plt.savefig(output, dpi=300, bbox_inches="tight")
+    if output_file:
+        plt.savefig(output_file, dpi=300, bbox_inches="tight")
 
     fig = plt.gcf()
     plt.close(fig)
     return fig
 
 
-def plot_neutrality_test_suite(
-    results: Dict[str, Any], output_file: Optional[str] = None, output_path: Optional[str] = None
-) -> Optional[Any]:
+def plot_neutrality_test_suite(results: Dict[str, Any], output_file: Optional[str] = None) -> Optional[Any]:
     """Plot comprehensive neutrality test results."""
     try:
         import matplotlib.pyplot as plt
@@ -404,7 +386,6 @@ def plot_neutrality_test_suite(
         logger.warning("matplotlib not available for plotting")
         return None
 
-    output = output_file or output_path
     if not results:
         return None
 
@@ -428,18 +409,15 @@ def plot_neutrality_test_suite(
     ax.grid(True, axis="y", alpha=0.3)
     fig.tight_layout()
 
-    if output:
-        plt.savefig(output, dpi=300, bbox_inches="tight")
+    if output_file:
+        plt.savefig(output_file, dpi=300, bbox_inches="tight")
 
     plt.close(fig)
     return fig
 
 
-def plot_neutrality_test_summary(
-    summary: Dict[str, Any], output_file: Optional[str] = None, output_path: Optional[str] = None
-) -> Optional[Any]:
+def plot_neutrality_test_summary(summary: Dict[str, Any], output_file: Optional[str] = None) -> Optional[Any]:
     """Plot summary of neutrality test interpretations."""
-    output = output_file or output_path
     try:
         import matplotlib.pyplot as plt
     except ImportError:
@@ -474,8 +452,8 @@ def plot_neutrality_test_summary(
         ax.axis("off")
     fig.tight_layout()
 
-    if output:
-        plt.savefig(output, dpi=300, bbox_inches="tight")
+    if output_file:
+        plt.savefig(output_file, dpi=300, bbox_inches="tight")
 
     plt.close(fig)
     return fig
@@ -485,7 +463,6 @@ def plot_outlier_detection(
     results: List[Dict[str, Any]] | List[float],
     outliers: Optional[List[int]] = None,
     output_file: Optional[str] = None,
-    output_path: Optional[str] = None,
 ) -> Optional[Any]:
     """Plot outlier detection results."""
     try:
@@ -494,7 +471,6 @@ def plot_outlier_detection(
         logger.warning("matplotlib not available for plotting")
         return None
 
-    output = output_file or output_path
     if not results:
         return None
 
@@ -518,8 +494,8 @@ def plot_outlier_detection(
     if outlier_set:
         plt.legend()
 
-    if output:
-        plt.savefig(output, dpi=300, bbox_inches="tight")
+    if output_file:
+        plt.savefig(output_file, dpi=300, bbox_inches="tight")
 
     fig = plt.gcf()
     plt.close(fig)
@@ -530,8 +506,6 @@ def plot_pca_results(
     pca_result: Tuple[np.ndarray, np.ndarray, np.ndarray] | Dict[str, Any] | np.ndarray | List[List[float]],
     sample_names: Optional[List[str]] = None,
     output_file: Optional[str] = None,
-    output_path: Optional[str] = None,
-    n_components: Optional[int] = None,
 ) -> Optional[Any]:
     """Plot PCA results.
 
@@ -542,14 +516,11 @@ def plot_pca_results(
             "explained_variance_ratio" and "labels"/"cluster_labels".
         sample_names: Optional sample names drawn next to the points
         output_file: Optional output file path
-        output_path: Alias for output_file
-        n_components: Unused; accepted for API compatibility
 
     Returns:
         Plot object if matplotlib is available and usable 2D coordinates are
         present, None otherwise
     """
-    output = output_file or output_path
 
     if isinstance(pca_result, dict) and pca_result.get("status") == "failed":
         from metainformant.core.utils.errors import ValidationError
@@ -583,7 +554,7 @@ def plot_pca_results(
         # A bare (n_samples, n_components) coordinate array, or the same as nested lists
         try:
             coordinates = np.asarray(pca_result, dtype=float)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             coordinates = None  # ragged or non-numeric: reported below as unusable
 
     if coordinates is None or coordinates.ndim != 2 or coordinates.shape[0] == 0 or coordinates.shape[1] < 2:
@@ -620,8 +591,8 @@ def plot_pca_results(
     ax.grid(True, alpha=0.3)
     fig.tight_layout()
 
-    if output:
-        plt.savefig(output, dpi=300, bbox_inches="tight")
+    if output_file:
+        plt.savefig(output_file, dpi=300, bbox_inches="tight")
 
     plt.close(fig)
     return fig
@@ -632,7 +603,6 @@ def plot_permutation_test(
     observed_value: Optional[float] = None,
     p_value: Optional[float] = None,
     output_file: Optional[str] = None,
-    output_path: Optional[str] = None,
 ) -> Optional[Any]:
     """Plot permutation test results."""
     try:
@@ -641,7 +611,6 @@ def plot_permutation_test(
         logger.warning("matplotlib not available for plotting")
         return None
 
-    output = output_file or output_path
     if isinstance(results, dict):
         permuted_values = results.get("permuted_values", results.get("null_distribution", []))
         observed = observed_value if observed_value is not None else results.get("observed_value")
@@ -665,8 +634,8 @@ def plot_permutation_test(
     plt.title("Permutation Test Results")
     plt.grid(True, alpha=0.3, axis="y")
 
-    if output:
-        plt.savefig(output, dpi=300, bbox_inches="tight")
+    if output_file:
+        plt.savefig(output_file, dpi=300, bbox_inches="tight")
 
     fig = plt.gcf()
     plt.close(fig)
@@ -676,7 +645,6 @@ def plot_permutation_test(
 def plot_pi_vs_theta(
     pi_values: List[float],
     theta_values: List[float],
-    locus_names: Optional[List[str]] = None,
     output_file: Optional[str] = None,
 ) -> Optional[Any]:
     """Plot pi vs theta comparison."""
@@ -712,11 +680,8 @@ def plot_pi_vs_theta(
     return fig
 
 
-def plot_site_frequency_spectrum(
-    sfs_data: List[int], output_file: Optional[str] = None, output_path: Optional[str] = None
-) -> Optional[Any]:
+def plot_site_frequency_spectrum(sfs_data: List[int], output_file: Optional[str] = None) -> Optional[Any]:
     """Plot site frequency spectrum."""
-    output = output_file or output_path
     try:
         import matplotlib.pyplot as plt
     except ImportError:
@@ -739,9 +704,9 @@ def plot_site_frequency_spectrum(
     plt.title("Site Frequency Spectrum")
     plt.grid(True, alpha=0.3, axis="y")
 
-    if output:
-        plt.savefig(output, dpi=300, bbox_inches="tight")
-        logger.info(f"Saved SFS plot to {output}")
+    if output_file:
+        plt.savefig(output_file, dpi=300, bbox_inches="tight")
+        logger.info(f"Saved SFS plot to {output_file}")
 
     fig = plt.gcf()
     plt.close(fig)
@@ -787,7 +752,6 @@ def plot_statistic_distribution(
     stat_values: List[float] | Dict[str, List[float]],
     stat_name: str = "Statistic",
     output_file: Optional[str] = None,
-    plot_type: str = "histogram",
 ) -> Optional[Any]:
     """Plot distribution of a population statistic."""
     try:
@@ -830,10 +794,9 @@ def plot_statistic_distribution(
 
 
 def plot_summary_statistics_grid(
-    stats_dict: Dict[str, Dict[str, float]], output_file: Optional[str] = None, output_path: Optional[str] = None
+    stats_dict: Dict[str, Dict[str, float]], output_file: Optional[str] = None
 ) -> Optional[Any]:
     """Plot grid of summary statistics for multiple populations."""
-    output = output_file or output_path
     try:
         import matplotlib.pyplot as plt
     except ImportError:
@@ -863,18 +826,15 @@ def plot_summary_statistics_grid(
         ax.axis("off")
     fig.tight_layout()
 
-    if output:
-        plt.savefig(output, dpi=300, bbox_inches="tight")
+    if output_file:
+        plt.savefig(output_file, dpi=300, bbox_inches="tight")
 
     plt.close(fig)
     return fig
 
 
-def plot_tajimas_d_comparison(
-    tajima_d_values: Dict[str, float], output_file: Optional[str] = None, output_path: Optional[str] = None
-) -> Optional[Any]:
+def plot_tajimas_d_comparison(tajima_d_values: Dict[str, float], output_file: Optional[str] = None) -> Optional[Any]:
     """Compare Tajima's D values across populations."""
-    output = output_file or output_path
     try:
         import matplotlib.pyplot as plt
     except ImportError:
@@ -905,9 +865,9 @@ def plot_tajimas_d_comparison(
 
     plt.grid(True, alpha=0.3, axis="y")
 
-    if output:
-        plt.savefig(output, dpi=300, bbox_inches="tight")
-        logger.info(f"Saved Tajima's D comparison plot to {output}")
+    if output_file:
+        plt.savefig(output_file, dpi=300, bbox_inches="tight")
+        logger.info(f"Saved Tajima's D comparison plot to {output_file}")
 
     fig = plt.gcf()
     plt.close(fig)

@@ -39,7 +39,7 @@ graph TD
 
         PHA[phasing/] --> |haplotyping.py| HT[Phase Block Construction]
 
-        W[workflow/] --> |orchestrator.py| OR[Pipeline Orchestration]
+        W[workflow/] --> |orchestrator_core.py| OR[Pipeline Orchestration]
         W --> |pipelines.py| PI[Pre-defined Pipelines]
         W --> |reporting.py| RE[QC Reports]
 
@@ -59,7 +59,7 @@ graph TD
 ## Usage
 
 ```python
-from metainformant.longread.workflow.orchestrator import LongReadOrchestrator
+from metainformant.longread.workflow.orchestrator_core import LongReadOrchestrator
 from metainformant.longread.io import fast5, bam
 from metainformant.longread.quality import metrics, filtering
 from metainformant.longread.analysis import modified_bases, structural

@@ -196,10 +196,9 @@ def _resolve_tf_indices(tf_list: list[str] | None, gene_names: list[str]) -> lis
     """Row indices of the regulators: every gene when ``tf_list`` is ``None``, otherwise the listed genes.
 
     Entries of ``tf_list`` that are not in ``gene_names`` are ignored (a genome-wide TF catalogue is routinely longer
-    than the measured genes) and repeated entries count once. An earlier version silently replaced a ``tf_list`` that
-    matched nothing (a misspelt or wrongly-cased catalogue, an empty list) with *all* genes, returning the full
-    all-against-all network where the caller had asked for a regulator-restricted one; repeated entries produced
-    duplicate edges.
+    than the measured genes) and repeated entries count once. A ``tf_list`` that matches nothing (a misspelt or
+    wrongly-cased catalogue, an empty list) is never replaced by *all* genes, which would return the full
+    all-against-all network where the caller asked for a regulator-restricted one.
 
     Raises:
         ValueError: If ``tf_list`` is given but none of its entries is a gene in ``gene_names``.
@@ -760,8 +759,8 @@ def _hypergeometric_pvalue(k: int, n: int, K: int, N: int) -> float:
     precision (about 1e-10 for a population of 20 000). SciPy is not needed and the result does not depend on whether
     it is installed. The result only underflows to 0.0 when the true p-value is below about 5e-324.
 
-    An earlier version fell back to a normal approximation without SciPy. That approximation is poor exactly where
-    enrichment is tested: small counts and a small gene set in a large population.
+    There is no normal-approximation fallback: that approximation is poor exactly where enrichment is tested, with
+    small counts and a small gene set in a large population.
 
     Args:
         k: Number of successes observed.
@@ -775,8 +774,8 @@ def _hypergeometric_pvalue(k: int, n: int, K: int, N: int) -> float:
 
     Raises:
         ValueError: If the arguments do not describe a draw from a population (``K`` or ``n`` negative or larger
-            than ``N``). A call used to return 1.0 for what is an invalid population (for example a gene set larger
-            than the target universe, where SciPy returns NaN that was then clamped to 1.0).
+            than ``N``), for example a gene set larger than the target universe (where SciPy returns NaN), rather
+            than returning 1.0.
     """
     if N < 0 or not 0 <= K <= N or not 0 <= n <= N:
         raise ValueError(
@@ -901,8 +900,8 @@ def _motif_z_scores(motif_counts: dict[str, int], random_counts: dict[str, list[
 def _count_motifs_fast(edges: list[dict], motif_size: int, node_list: list[str]) -> dict[str, int]:
     """Count 2- or 3-node regulatory motifs of a directed edge list.
 
-    Autoregulation (a self-loop) belongs to no motif of two or three distinct nodes and is ignored: counting it made
-    ``A->A, A->B`` contain a feed-forward loop on two nodes, and a network with every TF autoregulated report 7
+    Autoregulation (a self-loop) belongs to no motif of two or three distinct nodes and is ignored: counting it would
+    make ``A->A, A->B`` contain a feed-forward loop on two nodes, and a network with every TF autoregulated report 7
     feed-forward loops where there is 1. Repeated edges count once, and co-regulation counts the pairs of
     *distinct* regulators of each target.
 

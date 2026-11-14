@@ -89,7 +89,7 @@ def _collect_conductances(graph: Any, community_lists: list[list[str]]) -> list[
             try:
                 conductance = nx.algorithms.cuts.conductance(graph, community)
                 conductances.append(conductance)
-            except (nx.NetworkXError, ZeroDivisionError):
+            except nx.NetworkXError, ZeroDivisionError:
                 pass
     return conductances
 
@@ -306,11 +306,7 @@ def greedy_modularity_communities(graph: Any, **kwargs: Any) -> List[List[str]]:
         return trivial
 
     greedy_kwargs = _networkx_greedy_kwargs(kwargs)
-    try:
-        communities = list(nx.algorithms.community.greedy_modularity_communities(graph, **greedy_kwargs))
-    except AttributeError:
-        # Fallback for older NetworkX versions
-        communities = list(nx.algorithms.community.modularity_max.greedy_modularity_communities(graph, **greedy_kwargs))
+    communities = list(nx.algorithms.community.greedy_modularity_communities(graph, **greedy_kwargs))
 
     # Convert frozensets to lists and sort by size
     community_lists = _communities_sorted_by_size(communities)
@@ -323,8 +319,7 @@ def _drop_seed(kwargs: Dict[str, Any]) -> Dict[str, Any]:
     """Remove ``random_state`` / ``seed`` from the options of a deterministic algorithm.
 
     ``detect_communities`` and ``community_stability`` hand one seed to whichever method they run. A deterministic
-    method has no use for it, but must not choke on it: the resulting ``TypeError`` used to be caught by
-    ``detect_communities``, which then silently ran greedy modularity instead of the requested method.
+    method has no use for it, but must not choke on it: a ``TypeError`` here would stop the requested method.
     """
     return {key: value for key, value in kwargs.items() if key not in ("random_state", "seed")}
 
@@ -567,7 +562,7 @@ def evaluate_communities(graph: Any, communities: List[List[str]] | Dict[str, in
         else:
             # Fallback using NetworkX
             modularity = nx.algorithms.community.modularity(graph, communities)
-    except (nx.NetworkXError, ValueError, ZeroDivisionError):
+    except nx.NetworkXError, ValueError, ZeroDivisionError:
         modularity = None
 
     # Calculate community statistics
@@ -769,9 +764,8 @@ def compare_communities(communities1: Dict[str, int], communities2: Dict[str, in
 
     Returns the normalized mutual information (arithmetic-mean normalisation) and the adjusted Rand index. Both are
     computed exactly from the contingency table of the two assignments, so they do not depend on the community
-    numbering: the same partition under different labels scores 1.0. (An earlier version fell back to the fraction
-    of nodes with equal labels, reported as both measures, whenever scikit-learn raised, which scores a relabelled
-    copy of a partition 0.0.)
+    numbering: the same partition under different labels scores 1.0. (The fraction of nodes with equal labels is
+    not used as a fallback: it scores a relabelled copy of a partition 0.0.)
     """
     common_nodes = sorted(set(communities1) & set(communities2))
     if not common_nodes:

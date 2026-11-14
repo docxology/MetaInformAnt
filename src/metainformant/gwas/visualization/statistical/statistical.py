@@ -9,7 +9,7 @@ import math
 import sys
 from pathlib import Path
 from statistics import NormalDist
-from typing import Any, List, Optional, cast
+from typing import Any, List, Optional
 
 import numpy as np
 
@@ -212,7 +212,6 @@ def power_plot(
     effect_sizes: List[float],
     alpha: float = 0.05,
     output_file: Optional[str | Path] = None,
-    output_path: Optional[str | Path] = None,
     title: str = "Statistical Power Analysis",
     ax: Optional[Any] = None,
     style: Optional[Any] = None,
@@ -225,7 +224,6 @@ def power_plot(
         effect_sizes: List of effect sizes to evaluate
         alpha: Significance level
         output_file: Optional output file path
-        output_path: Alias for output_file
         title: Plot title
         ax: Optional matplotlib Axes
         style: Optional PlotStyle
@@ -234,10 +232,6 @@ def power_plot(
     Returns:
         Dictionary with plot status and metadata
     """
-    # Allow output_path as alias for output_file
-    if output_path is not None and output_file is None:
-        output_file = output_path
-
     try:
         import matplotlib.pyplot as plt
         import numpy as np
@@ -270,7 +264,7 @@ def power_plot(
                 # Power calculation
                 power = 1 - stats.nct.cdf(t_crit, df=2 * n - 2, nc=ncp)
                 power_grid[i, j] = power
-            except (ValueError, ZeroDivisionError):
+            except ValueError, ZeroDivisionError:
                 power_grid[i, j] = np.nan
 
     if style is None:
@@ -628,8 +622,7 @@ def volcano_plot(
     """Create a volcano plot for GWAS results.
 
     Args:
-        results: List of result dicts with 'p_value' and 'beta' keys, or list of effect sizes
-            (if list of floats, a second positional arg for p_values is expected via output_path)
+        results: List of result dicts with 'p_value' and 'beta' keys
         output_path: Path to save the plot
         significance_threshold: P-value threshold for significance
         effect_size_threshold: Effect size threshold for highlighting
@@ -650,20 +643,8 @@ def volcano_plot(
         return {"status": "failed", "error": "matplotlib not available"}
 
     try:
-        # Accept list-of-dicts: extract effect_sizes and p_values
-        if results and isinstance(results[0], dict):
-            effect_sizes: list[float] = [r.get("beta", 0.0) for r in results]
-            p_values: list[float] = [r["p_value"] for r in results]
-        else:
-            effect_sizes = list(results)
-            p_values = cast(list[float], list(cast(Any, output_path)) if output_path is not None else [])
-            output_path = None
-
-        if len(effect_sizes) != len(p_values):
-            return {
-                "status": "failed",
-                "error": "effect_sizes and p_values must have same length",
-            }
+        effect_sizes: list[float] = [r.get("beta", 0.0) for r in results]
+        p_values: list[float] = [r["p_value"] for r in results]
 
         # Convert p-values to -log10
         neg_log_p = [-math.log10(max(p, 1e-300)) for p in p_values]

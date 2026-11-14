@@ -124,8 +124,8 @@ class TestRaisesSectionsMatchTheCode:
             with_section += sections
             raising_validation += raising
 
-        # 70 and 45 when written: a scan that sees far fewer is not looking at the package any more
-        assert with_section >= 60 and raising_validation >= 40, "the scan no longer sees the package it guards"
+        # 70 and 45 when written: a scan that sees far fewer is not looking at the package
+        assert with_section >= 60 and raising_validation >= 40, "the scan does not see the package it guards"
         assert offences == []
 
     def test_the_scan_flags_the_old_pattern(self) -> None:

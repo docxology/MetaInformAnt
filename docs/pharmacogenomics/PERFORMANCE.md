@@ -7,13 +7,13 @@
 | `call_star_alleles(variants, 'CYP2D6', allele_definitions=...)` | ~4 µs | 1 to 3 observed variants against the 12 CYP2D6 definitions |
 | `determine_diplotype()` | ~1.4 µs | two table lookups and a sum |
 | `classify_phenotype('*1/*4', 'CYP2D6')` | ~2.6 µs | string diplotype in, band or allele-function rule applied |
-| `predict_metabolizer()` | ~5 µs | dict front end over the same classification |
+| `predict_metabolizer_status()` | ~5 µs | dict front end over the same classification |
 | variants → phenotype (`call_star_alleles` → `determine_diplotype` → `classify_phenotype`) | ~11 µs | the whole per-sample pipeline |
 | `get_dosing_recommendation('codeine', 'Poor Metabolizer')` | ~1 µs | list scan of the 9 built-in guidelines |
 | `generate_clinical_report(...)` | ~0.26 ms | two genes, all CPIC drugs for them |
 | `export_report(report, format='text')` | ~11 µs | |
 
-Measured with the benchmark script below on an Apple-silicon laptop (Python 3.12, one core,
+Measured with the benchmark script below on an Apple-silicon laptop (one core,
 default logging): 10,000 calls per row, 1,000 for the report functions. Expect different
 absolute numbers on other hardware; the per-sample cost does not depend on cohort size, so
 cohort time grows linearly with the number of samples.

@@ -58,13 +58,8 @@ def test_gene_annotation_plot(tmp_path: Path) -> None:
 
 def test_recombination_rate_plot(tmp_path: Path) -> None:
     """Test recombination rate plot generation."""
-    results = [
-        {"CHROM": "chr1", "POS": 1000, "ID": "rs1", "p_value": 1e-8},
-        {"CHROM": "chr1", "POS": 2000, "ID": "rs2", "p_value": 1e-6},
-    ]
-
     output_path = tmp_path / "recombination_rate.png"
-    result = recombination_rate_plot(results, output_path, chrom="chr1", start=500, end=2500)
+    result = recombination_rate_plot(output_path)
 
     # Function returns skipped status as it requires recombination map data
     assert "status" in result

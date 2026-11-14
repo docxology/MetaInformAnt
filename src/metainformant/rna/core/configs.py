@@ -40,8 +40,7 @@ def load_workflow_config(config_path: str | Path) -> Dict[str, Any]:
     # Support multiple file formats using core config utilities
     config = core_config.load_mapping_from_file(config_path)
 
-    # Apply only the current Amalgkit environment namespace. The historical
-    # short prefix is intentionally not accepted by the RNA configuration API.
+    # Apply overrides from the AMALGKIT_ environment namespace only.
     config = core_config.apply_env_overrides(config, prefix="AMALGKIT")
 
     # Validate configuration

@@ -330,7 +330,7 @@ class TestHypergeometricPvalue:
 
     def test_degenerate_cases_are_exact_not_fabricated(self) -> None:
         # No draws, no successes, or an empty population: observing nothing is certain, observing something
-        # is impossible. Neither is the "1.0" the function used to answer for every zero.
+        # is impossible, so not every zero answers "1.0".
         assert _hypergeometric_pvalue(k=0, n=0, K=10, N=100) == 1.0
         assert _hypergeometric_pvalue(k=0, n=10, K=0, N=100) == 1.0
         assert _hypergeometric_pvalue(k=0, n=0, K=0, N=0) == 1.0

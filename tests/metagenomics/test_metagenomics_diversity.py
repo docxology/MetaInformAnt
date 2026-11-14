@@ -402,7 +402,7 @@ def _fisher_alpha_oracle(counts: list[int]) -> float:
 
 
 class TestFisherAlpha:
-    """`_fisher_alpha` used to diverge (about 8.6e8 for [0.7, 0.2, 0.1])."""
+    """`_fisher_alpha` converges (it does not diverge to about 8.6e8 for [0.7, 0.2, 0.1])."""
 
     @pytest.mark.parametrize(
         "counts",

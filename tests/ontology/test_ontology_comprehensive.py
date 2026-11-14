@@ -38,7 +38,7 @@ class TestOntologyTypes:
         assert len(onto) == 0
 
         # Create with terms
-        term = Term(id="GO:001", name="test")
+        term = Term(term_id="GO:001", name="test")
         onto = Ontology(terms={"GO:001": term})
         assert len(onto) == 1
         assert onto.has_term("GO:001")

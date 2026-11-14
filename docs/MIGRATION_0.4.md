@@ -5,7 +5,7 @@ using the package in a production or scientific workflow.
 
 ## Removed import paths
 
-Use the canonical modules below. The former compatibility modules are removed:
+Use the canonical modules below:
 
 | Removed | Replacement |
 | --- | --- |
@@ -16,8 +16,8 @@ Use the canonical modules below. The former compatibility modules are removed:
 ## Removed command wrappers
 
 Use `bash scripts/package/test.sh` and its documented `--mode` options. The
-deprecated `scripts/package/run_tests.sh` and
-`scripts/package/uv_test_optimized.sh` wrappers are removed.
+`scripts/package/run_tests.sh` and `scripts/package/uv_test_optimized.sh`
+wrappers are removed.
 
 ## RNA and external data behavior
 
@@ -27,8 +27,8 @@ opt-in. Anonymous mode emits a warning, does not invent or persist an email,
 and records the contact mode in provenance.
 
 RNA subprocesses use campaign-local `NCBI_SETTINGS`, `TMPDIR`, `VDB_CONFIG`,
-and cache paths. The package no longer modifies user-global SRA Toolkit
-configuration or scans home-directory/tmp SRA locations during cleanup.
+and cache paths. The package does not modify user-global SRA Toolkit
+configuration or scan home-directory/tmp SRA locations during cleanup.
 
 ## Cross-species analysis
 

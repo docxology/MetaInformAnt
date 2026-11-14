@@ -19,7 +19,4 @@ Visualization plots subpackage.
 - `cross_species.py`
 - `general.py`
 - `multidim.py`
-- `rna_campaign.py`: `plot_acquisition_observation(payload, output_prefix, title=...)`
-  validates the scope partition and exports PNG/PDF with the shared palette and
-  timestamp-independent PDF metadata. It plots operational counts, not replication.
 - `specialized.py`

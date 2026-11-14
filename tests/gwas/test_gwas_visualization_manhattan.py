@@ -249,11 +249,11 @@ class TestManhattanPlotCombined:
 
 
 @pytest.mark.skipif(not HAS_MATPLOTLIB or not HAS_NUMPY, reason="matplotlib/numpy required")
-class TestManhattanPlotBackwardCompatibility:
-    """Ensure existing API is unbroken by the enhancements."""
+class TestManhattanPlotMinimalCalls:
+    """manhattan_plot works with only the core arguments."""
 
-    def test_existing_call_no_new_params(self, tmp_path: Path) -> None:
-        """Calling manhattan_plot with only original params still works."""
+    def test_call_with_core_params_only(self, tmp_path: Path) -> None:
+        """Calling manhattan_plot with only the core parameters draws and saves the figure."""
         results = [
             {"chrom": "1", "pos": 1000, "p_value": 1e-6},
             {"chrom": "1", "pos": 2000, "p_value": 1e-7},
@@ -267,8 +267,8 @@ class TestManhattanPlotBackwardCompatibility:
         assert output.exists()
         plt.close(fig)
 
-    def test_single_dict_input_still_works(self, tmp_path: Path) -> None:
-        """A single result dict (not a list) is still handled properly."""
+    def test_single_dict_input(self, tmp_path: Path) -> None:
+        """A single result dict (not a list) is accepted."""
         result = {"chrom": "1", "pos": 5000, "p_value": 1e-9}
         fig = manhattan_plot(result)
 

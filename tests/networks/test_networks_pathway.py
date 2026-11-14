@@ -6,11 +6,10 @@ Real implementationing used - all tests use real computational methods and data.
 
 from __future__ import annotations
 
-from metainformant.networks.analysis.graph import BiologicalNetwork
+from metainformant.networks.analysis.graph_core import BiologicalNetwork
 from metainformant.networks.analysis.pathway import (
     PathwayNetwork,
     load_pathway_database,
-    network_enrichment_analysis,
     pathway_enrichment,
 )
 
@@ -198,7 +197,7 @@ class TestLoadPathwayDatabase:
         try:
             pathway_network = load_pathway_database(invalid_data)
             assert isinstance(pathway_network, PathwayNetwork)
-        except (ValueError, TypeError):
+        except ValueError, TypeError:
             # Acceptable to raise error for invalid format
             pass
 
@@ -253,7 +252,7 @@ class TestPathwayEnrichment:
             assert "pathway_size" in result
             assert "p_value" in result
             assert "enrichment_ratio" in result
-            assert "overlapping_genes" in result or "overlap_genes" in result
+            assert "overlap_genes" in result
 
         # Cell cycle should be most enriched (6/10 genes in test set)
         cell_cycle_result = results["cell_cycle"]
@@ -328,7 +327,7 @@ class TestNetworkEnrichmentAnalysis:
 
     def test_network_enrichment_basic(self):
         """Test basic network enrichment analysis."""
-        results = network_enrichment_analysis(gene_list=self.test_genes, pathway_network=self.pathway_network)
+        results = pathway_enrichment(gene_list=self.test_genes, pathway_network=self.pathway_network)
 
         # Should return enrichment results (pathway_id -> result dict)
         assert isinstance(results, dict)

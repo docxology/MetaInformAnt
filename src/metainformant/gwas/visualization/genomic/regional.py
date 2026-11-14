@@ -219,7 +219,7 @@ def plot_gene_track(ax: Any, chrom: str | int, start: int, end: int, gene_data: 
     (``chrom``, ``chromosome``, ``chr``, ``CHROM`` or ``CHR``); genes are clipped to the region. A gene that
     names a chromosome is drawn only on that chromosome (compared as text, so ``1`` and ``"1"`` agree); one
     that names none is assumed to lie on ``chrom``. ``gene_data`` is the only annotation source (none is
-    bundled), so the track never invents genes: a gene without both coordinates is not drawn (it used to be
+    bundled), so the track never invents genes: a gene without both coordinates is not drawn (rather than
     stretched across the whole region), and when no gene can be drawn the track says why instead of staying
     blank.
     """
@@ -287,12 +287,8 @@ def plot_gene_track(ax: Any, chrom: str | int, start: int, end: int, gene_data: 
 
 
 def recombination_rate_plot(
-    results: Any,
     output_file: Optional[str | Path] = None,
     *,
-    chrom: Optional[str] = None,
-    start: Optional[int] = None,
-    end: Optional[int] = None,
     recombination_rates: Optional[Dict[str, List[float]]] = None,
     positions: Optional[Dict[str, List[int]]] = None,
     title: str = "Recombination Rate Profile",
@@ -305,12 +301,7 @@ def recombination_rate_plot(
     ``"output_path": None`` rather than a placeholder figure.
 
     Args:
-        results: GWAS results as list of dicts or DataFrame (not used to derive rates; kept for
-            call-compatibility)
         output_file: Optional output file path
-        chrom: Chromosome to plot (unused without a recombination map)
-        start: Start position (bp) (unused without a recombination map)
-        end: End position (bp) (unused without a recombination map)
         recombination_rates: Dictionary mapping chromosomes to recombination rate lists (cM/Mb)
         positions: Dictionary mapping chromosomes to position lists (same lengths as the rates)
         title: Plot title
@@ -327,9 +318,9 @@ def recombination_rate_plot(
         logger.warning("matplotlib not available for recombination rate plot")
         return {"status": "skipped", "reason": "matplotlib not available"}
 
-    # If called with explicit recombination data, use the legacy path
+    # Draw the supplied recombination map
     if recombination_rates is not None and positions is not None:
-        return _recombination_rate_plot_legacy(recombination_rates, positions, output_file, title)
+        return _draw_recombination_rates(recombination_rates, positions, output_file, title)
 
     # Without an explicit recombination map there is nothing true to draw: report that, write no file
     logger.warning(
@@ -367,13 +358,13 @@ def _smoothed_rates(rates: List[float]) -> Optional[np.ndarray]:
     return np.asarray(signal.savgol_filter(rates, window_size, _SMOOTHING_POLYORDER))
 
 
-def _recombination_rate_plot_legacy(
+def _draw_recombination_rates(
     recombination_rates: Dict[str, List[float]],
     positions: Dict[str, List[int]],
     output_file: Optional[str | Path] = None,
     title: str = "Recombination Rate Profile",
 ) -> Dict[str, Any]:
-    """Legacy implementation for recombination rate plotting with explicit data."""
+    """Draw one recombination-rate panel per chromosome from the supplied rates and positions."""
     try:
         import matplotlib
 
