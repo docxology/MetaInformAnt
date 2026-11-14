@@ -35,11 +35,20 @@ AMEL = "GCF_003254395.2"
 
 @contextmanager
 def skip_if_service_unavailable() -> Iterator[None]:
-    """Skip on transport failures and server-side trouble; let a client error (HTTP 4xx) fail the test."""
+    """Skip on transport failures and server-side trouble; let a client error (HTTP 4xx) fail the test.
+
+    The download fallbacks wrap the request error in a ``RuntimeError`` raised ``from`` it, so the cause
+    chain is searched for the request error before deciding.
+    """
     try:
         yield
-    except requests.RequestException as exc:
-        status = getattr(exc, "status_code", None)
+    except (requests.RequestException, RuntimeError) as exc:
+        cause: BaseException | None = exc
+        while cause is not None and not isinstance(cause, requests.RequestException):
+            cause = cause.__cause__
+        if cause is None:
+            raise
+        status = getattr(cause, "status_code", None)
         if status is not None and status < 500 and status != 429:
             raise
         pytest.skip(f"NCBI Datasets unavailable: {exc}")
