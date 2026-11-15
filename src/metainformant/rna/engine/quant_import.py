@@ -8,9 +8,12 @@ reasons, one of:
 ``import``            a cohort task, valid in its source context, bound to the
                       cohort configuration and index bytes, absent from the
                       destination (``imported`` once executed);
-``exists_identical``  the destination already holds the same files;
-``exists_different``  the destination holds different files (never
-                      overwritten; both versions' bindings are reported);
+``exists_identical``  the destination already holds the same files (see the
+                      identity check below);
+``exists_different``  the destination holds different files, or either
+                      side's quantification file does not hash to its own
+                      sidecar (never overwritten; both versions' bindings are
+                      reported);
 ``skipped``           with ``reference_mismatch``, ``config_mismatch``,
                       ``not_in_cohort``, ``permanent_drop``,
                       ``no_reference_evidence``, ``receipt_mismatch`` or
@@ -23,6 +26,18 @@ receipt store is configured, a reference-bound receipt whose sidecar, files,
 configuration and index digest must all agree. The destination must quantify
 the species against the same index bytes (else every sample of that species is
 ``reference_mismatch``).
+
+An existing destination sample is compared with the source sample. By default
+(``identity_basis`` ``sidecar_bytes+sizes+quantification_sha256``, which hashes
+only the abundance tables) identity needs byte-identical sidecars, equal sizes
+of every contract file, and, on both sides, the quantification file the sidecar
+names (``quantification_file``) hashing to that sidecar's
+``quantification_file_sha256``: blocks overwritten in place keep a file's size,
+and an intact sidecar does not vouch for the table beside it. A side whose
+table does not match its sidecar makes the sample ``exists_different`` with the
+reason ``destination quantification does not match its sidecar`` (or
+``source ...``) and ``quantification`` ``unknown``. ``deep_compare`` hashes
+every contract file on both sides instead (``identity_basis`` ``sha256``).
 
 Execution copies only the contract files (sidecar, abundance table, run info,
 HDF5 and an existing restored-input witness) into a staging directory under the
@@ -103,6 +118,13 @@ REASON_NOT_IN_COHORT = "not_in_cohort"
 REASON_PERMANENT_DROP = "permanent_drop"
 REASON_NO_REFERENCE_EVIDENCE = "no_reference_evidence"
 REASON_RECEIPT_MISMATCH = "receipt_mismatch"
+
+# ``identity_basis`` of the existing-destination comparison (``deep_compare`` off / on).
+IDENTITY_BASIS_SHALLOW = "sidecar_bytes+sizes+quantification_sha256"
+IDENTITY_BASIS_DEEP = "sha256"
+# Comparison ``difference`` (and ``exists_different`` reason) when a side's table does not hash to its own sidecar.
+DIFFERENCE_DESTINATION_QUANTIFICATION = "destination quantification does not match its sidecar"
+DIFFERENCE_SOURCE_QUANTIFICATION = "source quantification does not match its sidecar"
 
 _ACCESSION = re.compile(r"^(SRR|ERR|DRR)\d+$")
 _LABEL = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
@@ -415,15 +437,50 @@ def _contract_file_names(sample_dir: Path) -> list[str]:
     return sorted(set(names))
 
 
+def _quantification_against_sidecar(sample_dir: Path, sidecar_bytes: bytes) -> tuple[str | None, bool]:
+    """Hash the quantification file a sidecar names; return ``(sha256 or None, matches the sidecar)``.
+
+    Only a regular file inside ``sample_dir`` whose bytes hash to the sidecar's
+    ``quantification_file_sha256`` matches; an unreadable sidecar, a missing or
+    unsafe name, or a missing, unreadable or non-regular file does not.
+    """
+
+    try:
+        sidecar = json.loads(sidecar_bytes)
+    except ValueError:
+        return None, False
+    if not isinstance(sidecar, dict):
+        return None, False
+    name, recorded = sidecar.get("quantification_file"), sidecar.get("quantification_file_sha256")
+    if not isinstance(name, str) or not isinstance(recorded, str):
+        return None, False
+    if name in ("", ".", "..") or PurePosixPath(name).name != name:
+        return None, False
+    path = sample_dir / name
+    try:
+        if not stat_module.S_ISREG(path.lstat().st_mode):
+            return None, False
+        digest = _file_sha256(path)
+    except OSError:
+        return None, False
+    return digest, digest == recorded
+
+
 def _compare_outputs(source_dir: Path, destination_dir: Path, *, deep: bool) -> tuple[bool, dict[str, Any]]:
     """Return ``(identical, details)``; identical means same contract files with the same bytes.
 
-    Without ``deep``, identity is the sidecar bytes (which pin the abundance
-    sha256) plus equal sizes of every file; ``deep`` hashes every file.
+    Without ``deep`` (``identity_basis`` ``sidecar_bytes+sizes+quantification_sha256``),
+    identity is the sidecar bytes, equal sizes of every contract file, and, on
+    each side, the quantification file the sidecar names hashing to that
+    sidecar's ``quantification_file_sha256``. Sizes alone miss blocks
+    overwritten in place, so a side whose quantification does not match its own
+    sidecar is never identical, whatever the other checks say; ``difference``
+    names that side (the destination first). ``deep`` (``identity_basis``
+    ``sha256``) hashes every contract file on both sides and compares them.
     """
 
     names = _contract_file_names(source_dir)
-    details: dict[str, Any] = {"identity_basis": "sha256" if deep else "sidecar_bytes+sizes"}
+    details: dict[str, Any] = {"identity_basis": IDENTITY_BASIS_DEEP if deep else IDENTITY_BASIS_SHALLOW}
     if not names:
         return False, {**details, "difference": "source has no readable sidecar"}
     try:
@@ -433,6 +490,19 @@ def _compare_outputs(source_dir: Path, destination_dir: Path, *, deep: bool) -> 
         return False, {**details, "difference": "destination has no readable sidecar"}
     details["source_sidecar_sha256"] = sha256_bytes(source_sidecar)
     details["destination_sidecar_sha256"] = sha256_bytes(destination_sidecar)
+    if not deep:
+        destination_sha, destination_matches = _quantification_against_sidecar(destination_dir, destination_sidecar)
+        source_sha, source_matches = _quantification_against_sidecar(source_dir, source_sidecar)
+        details.update(
+            destination_quantification_sha256=destination_sha,
+            destination_quantification_matches_sidecar=destination_matches,
+            source_quantification_sha256=source_sha,
+            source_quantification_matches_sidecar=source_matches,
+        )
+        if not destination_matches:
+            return False, {**details, "difference": DIFFERENCE_DESTINATION_QUANTIFICATION}
+        if not source_matches:
+            return False, {**details, "difference": DIFFERENCE_SOURCE_QUANTIFICATION}
     if source_sidecar != destination_sidecar:
         return False, {**details, "difference": "sidecar bytes differ"}
     for name in names:
@@ -580,11 +650,15 @@ def plan_imports(
             source_abundance, destination_abundance = _abundance_sha(path), _abundance_sha(destination_dir)
             quantification = _quantification_relation(source_abundance, destination_abundance)
             decision.action = ACTION_EXISTS_DIFFERENT
-            decision.reason = (
-                "destination holds the same quantification with different runtime files"
-                if quantification == "identical"
-                else "destination holds a different quantification"
-            )
+            damaged = comparison.get("difference")
+            if damaged in (DIFFERENCE_DESTINATION_QUANTIFICATION, DIFFERENCE_SOURCE_QUANTIFICATION):
+                # The sidecar-recorded digests no longer describe the table on disk on that side.
+                quantification = "unknown"
+                decision.reason = str(damaged)
+            elif quantification == "identical":
+                decision.reason = "destination holds the same quantification with different runtime files"
+            else:
+                decision.reason = "destination holds a different quantification"
             verdict = judge_sample(
                 path, expectation, receipt_stores, digests, source_label=source.label, verify_content=verify_content
             )

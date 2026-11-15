@@ -33,10 +33,15 @@ from metainformant.rna.engine.quant_import import (
     ACTION_IMPORT,
     ACTION_IMPORTED,
     ACTION_SKIPPED,
+    DIFFERENCE_DESTINATION_QUANTIFICATION,
+    DIFFERENCE_SOURCE_QUANTIFICATION,
+    IDENTITY_BASIS_DEEP,
+    IDENTITY_BASIS_SHALLOW,
     STAGING_MARKER,
     STAGING_SCHEMA,
     ImportSource,
     ReceiptStore,
+    _quantification_against_sidecar,
     execute_imports,
     executed_imports,
     main,
@@ -369,3 +374,190 @@ def test_executed_imports_lists_finished_runs_per_source_root(world: World, tmp_
     again = executed_imports(world.dest.base)
     assert again["unfinished"] == [str(killed)]
     assert again["finished"][os.path.normpath(str(world.october.base.absolute()))]["manifest"] == str(manifest)
+
+
+# ---------------------------------------------------------------------------
+# Size-preserving damage (2026-11-15: 4 KiB blocks overwritten in place, sidecar intact)
+# ---------------------------------------------------------------------------
+
+_RSYNC_JUNK = b"\x00" * 48 + b"     1,048,576 100%   12.34MB/s    0:00:00 (xfr#1, to-chk=0/1)\r"
+
+
+def _overwrite_block_in_place(path: Path, *, offset: int = 64, block: int = 4096) -> None:
+    """Overwrite ``[offset, end of its 4 KiB block)`` with NULs and rsync progress text; the size never changes."""
+
+    size = path.stat().st_size
+    end = min((offset // block + 1) * block, size)
+    junk = (_RSYNC_JUNK * ((end - offset) // len(_RSYNC_JUNK) + 1))[: end - offset]
+    with path.open("r+b") as handle:
+        handle.seek(offset)
+        handle.write(junk)
+    assert path.stat().st_size == size and junk and path.read_bytes()[offset:end] == junk
+
+
+def _rewrite_in_place(path: Path, old: bytes, new: bytes) -> None:
+    """Replace one same-length byte run (a plausible, still parseable edit); the size never changes."""
+
+    assert len(old) == len(new)
+    data = path.read_bytes()
+    assert data.count(old) == 1
+    path.write_bytes(data.replace(old, new))
+    assert len(path.read_bytes()) == len(data)
+
+
+def _recorded_quantification_sha(sample: Path) -> str:
+    return json.loads((sample / QUANT_PROVENANCE_FILENAME).read_bytes())["quantification_file_sha256"]
+
+
+def test_intact_pair_is_identical_on_the_sidecar_and_both_quantification_hashes(world: World) -> None:
+    decision = _by_accession(world.plan())["SRR102"]
+    assert decision.action == ACTION_EXISTS_IDENTICAL
+    comparison = decision.details["comparison"]
+    recorded = _recorded_quantification_sha(world.dest.sample("SRR102"))
+    assert comparison["identity_basis"] == IDENTITY_BASIS_SHALLOW == "sidecar_bytes+sizes+quantification_sha256"
+    assert comparison["source_quantification_sha256"] == comparison["destination_quantification_sha256"] == recorded
+    assert comparison["source_quantification_matches_sidecar"] is True
+    assert comparison["destination_quantification_matches_sidecar"] is True
+    assert "difference" not in comparison
+
+
+def test_destination_block_overwritten_in_place_is_never_identical(world: World) -> None:
+    damaged = world.dest.sample("SRR102") / "SRR102_abundance.tsv"
+    intact = world.october.sample("SRR102") / "SRR102_abundance.tsv"
+    _overwrite_block_in_place(damaged)
+    # Everything the former default basis (sidecar bytes + sizes) looked at still agrees.
+    for name in sorted(path.name for path in world.october.sample("SRR102").iterdir()):
+        assert (world.dest.sample("SRR102") / name).stat().st_size == (
+            world.october.sample("SRR102") / name
+        ).stat().st_size
+    assert (world.dest.sample("SRR102") / QUANT_PROVENANCE_FILENAME).read_bytes() == (
+        world.october.sample("SRR102") / QUANT_PROVENANCE_FILENAME
+    ).read_bytes()
+    before_dest, before_source = _tree(world.dest.base), _tree(world.october.base)
+
+    plan = world.plan()
+    decision = _by_accession(plan)["SRR102"]
+    assert decision.action == ACTION_EXISTS_DIFFERENT
+    assert decision.reason == DIFFERENCE_DESTINATION_QUANTIFICATION
+    comparison = decision.details["comparison"]
+    assert comparison["identity_basis"] == IDENTITY_BASIS_SHALLOW
+    assert comparison["difference"] == "destination quantification does not match its sidecar"
+    assert comparison["destination_quantification_matches_sidecar"] is False
+    assert comparison["destination_quantification_sha256"] == sha(damaged.read_bytes())
+    assert comparison["source_quantification_matches_sidecar"] is True
+    assert comparison["source_quantification_sha256"] == sha(intact.read_bytes())
+    # The sidecar-recorded digests agree, but they no longer describe the destination's table.
+    assert decision.details["source_abundance_sha256"] == decision.details["destination_abundance_sha256"]
+    assert decision.details["quantification"] == "unknown"
+    assert decision.details["source_bound"] is True and decision.details["destination_bound"] is False
+    assert decision.details["destination_verdict"].startswith("invalid_source:")
+    assert decision.details["bound"] == "source_only"
+    assert plan.counts()[f"october/{SPECIES}"].get(ACTION_EXISTS_IDENTICAL) is None
+    assert _tree(world.dest.base) == before_dest and _tree(world.october.base) == before_source
+
+    # Execution reports the same conflict and never replaces (or repairs) the damaged destination.
+    plan, manifest, summary = execute_imports(world.cohort, world.dest.base, [world.source], workers=1)
+    assert summary["imported"] == 1 and summary["failed"] == 0  # SRR101 only
+    executed = _by_accession(plan)["SRR102"]
+    assert (executed.action, executed.reason) == (ACTION_EXISTS_DIFFERENT, DIFFERENCE_DESTINATION_QUANTIFICATION)
+    assert _tree(world.dest.sample("SRR102")) == {
+        key.removeprefix(f"{SPECIES}/work/quant/SRR102/"): value
+        for key, value in before_dest.items()
+        if key.startswith(f"{SPECIES}/work/quant/SRR102/")
+    }
+    record = next(
+        json.loads(line)
+        for line in manifest.read_text().splitlines()
+        if json.loads(line).get("kind") == "decision" and json.loads(line)["accession"] == "SRR102"
+    )
+    assert record["action"] == ACTION_EXISTS_DIFFERENT
+    assert record["details"]["comparison"]["destination_quantification_matches_sidecar"] is False
+
+
+def test_source_block_overwritten_in_place_is_not_importable(world: World) -> None:
+    # Against an intact destination copy: a conflict naming the source, never "identical".
+    _overwrite_block_in_place(world.october.sample("SRR102") / "SRR102_abundance.tsv")
+    decision = _by_accession(world.plan())["SRR102"]
+    assert (decision.action, decision.reason) == (ACTION_EXISTS_DIFFERENT, DIFFERENCE_SOURCE_QUANTIFICATION)
+    comparison = decision.details["comparison"]
+    assert comparison["difference"] == "source quantification does not match its sidecar"
+    assert comparison["destination_quantification_matches_sidecar"] is True
+    assert comparison["source_quantification_matches_sidecar"] is False
+    assert decision.details["quantification"] == "unknown"
+    assert decision.details["source_bound"] is False and decision.details["destination_bound"] is True
+
+    # Absent from the destination: a still-parseable same-size edit is caught only by the hash, and skipped.
+    table = world.october.sample("SRR101") / "SRR101_abundance.tsv"
+    _rewrite_in_place(table, b"\t13.25\t", b"\t31.25\t")
+    decision = _by_accession(world.plan())["SRR101"]
+    assert (decision.action, decision.reason) == (ACTION_SKIPPED, "invalid_source:abundance checksum mismatch")
+    plan, _, summary = execute_imports(world.cohort, world.dest.base, [world.source], workers=1)
+    assert summary["imported"] == 0 and summary["failed"] == 0
+    assert not [d for d in plan.decisions if d.action in (ACTION_IMPORT, ACTION_IMPORTED)]
+    assert not world.dest.sample("SRR101").exists()
+
+
+def test_damage_on_both_sides_names_the_destination_first(world: World) -> None:
+    _overwrite_block_in_place(world.dest.sample("SRR102") / "SRR102_abundance.tsv", offset=40)
+    _overwrite_block_in_place(world.october.sample("SRR102") / "SRR102_abundance.tsv", offset=96)
+    decision = _by_accession(world.plan())["SRR102"]
+    assert (decision.action, decision.reason) == (ACTION_EXISTS_DIFFERENT, DIFFERENCE_DESTINATION_QUANTIFICATION)
+    comparison = decision.details["comparison"]
+    assert comparison["source_quantification_matches_sidecar"] is False
+    assert comparison["destination_quantification_matches_sidecar"] is False
+    assert decision.details["bound"] == "neither"
+
+
+def test_damaged_destination_with_a_different_sidecar_reports_the_damage(world: World) -> None:
+    """The quantification check runs before the sidecar comparison, so a runtime-only conflict cannot mask damage."""
+
+    sidecar = world.dest.sample("SRR102") / QUANT_PROVENANCE_FILENAME
+    payload = json.loads(sidecar.read_text())
+    payload["command"] = [*payload["command"], "--threads", "2"]
+    sidecar.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+    _overwrite_block_in_place(world.dest.sample("SRR102") / "SRR102_abundance.tsv")
+    decision = _by_accession(world.plan())["SRR102"]
+    assert (decision.action, decision.reason) == (ACTION_EXISTS_DIFFERENT, DIFFERENCE_DESTINATION_QUANTIFICATION)
+    assert (
+        decision.details["comparison"]["source_sidecar_sha256"]
+        != decision.details["comparison"]["destination_sidecar_sha256"]
+    )
+    assert decision.details["quantification"] == "unknown"
+
+
+def test_deep_compare_is_unchanged(world: World) -> None:
+    decision = _by_accession(world.plan(deep_compare=True))["SRR102"]
+    assert decision.action == ACTION_EXISTS_IDENTICAL
+    assert decision.details["comparison"] == {
+        "identity_basis": IDENTITY_BASIS_DEEP,
+        "source_sidecar_sha256": decision.details["comparison"]["source_sidecar_sha256"],
+        "destination_sidecar_sha256": decision.details["comparison"]["destination_sidecar_sha256"],
+    }
+    assert IDENTITY_BASIS_DEEP == "sha256"
+    _overwrite_block_in_place(world.dest.sample("SRR102") / "SRR102_abundance.tsv")
+    decision = _by_accession(world.plan(deep_compare=True))["SRR102"]
+    assert decision.action == ACTION_EXISTS_DIFFERENT
+    assert decision.details["comparison"]["difference"] == "file bytes differ: SRR102_abundance.tsv"
+    assert "destination_quantification_matches_sidecar" not in decision.details["comparison"]
+
+
+def test_quantification_must_be_a_regular_file_named_by_the_sidecar(world: World, tmp_path: Path) -> None:
+    sample = world.october.sample("SRR101")
+    sidecar_bytes = (sample / QUANT_PROVENANCE_FILENAME).read_bytes()
+    table = sample / "SRR101_abundance.tsv"
+    assert _quantification_against_sidecar(sample, sidecar_bytes) == (sha(table.read_bytes()), True)
+    assert _quantification_against_sidecar(sample, b"not json") == (None, False)
+    assert _quantification_against_sidecar(sample, b"[]") == (None, False)
+    payload = json.loads(sidecar_bytes)
+    for name in ("../SRR101/SRR101_abundance.tsv", "", "..", None):
+        unsafe = json.dumps({**payload, "quantification_file": name}).encode()
+        assert _quantification_against_sidecar(sample, unsafe) == (None, False)
+    no_digest = json.dumps({**payload, "quantification_file_sha256": None}).encode()
+    assert _quantification_against_sidecar(sample, no_digest) == (None, False)
+    # A symlink to an intact copy is not the sample's own table; a missing table matches nothing.
+    copy = tmp_path / "elsewhere.tsv"
+    shutil.copyfile(table, copy)
+    table.unlink()
+    assert _quantification_against_sidecar(sample, sidecar_bytes) == (None, False)
+    table.symlink_to(copy)
+    assert _quantification_against_sidecar(sample, sidecar_bytes) == (None, False)

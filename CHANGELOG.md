@@ -325,6 +325,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   document `rna.amalgkit.genome_prep` directly.
 
 ### Fixed
+- `rna.engine.quant_import` called a damaged destination copy
+  `exists_identical`. Its default comparison trusted the sidecar bytes and file
+  sizes (`identity_basis` `sidecar_bytes+sizes`), but blocks overwritten in
+  place keep both: two `apis_mellifera` `abundance.tsv` files (SRR18714397,
+  SRR4045784) passed that check on 2026-11-15. The default now also hashes the
+  quantification file each sidecar names, on both sides, against that
+  sidecar's `quantification_file_sha256` (`identity_basis`
+  `sidecar_bytes+sizes+quantification_sha256`). A mismatch is `exists_different`
+  with the reason `destination quantification does not match its sidecar` (or
+  `source …`) and `quantification` `unknown`; such a source is never imported.
+  `deep_compare` is unchanged.
 - SQLite connections leaked: `with sqlite3.connect(...)` commits but never
   closes, and test producers never closed their `ProgressDB`. The garbage
   collector then reclaimed them inside unrelated tests, where the
