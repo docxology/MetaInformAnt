@@ -21,6 +21,11 @@ See the [Hymenoptera methods contract](../../../../docs/rna/HYMENOPTERA_METHODS.
 | `atlas_plots.py` | Atlas-style figures: species x tissue tau heatmap, per-orthogroup cross-species profile small multiples, tau-by-orthology-class strip plots (descriptive statistics only) |
 | `protein_integration.py` | Translation efficiency, protein abundance prediction, ribosome profiling |
 | `validation.py` | Pipeline validation: per-sample status checks and end-to-end reports |
+| `within_species_orchestrator.py` | Within-species downstream analysis orchestrator (`WithinSpeciesOrchestrator`) |
+| `across_species_orchestrator.py` | Across-species downstream analysis orchestrator (`AcrossSpeciesOrchestrator`) |
+| `conservation_profiles.py` | Cross-species expression-profile conservation and summary artifacts (`compute_profile_conservation`, `compute_tpm_distribution_summary`) |
+| `tissue_specificity.py` | Tissue-specificity (tau) and orthology-class stratification (`compute_tau`, `classify_orthogroups`) |
+| `tissue_specificity_evolution.py` | Descriptive tissue-specificity evolution across a species phylogeny (`count_parsimony_transitions`, `count_tissue_specificity_gains_losses`) |
 
 ## Key Functions
 

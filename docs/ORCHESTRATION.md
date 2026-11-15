@@ -9,15 +9,21 @@ launcher and the shared `StreamingPipelineOrchestrator`.
 ```mermaid
 flowchart LR
     Y[Project species YAMLs] --> C[run_all_species.py]
+    K[Frozen cohort] --> C
+    K --> S
     Y --> S[process_species.py]
     C --> P[StreamingPipelineOrchestrator]
     S --> P
     P --> DB[ProgressDB]
-    P --> Q[metadata/select/getfastq/integrate/quant]
+    P --> Q[getfastq/integrate/quant]
     DB --> R[run_all_finalization.sh]
     Q --> R
     R --> M[merge/wsfilter/finalize/sanity]
 ```
+
+With `--cohort` (the launcher's only mode) the producer runs from the cohort's
+frozen selection table; `metadata` and `select` run only without `--cohort`
+and with `--refresh-metadata`.
 
 Inspect the cohort:
 
@@ -34,8 +40,9 @@ Execute the complete campaign:
 bash projects/hymenoptera_amalgkit/scripts/run_full_campaign.sh
 ```
 
-The launcher owns the producer/downstream lock boundary. Do not start another
-producer against the same data root while the lock is present.
+The launcher holds the campaign writer lock (`<data-root>/.campaign.flock`)
+for its whole run; its producer and finalization passes inherit it, and a
+second launcher or producer against the same data root exits 73.
 
 ## Other domains
 

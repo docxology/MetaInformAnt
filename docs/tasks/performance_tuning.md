@@ -23,19 +23,24 @@ throughput and may increase external-volume contention.
 
 ## Bounded producer settings
 
+Without `--workers` and `--threads` the producer derives every budget from
+the host; `--print-profile` prints the result. A bounded diagnostic run with
+explicit budgets:
+
 ```bash
-AMALGKIT_PIPELINE_WORKERS=4 \
-AMALGKIT_PIPELINE_THREADS=8 \
-AMALGKIT_PIPELINE_QUANT_SLOTS=2 \
-AMALGKIT_PIPELINE_FASTQ_THREADS=1 \
-AMALGKIT_PIPELINE_FASTQ_SLOTS=1 \
-AMALGKIT_PIPELINE_VALIDATION_SLOTS=2 \
-uv run python scripts/rna/run_all_species.py \
+env -u VIRTUAL_ENV uv run --frozen --no-sync python scripts/rna/run_all_species.py \
   --config-dir projects/hymenoptera_amalgkit/config/amalgkit \
   --data-root "$AMALGKIT_DATA_ROOT" \
+  --cohort "$AMALGKIT_DATA_ROOT/cohort/hymenoptera27-20261005" \
   --workers 4 --threads 8 --quant-slots 2 \
   --fastq-threads 1 --fastq-slots 1 --validation-slots 2
 ```
+
+The same budgets can be set through `PIPELINE_WORKERS`, `PIPELINE_THREADS`
+and the `AMALGKIT_PIPELINE_*` variables (`AMALGKIT_PIPELINE_QUANT_SLOTS`,
+`AMALGKIT_PIPELINE_FASTQ_THREADS`, `AMALGKIT_PIPELINE_FASTQ_SLOTS`,
+`AMALGKIT_PIPELINE_VALIDATION_SLOTS`); a command-line option takes
+precedence.
 
 Keep `--max-in-flight` bounded when the metadata inventory is large. Use the
 campaign report and free-space checks to confirm that a change improves the

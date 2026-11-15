@@ -47,7 +47,7 @@ from pathlib import Path
 info = extract_script_metadata(Path("scripts/rna/run_all_species.py"))
 print(info.name, info.category, info.description)
 
-category = categorize_script(Path("scripts/gwas/run_analysis.py"))  # "gwas"
+category = categorize_script(Path("scripts/gwas/pipelines/run_analysis.py"))  # "gwas"
 ```
 
 | Class/Function | Description |

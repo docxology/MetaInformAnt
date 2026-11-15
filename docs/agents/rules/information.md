@@ -26,8 +26,9 @@ src/metainformant/information/
 ```
 
 ## Package Management
+
 - **ALWAYS use `uv`** for all Python package management and environment operations
-- Use `uv run` to execute commands: `uv run pytest`, `uv run metainformant information --help`
+- Use `uv run` to execute commands: `uv run pytest`
 - **NEVER use `pip` directly**
 
 ## Key Submodules

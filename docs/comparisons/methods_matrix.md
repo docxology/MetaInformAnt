@@ -746,14 +746,9 @@ guideline = cpic.get_dosing_recommendation("codeine", result["phenotype"].value)
 | **Typical Runtime** | Instant response (menu-driven) |
 | **Primary Use Cases** | Interactive exploration of available scripts, guided workflow execution, parameter prompting, menu-driven analysis launch |
 
-**Example**:
-```bash
-# Launch interactive menu
-uv run python -m metainformant menu
-
-# Navigate: "RNA-seq" → "Amalgkit workflow" → prompts for species/Fastq dir
-# Then launch script with populated arguments automatically.
-```
+**Entry point**: the menu has no `metainformant` subcommand; build a menu
+tree and start it from Python with
+`metainformant.menu.app.run_menu_app(menus, root_id="root")`.
 
 ---
 

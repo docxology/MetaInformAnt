@@ -10,19 +10,22 @@ single-species scripts.
 ```mermaid
 flowchart LR
     C[Project YAML inventory] --> P[run_all_species.py]
-    P --> M[metadata]
-    M --> S[select]
-    S --> G[getfastq]
+    K[Frozen cohort] --> P
+    P --> G[getfastq]
     G --> I[integrate]
     I --> Q[quant]
     Q --> L[SQLite progress and provenance]
-    L --> R[producer lock released]
+    L --> R[producer stopped]
     R --> D[merge]
     D --> W[wsfilter]
     W --> F[finalize]
     F --> Y[sanity]
     Y --> E[evidence manifest and analysis]
 ```
+
+With `--cohort` (the launcher's only mode) the producer builds its tasks from
+the cohort's frozen `metadata_selected.tsv` and never rewrites it; `metadata`
+and `select` run only without `--cohort` and with `--refresh-metadata`.
 
 ## Inspect the cohort
 
@@ -43,21 +46,25 @@ inventory, and data root that a real producer run will use.
 bash projects/hymenoptera_amalgkit/scripts/run_full_campaign.sh
 ```
 
-The project launcher acquires a lock, validates resource floors, starts the
-producer, waits for it to finish, and then invokes the downstream checkpoint
-runner only when the producer exits successfully. It preserves the progress
+The project launcher holds the campaign writer lock
+(`<data-root>/.campaign.flock`, kind `launcher`) for its whole run, validates
+resource floors, starts the producer, waits for it to finish, and then invokes
+the downstream checkpoint runner only when the producer exits 0. The producer
+and finalization passes inherit the launcher's lock; a second launcher or
+producer exits 73. It preserves the progress
 database, partial downloads, quantification receipts, and logs on interruption.
 
 Run one species through the same producer when a bounded diagnostic is needed:
 
 ```bash
-uv run python scripts/rna/process_species.py \
+env -u VIRTUAL_ENV uv run --frozen --no-sync python scripts/rna/process_species.py \
   --species apis_mellifera \
   --config-dir projects/hymenoptera_amalgkit/config/amalgkit \
-  --data-root "$AMALGKIT_DATA_ROOT"
+  --data-root "$AMALGKIT_DATA_ROOT" \
+  --cohort "$AMALGKIT_DATA_ROOT/cohort/hymenoptera27-20261005"
 ```
 
-Do not start this command while the full campaign lock is held.
+Do not start this command while the full campaign lock is held; it exits 73.
 
 ## Downstream checkpoints
 

@@ -27,15 +27,15 @@ uv pip install -e ".[all]"
 
 ### Q: I'm getting import errors after installation. What should I do?
 
-**A:** Try reinstalling with all optional dependencies:
+**A:** Reinstall the project environment from the lockfile with the extras you
+need (`uv sync` installs exactly the extras it is given):
 
 ```bash
 # Clean reinstall
-uv pip uninstall metainformant
-uv pip install --force-reinstall metainformant[scientific,ml,networks]
+uv sync --frozen --reinstall --extra scientific --extra ml --extra networks
 
 # Verify installation
-python -c "import metainformant as mi; print('Installation successful!')"
+env -u VIRTUAL_ENV uv run --frozen --no-sync python -c "import metainformant; print('Installation successful!')"
 ```
 
 ### Q: How do I set up the external drive temp directory for large datasets?

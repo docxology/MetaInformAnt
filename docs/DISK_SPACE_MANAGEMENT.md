@@ -167,7 +167,9 @@ du -sh .tmp/ .cache/ output/
 
 ### Automated cleanup script
 
-Add to `scripts/core/cleanup_temp.sh`:
+The repository does not ship a cleanup script (`scripts/core/fix_disk_space.sh` and
+`scripts/core/setup_temp_dirs.sh` only set up the temp directories). To automate
+this cleanup, save the following as a local `scripts/core/cleanup_temp.sh`:
 
 ```bash
 #!/bin/bash

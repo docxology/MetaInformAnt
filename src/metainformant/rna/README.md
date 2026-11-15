@@ -16,9 +16,14 @@ flowchart LR
     F --> E[Evidence and cross-species analysis]
 ```
 
-The producer owns the first five stages and records resumable sample state:
+The producer owns acquisition and quantification and records resumable
+sample state. In frozen-cohort mode (`--cohort`, the launcher's only mode) it
+runs from the cohort's frozen `metadata_selected.tsv`:
 
-`metadata → select → getfastq → integrate → quant`
+`getfastq → integrate → quant`
+
+`metadata` and `select` run only without `--cohort` and with
+`--refresh-metadata`.
 
 The project checkpoint runner owns the deterministic downstream stages:
 
@@ -37,11 +42,14 @@ validation.
 | `metainformant.rna.engine.progress_db.ProgressDB` | SQLite-backed sample state and resume queries |
 | `metainformant.rna.engine.workflow` | Typed configuration, planning, and step execution |
 | `metainformant.rna.engine.provenance` | Hash-bound metadata, quantification, and downstream receipts |
-| `metainformant.rna.engine.preflight` | Mandatory start-of-run campaign preflight: data-root write probe and Amalgkit CLI resolution (`run_campaign_preflight`; also `python -m metainformant.rna.engine.preflight`) |
+| `metainformant.rna.engine.preflight` | Mandatory start-of-run campaign preflight: data-root write probe, Amalgkit CLI resolution, producer tools (`kallisto`, `fasterq-dump`, `prefetch`, `vdb-validate`, `pigz`), kallisto compatibility, free-space floors and the optional reuse dry-run (`run_campaign_preflight`; also `python -m metainformant.rna.engine.preflight`) |
+| `metainformant.rna.engine.cohort` | Frozen, hash-verified cohort (`load_frozen_cohort`, `verify_cohort_configs`) and the producers' `--cohort` options |
+| `metainformant.rna.engine.campaign_lock` | Single writer per data root: `flock` on `<data-root>/.campaign.flock` (`acquire`; `python -m metainformant.rna.engine.campaign_lock status` / `run`) |
 | `metainformant.rna.analysis.cohort_accounting` | Fail-closed cohort funnel over the progress DB (`build_cohort_funnel`): configured → with_progress → quantified/failed/excluded/pending/active with durable failure classes |
 | `metainformant.rna.analysis.statistics_contract` | Inferential contract: Benjamini–Hochberg FDR, validated `AnalysisProvenance`, and the `SensitivityAnalysis` registry rendered as `analysis_provenance_sensitivity_*` lines |
 | `metainformant.rna.amalgkit` | Version-pinned Amalgkit command registry and wrappers |
 | `metainformant.rna.analysis` | Expression, QC, cross-species, and validation analyses |
+| `metainformant.rna.steps` | Registry of workflow step runners (`STEP_RUNNERS`) |
 
 ## Command-line entrypoints
 
@@ -54,13 +62,15 @@ uv run python scripts/rna/run_all_species.py \
   --data-root "$AMALGKIT_DATA_ROOT" --dry-run
 ```
 
-Run one species through the shared producer:
+Run one cohort species through the shared producer (a diagnostic; production
+runs use the launcher below):
 
 ```bash
-uv run python scripts/rna/process_species.py \
+env -u VIRTUAL_ENV uv run --frozen --no-sync python scripts/rna/process_species.py \
   --species apis_mellifera \
   --config-dir projects/hymenoptera_amalgkit/config/amalgkit \
-  --data-root "$AMALGKIT_DATA_ROOT"
+  --data-root "$AMALGKIT_DATA_ROOT" \
+  --cohort "$AMALGKIT_DATA_ROOT/cohort/hymenoptera27-20261005"
 ```
 
 Run the complete lock-owned project campaign:

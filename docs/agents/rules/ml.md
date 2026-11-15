@@ -22,9 +22,10 @@ src/metainformant/ml/
 ```
 
 ## Package Management
+
 - **ALWAYS use `uv`** for all Python package management and environment operations
 - Install optional dependencies: `uv add scikit-learn xgboost lightgbm`
-- Use `uv run` to execute commands: `uv run pytest`, `uv run metainformant ml --help`
+- Use `uv run` to execute commands: `uv run pytest`
 - **NEVER use `pip` directly**
 
 ## Key Submodules

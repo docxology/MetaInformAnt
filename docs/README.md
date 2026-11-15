@@ -4,12 +4,10 @@ METAINFORMANT documentation organized by biological domain.
 
 ## Current Status
 
-As of the 2026-09-24 snapshot, the deterministic suite collects 10,114 test
-functions across 484 test files under `tests/`. The latest recorded verification
-pass (2026-09-07) ran 9,861 tests and passed locally with mypy 2.3.1 clean at
-0 errors across 693 source files (quality budget gate = 0). Root-level audit and
-validation reports are retained as historical snapshots; regenerate current
-verification outputs under `output/`.
+The deterministic test suite lives under `tests/`. CI runs it together with
+the quality gate (black, isort, flake8 and mypy under the locked version with
+an error budget of 0). Root-level audit and validation reports are retained as
+historical snapshots; regenerate current verification outputs under `output/`.
 
 ## Navigation
 

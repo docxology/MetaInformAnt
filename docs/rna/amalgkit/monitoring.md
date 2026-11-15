@@ -48,9 +48,6 @@ session from the current external data root:
 ```bash
 tmux new-session -d -s hymenoptera-campaign \
   'env AMALGKIT_DATA_ROOT="$AMALGKIT_DATA_ROOT" \
-    AMALGKIT_PIPELINE_PROFILE=local-throughput \
-    AMALGKIT_PIPELINE_THREADS=10 \
-    AMALGKIT_PIPELINE_FASTQ_SLOTS=1 \
     AMALGKIT_RECLAIM_RAW_AFTER_QUANT=yes \
     bash projects/hymenoptera_amalgkit/scripts/run_full_campaign.sh'
 tmux capture-pane -pt hymenoptera-campaign:0 -S -40
@@ -66,7 +63,7 @@ bash projects/hymenoptera_amalgkit/scripts/run_full_campaign.sh --print-config
 
 Keep `AMALGKIT_PIPELINE_FASTQ_SLOTS=1` while host system free space is below
 `32 GiB`. A value of `2` is appropriate only after a measured extraction
-bottleneck and a fresh storage/I/O check; Blue free space alone is not enough
+bottleneck and a fresh storage/I/O check; external data-volume free space alone is not enough
 because `fasterq-dump` temporary files use the host scratch volume.
 
 The producer pauses new downloads when the external root has less than
@@ -106,7 +103,7 @@ all recorded input/output digests still match.
 
 ```bash
 # How many current quantification outputs exist for one species?
-find "$AMALGKIT_DATA_ROOT/apis_mellifera_all/work/quant" \
+find "$AMALGKIT_DATA_ROOT/apis_mellifera/work/quant" \
   -mindepth 2 -maxdepth 2 -name abundance.tsv -size +100c | wc -l
 
 # Any samples stuck downloading (large .fastq.gz partial files)?
@@ -117,7 +114,7 @@ find "$AMALGKIT_DATA_ROOT" -path '*/work/getfastq/*' \
 df -h "$AMALGKIT_DATA_ROOT"
 
 # Most recently modified quant directories
-ls -lt "$AMALGKIT_DATA_ROOT/apis_mellifera_all/work/quant/" | head -20
+ls -lt "$AMALGKIT_DATA_ROOT/apis_mellifera/work/quant/" | head -20
 ```
 
 ## Log Quick-Counts (Without Scanning Disk)

@@ -17,9 +17,12 @@ The producer holds the campaign writer lock of the data root for its whole
 life (``metainformant.rna.engine.campaign_lock``), logs INFO to
 ``<data-root>/logs/run_all_species_<utc>_<pid>.log`` and exits with:
 
-* ``0``  every scheduled task is quantified, quarantined, held by the retry
-  bookkeeping (layout mismatch, kallisto exit 1, spent attempts) or
-  permanently excluded;
+* ``0``  drained: with ``--cohort``, every cohort task is quantified or
+  permanently excluded; without a cohort, quarantined and held tasks (layout
+  mismatch, kallisto exit 1, spent attempts) also count as drained;
+* ``65`` with ``--cohort``, nothing runnable is left but tasks are held,
+  quarantined or above ``--max-gb`` (``needs_operator`` in the summary);
+  finalization would refuse them;
 * ``75`` resumable work remains, including tasks in retry backoff (the summary
   names ``next_attempt_due_at``) and species whose discovery failed this run
   (rerun the same command);

@@ -18,9 +18,13 @@ does not query NCBI or ENA and does not create progress state.
 
 ## Metadata and selection
 
-The producer executes `metadata` and `select` for each species. Selection is
-defined by the shared `select_rules.tsv` and the species query in its YAML.
-Inspect the resulting tables under:
+In frozen-cohort mode (`--cohort`, the launcher's only mode) the producer does
+not run `metadata` or `select`: its tasks come from the cohort's frozen
+`inputs/<species>/work/metadata/metadata_selected.tsv`, which is never
+rewritten. Without `--cohort`, the producer runs `metadata` and `select` only
+with `--refresh-metadata`; a missing or stale metadata table is otherwise an
+error. Selection is defined by the shared `select_rules.tsv` and the species
+query in its YAML. A refresh run writes the resulting tables under:
 
 ```text
 $AMALGKIT_DATA_ROOT/<species>/work/metadata/metadata.tsv

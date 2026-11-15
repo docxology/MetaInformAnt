@@ -23,8 +23,11 @@ The production contract is:
 
 `metadata → select → getfastq → integrate → quant → merge → wsfilter → finalize → sanity`
 
-The first five stages are resumable sample production. The final four stages
-are project checkpoints and require the producer lock to be released.
+The first five stages are resumable sample production; in frozen-cohort mode
+(`--cohort`, the launcher's only mode) `metadata` and `select` are fixed by the
+cohort's frozen selection table and the producer runs `getfastq → integrate →
+quant`. The final four stages are project checkpoints and run only after the
+producer has stopped.
 
 ## Public interfaces
 
@@ -36,8 +39,10 @@ are project checkpoints and require the producer lock to be released.
 - `engine.provenance` — current hash-bound receipt writers and validators
 - `engine.durable_quant` — immutable local output receipts and verified restoration
 - `engine.preflight` — mandatory start-of-run campaign preflight
-  (`run_campaign_preflight`): data-root write probe and Amalgkit CLI
-  resolution; runnable as `python -m metainformant.rna.engine.preflight`
+  (`run_campaign_preflight`): data-root write probe, Amalgkit CLI
+  resolution, producer tools, kallisto compatibility, free-space floors and
+  the optional reuse dry-run; runnable as
+  `python -m metainformant.rna.engine.preflight`
 - `analysis.cohort_accounting` — fail-closed cohort funnel
   (`build_cohort_funnel`) over the progress DB with durable failure
   classes and TSV rendering

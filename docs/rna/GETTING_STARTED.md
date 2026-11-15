@@ -39,10 +39,11 @@ configuration inventory.
 For a single-species bounded run:
 
 ```bash
-uv run python scripts/rna/process_species.py \
+env -u VIRTUAL_ENV uv run --frozen --no-sync python scripts/rna/process_species.py \
   --species pogonomyrmex_barbatus \
   --config-dir projects/hymenoptera_amalgkit/config/amalgkit \
-  --data-root "$AMALGKIT_DATA_ROOT"
+  --data-root "$AMALGKIT_DATA_ROOT" \
+  --cohort "$AMALGKIT_DATA_ROOT/cohort/hymenoptera27-20261005"
 ```
 
 ## 4. Check progress

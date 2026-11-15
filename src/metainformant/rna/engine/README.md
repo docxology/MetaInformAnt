@@ -15,13 +15,18 @@ created.
 
 | Module | Purpose |
 |---|---|
-| `streaming_orchestrator.py` | ENA-first metadata, acquisition, integration, and quantification |
-| `campaign_lock.py` | One `flock` writer per data root (`<root>/.campaign.flock`): producer, import, migration and seal exclude each other; `status`/`run` CLI; producer exit codes |
+| `streaming_orchestrator.py` | ENA-first acquisition, integration, and quantification from a frozen cohort (Amalgkit metadata/select only without a cohort and with metadata refresh allowed) |
+| `campaign_lock.py` | One `flock` writer per data root (`<root>/.campaign.flock`): launcher, producer, finalization, import, migration and seal exclude each other, and a launcher's producer and finalization passes inherit its lock; `status`/`run` CLI; producer exit codes |
+| `producer_stop.py` | Graceful SIGINT/SIGTERM/SIGHUP stop (`ProducerStop`): stops admitting work, cancels queued tasks, and terminates the producer's child process groups before the writer lock is released |
 | `preflight.py` | Mandatory start-of-run environment preflight (data-root write probe, producer tools, kallisto compatibility, free-space floors, optional reuse dry-run) |
 | `process_observation.py` | Native confirmed absence/zombie checks for recovery observers; live or denied processes remain unresolved |
 | `progress_db.py` | Concurrent-safe SQLite sample state, exclusions, resume queries, and frozen-cohort migration |
 | `cohort.py` | Frozen cohort definition (`COHORT.json`), install, hash verification, producer task tables |
 | `quant_import.py` | Plan/execute import of verified quantifications from other data roots (never overwrites) |
+| `durable_quant.py` | Immutable quantification receipt publication and verified restoration |
+| `quant_storage.py` | Append-only content-addressed storage for quantification recovery (`DirectoryStore`) |
+| `quant_validation.py` | Portable quantification input and output validation (`validate_quantification`) |
+| `reference_digest.py` | Content digests of reference files, computed once per file identity (`IndexDigestCache`) |
 | `acquisition_manifest.py` | Hash-bound frozen acquisition snapshot loader (`snapshot.json` plus its `manifest.jsonl`) that cohort definition and install read |
 | `acquisition_order.py`, `acquisition_size_overlay.py` | Species-fair, size-banded or smallest-first acquisition order over frozen compressed FASTQ weights |
 | `progress_dashboard.py` | Mosaic PDF/PNG dashboard of per-species sample processing status rendered from the progress DB |
@@ -33,6 +38,8 @@ created.
 | `workflow_steps.py` | Individual current step implementations |
 | `workflow_cleanup.py` | Provenance-gated raw cleanup and disk checks |
 | `provenance.py` | Hash-bound metadata, quantification, and downstream receipts |
+| `evidence_bundle.py` | Immutable single-file JSON evidence bundles for release-grade artifacts (`EvidenceBundleBuilder`, `validate_bundle`) |
+| `ehd_storage.py` | Validated EHD write-root admission, independent of unused host storage (`capture_ehd_write_policy`) |
 | `raw_cleanup.py` | Per-accession reclamation primitives: raw FASTQ/SRA and failed partials in `getfastq`, orphaned `.fasterq_tmp/<run>` staging, and the shared `.sra-cache` entries |
 | `raw_reclamation.py` | Audited reclamation pass (`scripts/rna/reclaim_quantified_raw.py`): releases inputs only for content-verified reusable outputs or cohort permanent exclusions; dry run by default, maintenance-locked `--execute` |
 | `cohort_host.py` | Fresh-host preparation (`scripts/rna/prepare_cohort_host.py`): places the frozen cohort's exact kallisto index bytes where each species configuration resolves them and writes the reference manifest cohort discovery and imports require; never replaces different bytes (a rebuilt index is not byte-identical); plan by default |

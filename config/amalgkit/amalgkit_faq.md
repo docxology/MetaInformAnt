@@ -29,19 +29,19 @@ bash projects/hymenoptera_amalgkit/scripts/run_full_campaign.sh
 
 ## How are resources selected?
 
-Use the bounded project profile or explicit script options:
+The producer derives them from the host (`build_host_resource_profile`): 8
+whole-sample acquisitions, quant slots = min(CPUs, 8, memory guard) with one
+kallisto thread each, 2 full FASTQ validations, 1 `fasterq-dump` recovery
+slot, workers = acquisitions + quant slots, and `max_in_flight` = workers.
+The launcher sets none of them. Override a value with its producer option or
+the matching variable, for example:
 
 ```bash
-AMALGKIT_PIPELINE_PROFILE=local-throughput \
-AMALGKIT_PIPELINE_THREADS=10 \
-AMALGKIT_PIPELINE_QUANT_SLOTS=10 \
-AMALGKIT_PIPELINE_FASTQ_SLOTS=1 \
+AMALGKIT_PIPELINE_QUANT_SLOTS=4 \
 bash projects/hymenoptera_amalgkit/scripts/run_full_campaign.sh
 ```
 
-The local-throughput profile uses `2 x host CPUs` of sample workers bounded to
-`16..24`, ten total quant threads, six validation slots, and twice the actual
-worker count in flight. Check both external and system free-space floors before
+Check both external and system free-space floors before
 raising `AMALGKIT_PIPELINE_FASTQ_SLOTS`; acquisition and mounted-volume
 contention can dominate wall time even when CPU is idle. Preview the resolved
 budget without starting a producer with:

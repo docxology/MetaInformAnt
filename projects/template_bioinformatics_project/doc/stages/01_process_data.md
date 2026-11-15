@@ -75,7 +75,7 @@ To add domain-specific processing (e.g., read trimming, sequence quality filteri
 ```python
 # In 01_process_data.py → process_data()
 # After the normalisation block, add:
-from metainformant.dna.sequences import validate_dna_sequence
+from metainformant.core.sequence import validate_dna_sequence
 # ... your domain logic here
 ```
 

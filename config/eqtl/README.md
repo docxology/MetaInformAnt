@@ -34,7 +34,7 @@ PY
 
 Requires:
 
-1. **Expression data**: `output/amalgkit/apis_mellifera_all/work/quant/`
+1. **Expression data**: `output/amalgkit/apis_mellifera/work/quant/`
 2. **Variants**: `output/gwas/amellifera/variants/`
 3. **Annotations**: `output/gwas/amellifera/genome/genomic.gff`
 

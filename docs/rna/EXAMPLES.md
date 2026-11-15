@@ -17,21 +17,24 @@ uv run python scripts/rna/run_all_species.py \
 ## Run one species
 
 ```bash
-uv run python scripts/rna/process_species.py \
+env -u VIRTUAL_ENV uv run --frozen --no-sync python scripts/rna/process_species.py \
   --species apis_mellifera \
   --config-dir projects/hymenoptera_amalgkit/config/amalgkit \
   --data-root "$AMALGKIT_DATA_ROOT" \
-  --workers 4 --threads 8 --quant-slots 2
+  --cohort "$AMALGKIT_DATA_ROOT/cohort/hymenoptera27-20261005" \
+  --workers 4 --threads 8
 ```
 
 ## Run the complete cohort
 
 ```bash
 AMALGKIT_DATA_ROOT="$AMALGKIT_DATA_ROOT" \
-AMALGKIT_PIPELINE_WORKERS=8 \
-AMALGKIT_PIPELINE_THREADS=8 \
 bash projects/hymenoptera_amalgkit/scripts/run_full_campaign.sh
 ```
+
+The producer derives its worker and thread budgets from the host; override
+them with `PIPELINE_WORKERS` and `PIPELINE_THREADS` only after measuring a
+bottleneck.
 
 ## Observe progress
 

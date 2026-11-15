@@ -74,13 +74,13 @@ steps:
   quant:
     # CRITICAL: out_dir must be work_dir (not separate quant_dir)
     # This allows quant to find getfastq output in {out_dir}/getfastq/
-    out_dir: output/amalgkit/apis_mellifera_all/work
-    metadata: output/amalgkit/apis_mellifera_all/work/metadata/metadata_selected.tsv
-    index_dir: output/amalgkit/apis_mellifera_all/work/index
+    out_dir: output/amalgkit/apis_mellifera/work
+    metadata: output/amalgkit/apis_mellifera/work/metadata/metadata_selected.tsv
+    index_dir: output/amalgkit/apis_mellifera/work/index
     threads: 16
     clean_fastq: no  # Required for provenance-gated project cleanup
     build_index: yes
-    fasta_dir: output/amalgkit/apis_mellifera_all/work/fasta
+    fasta_dir: output/amalgkit/apis_mellifera/work/fasta
 ```
 
 ## Parameters

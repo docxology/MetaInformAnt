@@ -43,18 +43,27 @@ uv run python scripts/rna/process_species.py \
   --dry-run
 ```
 
-Run the selected cohort:
+Run the frozen cohort through the project launcher (the production path):
 
 ```bash
-uv run python scripts/rna/run_all_species.py \
+bash projects/hymenoptera_amalgkit/scripts/run_full_campaign.sh
+```
+
+For a diagnostic, run the producer directly against the same cohort:
+
+```bash
+env -u VIRTUAL_ENV uv run --frozen --no-sync python scripts/rna/run_all_species.py \
   --config-dir projects/hymenoptera_amalgkit/config/amalgkit \
   --data-root "$AMALGKIT_DATA_ROOT" \
+  --cohort "$AMALGKIT_DATA_ROOT/cohort/hymenoptera27-20261005" \
   --workers 4 --threads 8 --quant-slots 2
 ```
 
-The producer owns metadata, selection, acquisition, validation, integration,
-and quantification. It resumes from `pipeline_progress.db`, retains failed
-and partial states, and writes provenance before an output becomes reusable.
+The producer owns acquisition, validation, integration, and quantification.
+With `--cohort` it never runs `metadata` or `select` and never rewrites the
+cohort's frozen selection table. It resumes from `pipeline_progress.db`,
+retains failed and partial states, and writes provenance before an output
+becomes reusable.
 
 ## Monitor and finalize
 

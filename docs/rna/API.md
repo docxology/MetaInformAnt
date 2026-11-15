@@ -9,28 +9,37 @@ execution contracts.
 ```python
 from pathlib import Path
 
+from metainformant.rna.engine.cohort import load_frozen_cohort
 from metainformant.rna.engine.streaming_orchestrator import StreamingPipelineOrchestrator
 
 # The orchestrator has repo-local defaults (config dir and output/amalgkit
 # log dir); set every path explicitly for campaign work.
 data_root = Path("/Volumes/external_drive/Data/amalgkit")
+cohort = load_frozen_cohort(data_root / "cohort" / "hymenoptera27-20261005")
 producer = StreamingPipelineOrchestrator(
     config_dir=Path("projects/hymenoptera_amalgkit/config/amalgkit"),
     log_dir=data_root / "logs",
     db_path=data_root / "pipeline_progress.db",
+    cohort=cohort,
 )
 producer.run_all(
     ["amalgkit_apis_mellifera.yaml"],
-    max_gb=50.0,
+    max_gb=1000.0,
     workers=4,
     threads=8,
     quant_slots=2,
 )
 ```
 
-`run_all()` handles metadata, selection, acquisition, integration, and
-quantification. It uses `ProgressDB` for resumable state and writes current
-provenance for every reusable quantification.
+With `cohort=`, `run_all()` builds its tasks from the frozen cohort and runs
+acquisition, integration, and quantification; it never runs `metadata` or
+`select` and never rewrites the cohort's selection table. Without a cohort it
+also runs `metadata` and `select` for a species whose metadata is missing or
+stale, unless the orchestrator is created with `allow_metadata_refresh=False`
+(the producer scripts pass `False` unless `--refresh-metadata` is given).
+`run_all()` takes the campaign writer lock of the data root, uses `ProgressDB`
+for resumable state, and writes current provenance for every reusable
+quantification.
 
 ## Progress database
 

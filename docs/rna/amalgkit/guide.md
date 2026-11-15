@@ -17,7 +17,7 @@ Before running workflows:
 
 ```bash
 # Check amalgkit availability
-python3 -c "from metainformant.rna import check_cli_available; print(check_cli_available())"
+env -u VIRTUAL_ENV uv run --frozen --no-sync python -c "from metainformant.rna.amalgkit import check_cli_available; print(check_cli_available())"
 
 # Check the installed Amalgkit version
 amalgkit --version
@@ -29,13 +29,14 @@ Create or modify a YAML configuration file in `config/amalgkit/`:
 
 ```yaml
 # config/amalgkit/amalgkit_<species>.yaml
-species: Pogonomyrmex_barbatus
-taxonomy_id: 219557
-work_dir: output/amalgkit/pbarbatus/
+work_dir: output/amalgkit/pogonomyrmex_barbatus/work
 threads: 16
+species_list:
+  - Pogonomyrmex_barbatus
+taxon_id: 144034
 
 genome:
-  assembly_accession: GCF_000187915.1
+  accession: GCF_000187915.1
   # ... genome configuration
 ```
 
@@ -43,16 +44,19 @@ See existing configurations for examples.
 
 ### 3. Run the current producer and downstream checkpoints
 
-**Single-species dry run and execution**:
+**Single-species dry run and execution** (a diagnostic against the frozen
+cohort; production runs use `projects/hymenoptera_amalgkit/scripts/run_full_campaign.sh`):
 
 ```bash
-uv run python scripts/rna/run_all_species.py \
-  --config-dir config/amalgkit \
+env -u VIRTUAL_ENV uv run --frozen --no-sync python scripts/rna/run_all_species.py \
+  --config-dir projects/hymenoptera_amalgkit/config/amalgkit \
   --data-root "$AMALGKIT_DATA_ROOT" \
+  --cohort "$AMALGKIT_DATA_ROOT/cohort/hymenoptera27-20261005" \
   --species pogonomyrmex_barbatus --dry-run
-uv run python scripts/rna/run_all_species.py \
-  --config-dir config/amalgkit \
+env -u VIRTUAL_ENV uv run --frozen --no-sync python scripts/rna/run_all_species.py \
+  --config-dir projects/hymenoptera_amalgkit/config/amalgkit \
   --data-root "$AMALGKIT_DATA_ROOT" \
+  --cohort "$AMALGKIT_DATA_ROOT/cohort/hymenoptera27-20261005" \
   --species pogonomyrmex_barbatus
 bash projects/hymenoptera_amalgkit/scripts/run_all_finalization.sh \
   --data-root "$AMALGKIT_DATA_ROOT"
@@ -66,7 +70,7 @@ uv run python scripts/rna/check_pipeline_status.py \
   --data-root "$AMALGKIT_DATA_ROOT" --verbose
 
 # Check output files
-ls output/amalgkit/pbarbatus/work/quant/ | wc -l
+ls "$AMALGKIT_DATA_ROOT/pogonomyrmex_barbatus/work/quant/" | wc -l
 tail -20 "$AMALGKIT_DATA_ROOT"/results/full_campaign_*.log
 ```
 

@@ -80,21 +80,21 @@ METAINFORMANT uses [pre-commit](https://pre-commit.com) to automate code quality
 - **black** – code formatting (target `py314`, line-length 120)
 - **isort** – import sorting (Black profile)
 - **flake8** – blocking linting with the CI configuration
-- **mypy** – type checking through the documented ratcheted scope; the full
-  package remains an explicit improvement target
 - **General file checks** (via `pre-commit-hooks`):
-  - `check-added-large-files` (max 1000 KB)
-  - `check-merge-conflict`
-  - `check-yaml`, `check-json`, `check-toml`
-  - `end-of-file-fixer`
-  - `trailing-whitespace` (excludes `.md`, `.rst`)
-  - `detect-private-key`, `detect-aws-credentials` (credential leak checks)
-  - `mixed-line-ending` – enforce LF
+    - `check-added-large-files` (max 1000 KB)
+    - `check-merge-conflict`
+    - `check-yaml`, `check-json`, `check-toml`
+    - `end-of-file-fixer`
+    - `trailing-whitespace` (excludes `.md`, `.rst`)
+    - `detect-private-key`, `detect-aws-credentials` (credential leak checks)
+    - `mixed-line-ending` – enforce LF
 - **Local hooks**:
-  - `validate-examples` – validates example Python files
+    - `validate-examples` – validates example Python files
 - **pygrep-hooks**: Python-specific checks (blanket noqa, type annotations, no log warnings, RST syntax)
 - **Bandit** – blocking medium/high-severity security checks
-- **pydocstyle** – informational documentation-style checks; not a release gate
+
+mypy is not a pre-commit hook; CI enforces it through
+`scripts/quality/check_mypy_budget.py` with an error budget of 0.
 
 #### Using Pre-commit
 
@@ -134,7 +134,7 @@ METAINFORMANT has a **strict real-implementation policy** and emphasizes real-da
 
 #### Test Organization
 - `tests/conftest.py` – shared fixtures
-- Markers: `slow`, `network` (real API calls), `external_tool` (requires external binaries), `integration`, `real_impl`
+- Markers: `slow`, `network` (real API calls), `external_tool` (requires external binaries), `integration`, `xdist_group` (tests that must share an xdist worker)
 - Parallel execution via `pytest-xdist`: `uv run pytest -n auto`
 
 ---
@@ -144,29 +144,29 @@ METAINFORMANT has a **strict real-implementation policy** and emphasizes real-da
 Follow these steps for a smooth PR experience:
 
 1. **Create a branch** from `main`: `git checkout -b my-feature`
-   - Use descriptive names: `feat/dna-msa-improvements`, `fix/gwas-plot-bug`, `docs/update-tutorials`
+    - Use descriptive names: `feat/dna-msa-improvements`, `fix/gwas-plot-bug`, `docs/update-tutorials`
 2. **Make changes** following [Coding Standards](#code-style-and-formatting)
 3. **Run locally**:
-   - `scripts/package/test.sh` – ensures all tests pass
-   - `pre-commit run --all-files` – ensures lint/formatting is clean
+    - `scripts/package/test.sh` – ensures all tests pass
+    - `pre-commit run --all-files` – ensures lint/formatting is clean
 4. **Commit** with a clear message following [Conventional Commits](https://www.conventionalcommits.org/):
    ```
    feat(dna): add progressive alignment algorithm
    fix(visualization): correct axis limits in manhattan plot
    docs(rna): update amalgkit workflow documentation
    ```
-   - Format: `<type>(<scope>): <subject>`
-   - Types: `feat`, `fix`, `docs`, `test`, `refactor`, `chore`, `build`, `ci`
-   - Scope: module name (`dna`, `rna`, `gwas`, `core`, `visualization`)
+    - Format: `<type>(<scope>): <subject>`
+    - Types: `feat`, `fix`, `docs`, `test`, `refactor`, `chore`, `build`, `ci`
+    - Scope: module name (`dna`, `rna`, `gwas`, `core`, `visualization`)
 5. **Push** to your fork and open a **Draft PR** early to get feedback.
 6. **CI pipeline** runs automatically:
-   - Tests on Python 3.14 (every lane) and 3.15 (fast lane; the full extras do not install on 3.15 because `ray` has no cp315 wheels)
-   - Linting (black, isort, flake8)
-   - Type checking (mypy)
-   - Documentation build check
+    - Tests on Python 3.14 (every lane) and 3.15 (fast lane; the full extras do not install on 3.15 because `ray` has no cp315 wheels)
+    - Linting (black, isort, flake8 with max line length 120)
+    - Type checking (mypy, error budget 0)
+    - The documentation build runs in the release workflow (`release.yml`)
 7. **Address review comments** from maintainers within 48 hours.
 8. **Update CHANGELOG.md** under `[Unreleased]` if your change is user-facing.
-9. **Request review** from the `@maintainers` team once CI passes.
+9. **Request review** from the maintainers once CI passes.
 10. **Merge** only after at least one approval and CI green.
 
 #### PR Checklist
@@ -274,4 +274,4 @@ METAINFORMANT is an open, welcoming community. We adhere to the [Contributor Cov
 
 ---
 
-**Questions?** Open a [GitHub Discussion](https://github.com/docxology/metainformant/discussions) or ping `@maintainers`.
+**Questions?** Open a [GitHub Discussion](https://github.com/docxology/metainformant/discussions) or contact the maintainers.
