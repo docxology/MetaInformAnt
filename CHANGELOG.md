@@ -21,22 +21,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Physical-file verification snapshots (`core.io.verification.BoundReads`) and
   conservative recovery process observations (`rna.engine.process_observation`),
   with real file-change, PID-identity, denied-inspection and timeout controls.
-- Local RNA acquisition frontier (`metainformant.rna.engine.acquisition_frontier`,
-  opt-in via `AMALGKIT_LOCAL_FRONTIER_SIZE`): separate acquisition, recovery and
-  quantification pools bounded by a planned-identity frontier and frozen
-  raw-size reservations, an fsynced transition ledger, STOP-aware draining, and
-  reuse of current-contract quantifications while acquisition slots are busy.
-  Supported by per-sample acquisition admission
-  (`AMALGKIT_PIPELINE_ACQUISITION_SLOTS`), size-band ordering
-  (`acquisition_order`), verified ENA staging and promotion
+- RNA acquisition for the streaming producer: per-sample acquisition admission
+  (`AMALGKIT_PIPELINE_ACQUISITION_SLOTS`), verified ENA staging and promotion
   (`rna.retrieval.ena_staging`), shared ENA connection budgets
-  (`rna.retrieval.ena_transport`), strict FASTQ record validation, and bounded
-  ENA metadata retries inside the first-pass deadline.
-- Read-only campaign observation (`rna.engine.campaign_observation`,
-  `campaign_observation_report`, `scripts/rna/observe_acquisition.py`):
-  content-bound capture of a running campaign's manifest and journals,
-  restore-bound new-output counts, and an isolated report bundle with an
-  acquisition figure (`visualization.plots.rna_campaign`).
+  (`rna.retrieval.ena_transport`), strict FASTQ record validation
+  (`validate_fastq_records`), and bounded ENA metadata retries inside the
+  first-pass deadline (`AMALGKIT_PIPELINE_DOWNLOAD_FIRST_PASS_SECONDS`).
 - `metainformant.rna.analysis.statistics_contract`: predeclared, fail-closed
   analysis-provenance records (descriptive/inferential role separation,
   role-conditional multiple-testing semantics), BH-FDR helper, gated
@@ -94,6 +84,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   re-locked without upgrades; only packages that Python < 3.12 resolutions or
   the removed `aws` extra needed left it. Code uses the PEP 758
   `except A, B:` form black writes for py314.
+- Tooling and CI refresh (2026-11-14): isort 9.0.2 and flake8 7.5.0 (pyflakes
+  4.1.0, pycodestyle 2.15.0) in the dev pins and pre-commit, bandit 1.9.4 in
+  pre-commit; `uv lock --upgrade` moved scanpy 1.13.0, python-dateutil 4.0.0,
+  pydantic-settings 2.16.3, soupsieve 4.1.1, argon2-cffi-bindings 26.2.0 and
+  types-pyyaml. Every workflow, including the project template's, pins its
+  Actions by commit SHA at the current releases (checkout v7.0.1,
+  upload-artifact v7.0.2, download-artifact v8.0.2, setup-uv v10.3.3,
+  codecov v7.1.1, action-gh-release v3.0.4, publish-unit-test-result
+  v2.26.0). Amalgkit stays at 0.16.108: 0.16.109 only changes `getfastq`,
+  which the campaign does not use, and every published quantification names
+  the pinned commit.
 - `campaign_lock` recognizes one writer per data root, the kernel flock
   `<root>/.campaign.flock`; `writer_status` reports only that flock.
 - `StreamingPipelineOrchestrator.process_single_sample` runs acquisition and
@@ -324,6 +325,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   document `rna.amalgkit.genome_prep` directly.
 
 ### Fixed
+- SQLite connections leaked: `with sqlite3.connect(...)` commits but never
+  closes, and test producers never closed their `ProgressDB`. The garbage
+  collector then reclaimed them inside unrelated tests, where the
+  `ResourceWarning` failed whichever test was running. Those sites now close
+  their connections (`scripts/rna/benchmark_campaign_scale.py`, the MCP
+  campaign monitor on its error path, five RNA test modules), and an RNA test
+  fixture closes every SQLite connection a test opened. It finds them through
+  the `sqlite3.connect/handle` audit event, so no code is monkeypatched.
 - `find_orfs` (`dna.expression.translation`, `dna.sequence.core`) matched start
   codons at any offset. Every ORF was reported once per frame of its strand,
   up to three times, with only one frame label correct. Starts are now
@@ -444,9 +453,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `correlation_mapping` used Spearman for any method other than Pearson; it
   now refuses unknown methods. The 3-D protein structure plot passed
   `projection` to `plt.subplots`, which raises.
-- `scripts/cloud/sync_cloud_down.sh` disabled SSH host-key checking; it now
-  uses `accept-new`, and the gcloud location comes from `GOOGLE_CLOUD_SDK_BIN`
-  instead of a hard-coded home directory.
 - `scripts/menu/run_menu.py` imported removed modules and could not start.
 - Sixty-two scripts under `scripts/` failed at import because the package
   had moved or stopped re-exporting the names they used; they now run against
@@ -536,15 +542,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   titles could escape the output directory. OBO `def:` parsing left the
   closing quote and dbxrefs in definitions; they are parsed and written back
   correctly, with xrefs kept in `metadata["definition_xrefs"]`.
-- `phenotype.run_phewas` computed p-values for 30 or fewer degrees of
+- `phenotype.gwas_integration.phewas.run_phewas` computed p-values for 30 or fewer degrees of
   freedom from a homemade series that returned 0.0065 where Student's t
   gives 0.46; it now uses SciPy's t distribution. Simpson's evenness divided
   by the Gini-Simpson index, so a perfectly even community scored 1/(S-1)
   instead of 1.
 - Sequence repeat and palindrome scans in
-  `information.analyze_sequence_information` took super-linear time (115 s
+  `information.metrics.analysis.analysis.analyze_sequence_information` took super-linear time (115 s
   for a 500 bp tandem repeat); they now return the same results in under a
-  second. `epigenome.load_methylation_cov` misread Bismark coverage columns,
+  second. `epigenome.assays.methylation.load_methylation_cov` misread Bismark coverage columns,
   `dna.phylogeny.bootstrap_support` mutated its input tree, `parse_vcf` could
   not read gzipped VCFs, spatially variable gene detection rejected sparse
   matrices, HTML output without Plotly failed after creating files, and
@@ -607,14 +613,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   tautological InterPro/Entrez `assert True` catch-alls replaced with
   real response assertions; bare "should not raise" validation tests now
   assert returned values.
-- CI/infra: pre-commit hook versions aligned with pyproject pins
-  (black 26.5.1, isort 8.0.1, flake8 7.3.0); `pytest-xdist` detection fixed
+- CI/infra: pre-commit hook versions aligned with the pyproject pins;
+  `pytest-xdist` detection fixed
   (`import xdist`); uv cache keyed on `uv.lock`; dead tag-push trigger
   removed from `release.yml` (Release events are the publish path);
-  `uv_quality.sh` aligned with the blocking CI quality gate; Dockerfile
-  pins `amalgkit=0.16.60`, drops standalone kallisto/fastp layers shadowed
-  by the conda env, and installs the full CRAN package set the dependency
-  verifier expects.
+  `uv_quality.sh` aligned with the blocking CI quality gate; the Dockerfile
+  takes Amalgkit only from `uv.lock`, drops standalone kallisto/fastp layers
+  shadowed by the conda env, and installs the full CRAN package set the
+  dependency verifier expects.
 - Docs: CONTRIBUTING install extras fixed (`.[dev]`; `test`/`docs` never
   existed), duplicate CHANGELOG Unreleased sections merged, stale MCP
   module description updated to the implemented stdio server, measured

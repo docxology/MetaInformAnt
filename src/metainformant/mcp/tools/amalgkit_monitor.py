@@ -34,6 +34,7 @@ import shutil
 import sqlite3
 from argparse import ArgumentParser
 from collections.abc import Sequence
+from contextlib import closing
 from pathlib import Path
 from typing import Any
 
@@ -151,9 +152,8 @@ def _readiness_snapshot(data_root: Path) -> dict[str, object]:
         return result
 
     try:
-        connection = sqlite3.connect(db_path)
-        rows = connection.execute("SELECT species, state, COUNT(*) FROM samples GROUP BY species, state").fetchall()
-        connection.close()
+        with closing(sqlite3.connect(db_path)) as connection:
+            rows = connection.execute("SELECT species, state, COUNT(*) FROM samples GROUP BY species, state").fetchall()
         counts: dict[str, dict[str, int]] = {}
         for species, state, count in rows:
             counts.setdefault(species, {})[state] = count

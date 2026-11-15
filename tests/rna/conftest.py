@@ -6,9 +6,11 @@ import json
 import os
 import random
 import shutil
+import sqlite3
 import stat
+import sys
 from collections.abc import Callable, Iterator
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -18,6 +20,45 @@ import pytest
 
 from metainformant.rna.amalgkit.genome_prep import run_kallisto_index
 from metainformant.rna.engine.acquisition_manifest import sha256_file
+
+# SQLite connections opened while a test runs; ``None`` outside a test.
+_test_sqlite_connections: list[sqlite3.Connection] | None = None
+
+
+def _record_sqlite_connection(event: str, args: tuple[Any, ...]) -> None:
+    if event == "sqlite3.connect/handle" and _test_sqlite_connections is not None:
+        _test_sqlite_connections.append(args[0])
+
+
+sys.addaudithook(_record_sqlite_connection)
+
+
+@pytest.fixture(autouse=True)
+def _close_sqlite_connections() -> Iterator[None]:
+    """Close every SQLite connection a test opened.
+
+    A producer keeps its progress database open for the life of its process.
+    Tests build many producers and rarely close them; an unclosed SQLite
+    connection is reclaimed by the garbage collector at an arbitrary later
+    point, where its ``ResourceWarning`` fails whichever test is running (for
+    example inside a ``pytest.warns`` block). The ``sqlite3.connect/handle``
+    audit event names each new connection without rebinding any code; holding
+    them here keeps them alive until they are closed at teardown. Closing an
+    already-closed connection does nothing.
+    """
+
+    global _test_sqlite_connections
+    opened: list[sqlite3.Connection] = []
+    _test_sqlite_connections = opened
+    try:
+        yield
+    finally:
+        _test_sqlite_connections = None
+        for connection in opened:
+            # A connection made in another thread with ``check_same_thread`` on
+            # can only be closed by that thread; the code that opened it owns it.
+            with suppress(sqlite3.ProgrammingError):
+                connection.close()
 
 
 @dataclass(frozen=True)

@@ -47,6 +47,7 @@ import statistics
 import subprocess
 import sys
 import time
+from contextlib import closing
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -374,7 +375,7 @@ def populate_progress_db(
         stale_ids = downloading_ids[: max(1, len(downloading_ids) // 2)] if downloading_ids else []
         if not stale_ids:
             continue
-        with sqlite3.connect(str(db.db_path)) as conn:
+        with closing(sqlite3.connect(str(db.db_path))) as conn, conn:
             conn.executemany(
                 "UPDATE samples SET updated_at = datetime('now', '-2 hours') WHERE species = ? AND srr_id = ?",
                 [(name, srr_id) for srr_id in stale_ids],

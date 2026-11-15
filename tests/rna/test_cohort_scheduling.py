@@ -17,6 +17,7 @@ import subprocess
 import sys
 import threading
 import time
+from contextlib import closing
 from pathlib import Path
 from typing import Any
 
@@ -881,7 +882,10 @@ def test_periodic_wal_checkpoints_let_an_immutable_reader_see_progress(
         if srr == "SRR_W2":
             # An observer that never reads the WAL (immutable=1), like a snapshot of the database file.
             try:
-                with sqlite3.connect(f"file:{orchestrator.db.db_path}?mode=ro&immutable=1", uri=True) as reader:
+                with (
+                    closing(sqlite3.connect(f"file:{orchestrator.db.db_path}?mode=ro&immutable=1", uri=True)) as reader,
+                    reader,
+                ):
                     row = reader.execute("SELECT state FROM samples WHERE srr_id = 'SRR_W1'").fetchone()
                 seen["SRR_W1"] = row[0] if row else None
             except sqlite3.OperationalError:  # not even the schema has reached the database file yet

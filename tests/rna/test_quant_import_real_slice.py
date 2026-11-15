@@ -15,6 +15,7 @@ import os
 import shutil
 import sqlite3
 import sys
+from contextlib import closing
 from pathlib import Path
 from typing import Any
 
@@ -201,7 +202,7 @@ def test_real_slice_adopts_imports_into_a_copy_of_the_canonical_db(real: RealSli
     shutil.copyfile(canonical_db, db_path)
 
     def rows() -> dict[tuple[str, str], tuple[Any, ...]]:
-        with sqlite3.connect(db_path) as conn:
+        with closing(sqlite3.connect(db_path)) as conn, conn:
             return {(r[0], r[1]): r[2:] for r in conn.execute("SELECT species, srr_id, state, error FROM samples")}
 
     before = rows()
