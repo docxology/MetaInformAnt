@@ -7,6 +7,7 @@ import shutil
 import sqlite3
 import subprocess
 import sys
+from contextlib import closing
 from pathlib import Path
 
 import pytest
@@ -46,7 +47,7 @@ def cohort(tmp_path: Path):
 
 
 def _rows(db_path: Path) -> dict[tuple[str, str], tuple[str, str | None]]:
-    with sqlite3.connect(db_path) as connection:
+    with closing(sqlite3.connect(db_path)) as connection, connection:
         return {
             (species, srr): (state, error)
             for species, srr, state, error in connection.execute("SELECT species, srr_id, state, error FROM samples")
@@ -116,7 +117,7 @@ def test_migration_adds_rows_resets_environment_failures_and_keeps_everything_el
     assert summary["cohort_exclusions_inserted"] == 0  # the audit's exclusion is kept as recorded
     assert db.get_exclusions(SPECIES)[0]["recorded_by"] == "audit"
     assert db.cohort_binding() == {"cohort_id": COHORT_ID, "cohort_definition_sha256": cohort.definition_sha256}
-    with sqlite3.connect(tmp_path / "backup.db") as backup:
+    with closing(sqlite3.connect(tmp_path / "backup.db")) as backup, backup:
         assert backup.execute("SELECT COUNT(*) FROM samples").fetchone()[0] == summary["rows_before"]
 
     again = db.migrate_to_cohort(cohort, backup_path=tmp_path / "backup.db")
@@ -148,7 +149,7 @@ def test_migration_records_cohort_and_extra_exclusions_and_optional_transfer_res
 def test_migration_refuses_a_store_bound_to_another_cohort(cohort, tmp_path: Path) -> None:
     db = ProgressDB(tmp_path / "p.db")
     db.migrate_to_cohort(cohort)
-    with sqlite3.connect(tmp_path / "p.db") as connection:
+    with closing(sqlite3.connect(tmp_path / "p.db")) as connection, connection:
         connection.execute("UPDATE campaign_meta SET value = 'other-cohort' WHERE key = 'cohort_id'")
     with pytest.raises(CohortError, match="bound to cohort other-cohort"):
         db.migrate_to_cohort(cohort)
@@ -168,7 +169,7 @@ def test_a_migration_interrupted_after_its_backup_can_be_rerun(cohort, tmp_path:
     assert (tmp_path / "backup.db").read_bytes() == b"backup of an interrupted attempt"  # never overwritten
     fresh = Path(summary["backup"])
     assert fresh.parent == tmp_path and fresh.name.startswith("backup.db.") and fresh != tmp_path / "backup.db"
-    with sqlite3.connect(fresh) as backup:
+    with closing(sqlite3.connect(fresh)) as backup, backup:
         assert backup.execute("SELECT COUNT(*) FROM samples").fetchone()[0] == 1
     assert db.cohort_binding()["cohort_id"] == COHORT_ID
     assert not [path.name for path in tmp_path.iterdir() if path.name.endswith(".tmp")]

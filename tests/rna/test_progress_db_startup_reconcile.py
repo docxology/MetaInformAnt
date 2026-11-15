@@ -11,6 +11,7 @@ import hashlib
 import os
 import sqlite3
 from collections.abc import Callable, Mapping
+from contextlib import closing
 from pathlib import Path
 from typing import Any
 
@@ -35,7 +36,7 @@ SENTINEL = "2000-01-01 00:00:00"
 
 
 def _row(db_path: Path, srr_id: str) -> tuple[str, str | None, str]:
-    with sqlite3.connect(db_path) as connection:
+    with closing(sqlite3.connect(db_path)) as connection, connection:
         row = connection.execute(
             "SELECT state, error, updated_at FROM samples WHERE species = ? AND srr_id = ?", (SPECIES, srr_id)
         ).fetchone()
@@ -44,7 +45,7 @@ def _row(db_path: Path, srr_id: str) -> tuple[str, str | None, str]:
 
 
 def _set_updated_at(db_path: Path, value: str) -> None:
-    with sqlite3.connect(db_path) as connection:
+    with closing(sqlite3.connect(db_path)) as connection, connection:
         connection.execute("UPDATE samples SET updated_at = ?", (value,))
         connection.execute("UPDATE quantification_audit SET checked_at = ?", (value,))
 
@@ -151,7 +152,7 @@ def test_restart_trusts_unchanged_outputs_and_rejudges_only_changes(tmp_path: Pa
     assert second["rows_changed"] == 0 and second["audits_written"] == 0
     # Unchanged rows keep updated_at and checked_at: a restart rewrites nothing.
     assert all(_row(db.db_path, run)[2] == SENTINEL for run in runs + ["SRR900"])
-    with sqlite3.connect(db.db_path) as connection:
+    with closing(sqlite3.connect(db.db_path)) as connection, connection:
         assert {row[0] for row in connection.execute("SELECT checked_at FROM quantification_audit")} == {SENTINEL}
 
     # One output rewritten with other configuration bytes: only it is re-judged, and it is quarantined.
@@ -200,7 +201,7 @@ def test_fingerprint_columns_are_added_once_and_unfingerprinted_audits_are_never
     db = ProgressDB(tmp_path / "p.db")
     db.init_species(SPECIES, ["SRR001"])
     outputs.reconcile(db)
-    with sqlite3.connect(db.db_path) as connection:
+    with closing(sqlite3.connect(db.db_path)) as connection, connection:
         columns = {row[1] for row in connection.execute("PRAGMA table_info(quantification_audit)")}
     assert {"sidecar_ino", "sidecar_size", "sidecar_mtime_ns", "config_sha256", "reference_sha256", "scope"} <= (
         columns

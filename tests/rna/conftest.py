@@ -18,6 +18,31 @@ import pytest
 
 from metainformant.rna.amalgkit.genome_prep import run_kallisto_index
 from metainformant.rna.engine.acquisition_manifest import sha256_file
+from metainformant.rna.engine.progress_db import ProgressDB
+
+
+@pytest.fixture(autouse=True)
+def _close_progress_databases(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
+    """Close every ``ProgressDB`` a test opened.
+
+    A producer keeps its progress database open for the life of its process.
+    Tests build many producers and rarely close them; an unclosed SQLite
+    connection is reclaimed by the garbage collector at an arbitrary later
+    point, where its ``ResourceWarning`` fails whichever test is running (for
+    example inside a ``pytest.warns`` block).
+    """
+
+    opened: list[ProgressDB] = []
+    original_init = ProgressDB.__init__
+
+    def tracking_init(self: ProgressDB, *args: Any, **kwargs: Any) -> None:
+        original_init(self, *args, **kwargs)
+        opened.append(self)
+
+    monkeypatch.setattr(ProgressDB, "__init__", tracking_init)
+    yield
+    for database in opened:
+        database.close()
 
 
 @dataclass(frozen=True)
