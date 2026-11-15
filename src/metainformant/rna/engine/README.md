@@ -237,9 +237,18 @@ receipt store), must match the cohort configuration and index bytes that the
 destination itself uses (else `reference_mismatch`), and is copied into a
 staging directory, re-hashed, given a portable binding witness and published
 with one `rename`. Existing destination samples are never replaced
-(`exists_identical` / `exists_different`); a conflict records whether the
-abundance tables differ (`quantification`) and which side's evidence proves the
-index bytes rather than only the index name (`index_bytes_proven`). Decisions
+(`exists_identical` / `exists_different`). By default identity needs
+byte-identical sidecars, equal file sizes, and, on both sides, the abundance
+table the sidecar names hashing to its `quantification_file_sha256`
+(`identity_basis` `sidecar_bytes+sizes+quantification_sha256`), because blocks
+overwritten in place keep a file's size. A side whose table does not match its
+own sidecar is `exists_different` with the reason `destination quantification
+does not match its sidecar` (or `source …`); a source like that is never
+imported. `deep_compare` hashes every file on both sides instead
+(`identity_basis` `sha256`). A conflict records whether the abundance tables
+differ (`quantification`: `identical`, `different`, or `unknown` when a table
+no longer matches its sidecar) and which side's evidence proves the index bytes
+rather than only the index name (`index_bytes_proven`). Decisions
 go to a JSON-lines manifest; a dry run writes it only to an explicit
 `--manifest` path.
 
