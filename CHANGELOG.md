@@ -331,7 +331,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `ResourceWarning` failed whichever test was running. Those sites now close
   their connections (`scripts/rna/benchmark_campaign_scale.py`, the MCP
   campaign monitor on its error path, five RNA test modules), and an RNA test
-  fixture closes every `ProgressDB` a test opened.
+  fixture closes every SQLite connection a test opened. It finds them through
+  the `sqlite3.connect/handle` audit event, so no code is monkeypatched.
 - `find_orfs` (`dna.expression.translation`, `dna.sequence.core`) matched start
   codons at any offset. Every ORF was reported once per frame of its strand,
   up to three times, with only one frame label correct. Starts are now
