@@ -372,7 +372,7 @@ In the METAINFORMANT workflow, `integrate` runs automatically after `getfastq`:
 ```python
 from metainformant.rna.engine.workflow import execute_workflow, load_workflow_config
 
-cfg = load_workflow_config("config/amalgkit_apis_mellifera.yaml")
+cfg = load_workflow_config("config/amalgkit/amalgkit_apis_mellifera.yaml")
 execute_workflow(cfg)  # integrate runs after getfastq automatically
 ```
 
@@ -414,7 +414,7 @@ amalgkit integrate --fastq_dir output/fastq
 - **Previous Step**: [`04_getfastq.md`](04_getfastq.md) - Downloading FASTQ files
 - **Next Step**: [`06_quant.md`](06_quant.md) - Transcript quantification
 - **Workflow Overview**: [`../amalgkit.md`](../amalgkit.md)
-- **Testing**: `tests/rna/test_rna_amalgkit_steps.py::test_integrate_basic_execution`
+- **Testing**: `tests/rna/test_rna_workflow_steps.py` (integrate checks) and `tests/rna/test_rna_step_runners_dispatch.py::test_each_step_runner_invokes_real_subcommand`
 
 ---
 

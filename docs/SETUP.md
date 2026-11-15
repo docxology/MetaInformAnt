@@ -8,7 +8,7 @@ Environment management uses `uv` with Python 3.14+.
 git clone https://github.com/docxology/metainformant.git
 cd metainformant
 bash scripts/package/setup.sh --ncbi-email "you@example.com"
-# Default setup installs dev + scientific dependencies + amalgkit
+# Default setup runs `uv sync --all-extras --all-groups` (including the pinned amalgkit)
 # You can either use uv run directly, or activate the venv for the shell:
 # uv run python -V
 source .venv/bin/activate  # or /tmp/metainformant_venv/bin/activate on FAT filesystems
@@ -57,7 +57,7 @@ External tools
 
 - RNA: `amalgkit` (installed automatically by default setup script, via uv)
 - Optional MSA: `muscle` or `clustalo` in PATH (the setup script reports whether a real MUSCLE binary is on PATH; install MUSCLE v5 with Homebrew or bioconda)
-- Optional NCBI Datasets: `ncbi-datasets-pylib` is a dependency; verify availability in runtime
+- Optional NCBI Datasets: `ncbi-datasets-pylib` is not installed by any extra or group; install it separately if needed
 
 Next steps
 - Explore [CLI](./cli.md)

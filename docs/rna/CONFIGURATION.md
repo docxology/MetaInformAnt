@@ -51,27 +51,23 @@ under the same data root for a run.
 
 ## Runtime settings
 
-Use CLI options for direct producers and the project shell variables for the
-full campaign. The launcher defaults to the measured `local-throughput`
-profile; use `compat` for a deliberately conservative diagnostic run:
-
-```bash
-export AMALGKIT_DATA_ROOT=/Volumes/external_drive/Data/amalgkit
-export AMALGKIT_PIPELINE_PROFILE=local-throughput
-export AMALGKIT_PIPELINE_THREADS=10
-export AMALGKIT_PIPELINE_QUANT_SLOTS=10
-export AMALGKIT_PIPELINE_FASTQ_THREADS=1
-export AMALGKIT_PIPELINE_FASTQ_SLOTS=1
-export AMALGKIT_PIPELINE_COMPRESSION_THREADS=1
-export AMALGKIT_PIPELINE_VALIDATION_SLOTS=6
-```
-
-The profile computes sample workers as `2 x host CPUs`, bounded to `16..24`,
-and derives the default queue bound as twice the actual worker override. Use
-the no-side-effect preview before a real run:
+The producer derives its budgets from the host
+(`build_host_resource_profile` in
+`metainformant.rna.engine.streaming_orchestrator`): 8 whole-sample
+acquisitions, quant slots = min(CPUs, 8, memory guard) with one kallisto
+thread each, 2 full FASTQ validations, 1 `fasterq-dump` recovery slot,
+workers = acquisitions + quant slots, and `max_in_flight` = workers. Override
+a value with its producer option, with `PIPELINE_WORKERS` /
+`PIPELINE_THREADS`, or with the matching `AMALGKIT_PIPELINE_*` variable (for
+example `AMALGKIT_PIPELINE_QUANT_SLOTS` or
+`AMALGKIT_PIPELINE_FASTQ_SLOTS`); the launcher sets none of them. Preview the
+resolved profile without side effects before a real run:
 
 ```bash
 bash projects/hymenoptera_amalgkit/scripts/run_full_campaign.sh --print-config
+env -u VIRTUAL_ENV uv run --frozen --no-sync python scripts/rna/run_all_species.py \
+  --data-root "$AMALGKIT_DATA_ROOT" \
+  --cohort "$AMALGKIT_DATA_ROOT/cohort/hymenoptera27-20261005" --print-profile
 ```
 
 Keep `AMALGKIT_PIPELINE_FASTQ_SLOTS=1` while system free space is below

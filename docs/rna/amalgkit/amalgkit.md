@@ -4,16 +4,16 @@ The `amalgkit` module provides a Python wrapper for the Amalgkit CLI, enabling s
 
 ## Key Features
 
-- **Version Validation**: The project launcher verifies the exact installed
-  Amalgkit release before a real campaign; do not rely on an unavailable
-  helper import as a substitute for that executable check.
+- **Version Validation**: `validate_amalgkit_version()` and
+  `verify_installed_amalgkit()` check the installed build against the
+  0.16.108 pin (upstream commit 1d1566638abe), and the project launcher
+  verifies the installed release before a real campaign.
 - **Bounded per-sample concurrency**: Processes samples through a bounded
   executor. Task workers cover validation/acquisition while a separate
   semaphore caps Kallisto quantification slots, so I/O overlap does not
   increase the quantification memory budget. Each sample flows through
   `download → quant → provenance-gated cleanup` independently.
 - **Streaming Output**: Long-running steps (`getfastq`, `quant`) stream stdout/stderr in real time via threaded `subprocess.Popen`.
-- **Automatic Installation**: Can automatically install/upgrade `amalgkit` via `uv` if missing or outdated.
 - **ENA-First Downloads**: Downloads use the implemented `ENADownloader`
   class with SRA Toolkit fallback in the streaming orchestrator.
 - **Resume Support**: `redo: no` (default) skips already-quantified samples, enabling crash recovery.
@@ -47,26 +47,26 @@ The `amalgkit` module provides a Python wrapper for the Amalgkit CLI, enabling s
 
 ## Running the Pipeline
 
-### All Configured Species (Recommended)
+### Full Campaign
+
+Production runs use the project launcher, which runs the producer in
+frozen-cohort mode under the campaign writer lock:
 
 ```bash
-export AMALGKIT_DATA_ROOT=/path/to/amalgkit-data
-uv run python scripts/rna/run_all_species.py \
-  --data-root "$AMALGKIT_DATA_ROOT" \
-  --workers 4 --threads 8 \
-  --fastq-threads 2 --compression-threads 1 --validation-slots 4 --max-in-flight 8 \
-  > "$AMALGKIT_DATA_ROOT/results/run_all_species.log" 2>&1 &
-
-# Monitor
-tail -f "$AMALGKIT_DATA_ROOT/results/run_all_species.log"
+export AMALGKIT_DATA_ROOT=/Volumes/external_drive/Data/amalgkit
+bash projects/hymenoptera_amalgkit/scripts/run_full_campaign.sh
 ```
 
-### Single Species
+Each producer run logs to
+`$AMALGKIT_DATA_ROOT/logs/run_all_species_<utc>_<pid>.log`.
+
+### Single Species (diagnostic)
 
 ```bash
-uv run python scripts/rna/run_all_species.py \
-    --config-dir config/amalgkit \
+env -u VIRTUAL_ENV uv run --frozen --no-sync python scripts/rna/run_all_species.py \
+    --config-dir projects/hymenoptera_amalgkit/config/amalgkit \
     --data-root "$AMALGKIT_DATA_ROOT" \
+    --cohort "$AMALGKIT_DATA_ROOT/cohort/hymenoptera27-20261005" \
     --species pogonomyrmex_barbatus
 ```
 
@@ -107,14 +107,14 @@ Parameters are managed via YAML config files. Key parameters:
 | Parameter | Default | Description |
 |-----------|---------|-------------|
 | `work_dir` | — | Base working directory (required) |
-| `--threads` | 8 in the general launcher; 10 in the measured Hymenoptera profile | Total quantification thread budget |
-| `--workers` | 4 in the general launcher; 16 in the measured Hymenoptera profile | Active sample tasks, including validation, acquisition, and quantification |
+| `--threads` | `PIPELINE_THREADS`, else one per quant slot of the host profile | Total quantification thread budget |
+| `--workers` | `PIPELINE_WORKERS`, else acquisition + quant slots of the host profile | Active sample tasks, including validation, acquisition, and quantification |
 | `--fastq-threads` | Derived | Threads for an NCBI `fasterq-dump` fallback |
 | `--compression-threads` | Derived | Threads per fallback `pigz` process |
-| `--validation-slots` | 4 | Concurrent full local FASTQ gzip scans; limits mounted-volume contention |
-| `--max-in-flight` | `2 × workers` | Submitted task window |
+| `--validation-slots` | host profile: 2 | Concurrent full local FASTQ gzip scans; limits mounted-volume contention |
+| `--max-in-flight` | host profile: workers | Submitted task window |
 | `redo` | `no` | Skip already-quantified samples (enables resume) |
-| `max_bp` | `4000000000` | Max bases per sample; larger samples are auto-skipped |
+| `max_bp` | Amalgkit default `999999999999999`; the repository configs set `50000000` | Amalgkit `getfastq` per-sample base-pair download target; the ENA-first producer does not read it and never skips a sample for it (its size budget is `--max-gb`) |
 | `clean_fastq` | `no` in the project lane | Retain reads until MetaInformAnt writes verified contract provenance; then the guarded reclamation utility deletes them |
 
 ## Download Architecture
@@ -124,26 +124,29 @@ Downloads use **direct ENA retrieval** via
 
 1. Queries ENA API for FTP URLs for each SRR accession
 2. Downloads pre-compressed `.fastq.gz` directly (~5 GB/sample)
-3. Verifies MD5 checksum and gzip integrity
-4. Falls back to SRA Toolkit (`prefetch` / `fasterq-dump`) only if the sample is absent from ENA; a local `<run>.sra` is extracted before any network request
+3. Verifies gzip integrity (`verify_gzip_integrity()`); `download_run()` does not compare MD5 checksums
+4. Falls back to SRA Toolkit (`prefetch` / `fasterq-dump`) only when the ENA path cannot complete; a local `<run>.sra` is extracted before any network request
 
 This approach:
+
 - Avoids SRA LITE files (metadata-only, zero reads)
 - Uses ~5× less disk space than SRA cache downloads
-- Supports 16+ concurrent workers without exhausting disk
+- Runs 8 concurrent acquisitions (2 ENA files each) in the default host profile, bounded by the free-space floors
 
 ## FASTQ Lifecycle
 
 ```
 existing validated FASTQ/SRA extraction → ENA HTTPS download → work/getfastq/<SRR>/<SRR>_1.fastq.gz
      ↓
-kallisto quant → work/quant/<SRR>/abundance.tsv
+kallisto quant → work/quant/<SRR>/abundance.tsv + quantification provenance sidecar
      ↓
-FASTQ files deleted → abundance.tsv is canonical proof of work
+guarded reclamation deletes the FASTQ files only after the sidecar validates
 ```
 
-The launcher discovers runnable species from `config/amalgkit/` and excludes
-template, test, and cross-species orchestration configurations. The mounted
+The launcher runs the species of the frozen cohort with their configurations
+from `projects/hymenoptera_amalgkit/config/amalgkit/`; without `--cohort`, the
+producer discovers runnable species from `--config-dir` and excludes template,
+test, and cross-species orchestration configurations. The mounted
 data root is selected with `AMALGKIT_DATA_ROOT`; an absent or partial data root
 must be reported as incomplete rather than inferred to be a completed
 historical run.
@@ -152,4 +155,4 @@ historical run.
 
 - [steps/README.md](steps/README.md) — Current Amalgkit stage reference
 - [monitoring.md](monitoring.md) — Pipeline monitoring
-- [../../ORCHESTRATION.md](../../ORCHESTRATION.md) — Orchestrator scripts
+- [../ORCHESTRATION.md](../ORCHESTRATION.md) — Orchestrator scripts

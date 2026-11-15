@@ -31,5 +31,6 @@ uv run python scripts/rna/run_all_species.py   --config-dir projects/hymenoptera
 - [GWAS Workflow Guide](../docs/gwas/workflow.md)
 - [Core Config Module](../src/metainformant/core/utils/config.py)
 - Amalgkit campaign configs live under
-  `projects/hymenoptera_amalgkit/config/amalgkit/` (parent-repo mirror;
-  28 species YAMLs plus template, test, and cross-species configs).
+  `projects/hymenoptera_amalgkit/config/amalgkit/` (species YAMLs plus
+  template, test, and cross-species configs); the campaign runs them
+  against the frozen cohort.

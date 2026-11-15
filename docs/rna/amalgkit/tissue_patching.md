@@ -68,10 +68,12 @@ python3 scripts/rna/normalize_tissue_metadata.py \
 ### Coverage Verification
 **Path**: `scripts/rna/verify_tissue_coverage.py`
 
-Reports how many samples are mapped vs. unmapped in a species workflow.
+Reports, for every species config in `config/amalgkit/`, how many samples
+under `output/amalgkit/` are mapped vs. unmapped. It takes no arguments and
+runs from the repository root.
 
 ```bash
-python3 scripts/rna/verify_tissue_coverage.py --species pbarbatus
+env -u VIRTUAL_ENV uv run --frozen --no-sync python scripts/rna/verify_tissue_coverage.py
 ```
 
 ## Validation

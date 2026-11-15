@@ -9,6 +9,7 @@ Download RNA-seq FASTQ files from ENA (European Nucleotide Archive) with automat
 | `ena_downloader.py` | `ENADownloader` class for ENA FASTQ discovery and download |
 | `ena_staging.py` | Bounded SSD acquisition and serialized, verified publication |
 | `ena_transport.py` | Shared FIFO file/metadata request budgets across downloader instances |
+| `process_groups.py` | Registry of the transfer and quantification process groups a writer has started (each command runs in its own session) |
 
 ## Key Classes
 

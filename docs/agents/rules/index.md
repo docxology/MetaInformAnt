@@ -91,7 +91,7 @@ def optional_feature():
         return amalgkit.do_work()
     except ImportError:
         raise ImportError(
-            "rna module required — install with: uv add metainformant[rna]"
+            "rna module required — install with: uv sync --frozen --extra rna"
         )
 ```
 

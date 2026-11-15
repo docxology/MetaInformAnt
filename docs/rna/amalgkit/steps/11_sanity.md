@@ -446,7 +446,7 @@ done
 ```python
 from metainformant.rna.engine.workflow import execute_workflow, load_workflow_config
 
-cfg = load_workflow_config("config/amalgkit_apis_mellifera.yaml")
+cfg = load_workflow_config("config/amalgkit/amalgkit_apis_mellifera.yaml")
 execute_workflow(cfg)  # sanity runs automatically after finalize
 ```
 
@@ -507,7 +507,7 @@ esac
 
 - **Previous Step**: [`10_finalize.md`](10_finalize.md) - Final analysis tables
 - **Workflow Overview**: [`../amalgkit.md`](../amalgkit.md)
-- **Testing**: `tests/rna/test_rna_amalgkit_steps.py::test_sanity_basic_execution`
+- **Testing**: `tests/rna/test_rna_step_runners_dispatch.py::test_each_step_runner_invokes_real_subcommand`
 
 ---
 

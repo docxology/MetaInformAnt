@@ -25,7 +25,7 @@ success, message, files = downloader.download_run(
 **ENA advantages:**
 - Pre-compressed `.fastq.gz` files (~5 GB/sample vs ~25 GB for SRA cache)
 - Existing valid gzip files are reused; corrupt or partial files are removed
-- Supports 16+ concurrent workers without disk pressure
+- The default host profile runs 8 concurrent acquisitions (2 ENA files each), bounded by the free-space floors
 - Gzip integrity verification is built in; MD5 is an available utility, not an
   automatic comparison in `download_run()`
 
@@ -86,12 +86,6 @@ these settings and the filtered FASTQ integrity checks pass. The resumable
 implementation is useful for interrupted large-sample runs, but it does not
 change the biological inclusion criteria.
 
-### METAINFORMANT-Specific Parameters
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `accelerate` | bool | `true` | Enables all cloud sources for SRA fallback. |
-
 ## Configuration
 
 ```yaml
@@ -99,8 +93,8 @@ steps:
   getfastq:
     out_dir: output/amalgkit/<species>/fastq
     threads: 24
-    # Project-wide concurrency is supplied at runtime:
-    # --workers 4 --max-in-flight 8
+    # Project-wide concurrency comes from the producer's host profile
+    # (override with --workers / --max-in-flight)
     fastp: yes
     max_bp: 10000000000         # 10GB extraction cap / downsampling limit
     remove_sra: yes
@@ -165,7 +159,7 @@ Samples categorically skipped entirely (if bypasses trigger) will be logged as:
 - **Quality filter (fastp)**: 2–5 min
 - **Total**: ~10–30 min per sample
 
-**For 100 Samples with 16 Workers**: ~1.5–3 hours total
+**For 100 Samples** at the measured c19 rate (32.4 samples/h average, 46.5/h best; 8 cores, USB data volume): ~2–3 hours total
 
 **Disk per sample**: ~5 GB during download, 0 after quantification + cleanup.
 

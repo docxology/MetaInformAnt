@@ -10,9 +10,11 @@ metadata → select → getfastq → integrate → quant
          → merge → wsfilter → finalize → sanity
 ```
 
-The producer owns acquisition and quantification. The project checkpoint
-runner owns merge, filtering, finalization, and sanity after the producer lock
-is released.
+The producer owns acquisition and quantification. In frozen-cohort mode
+(`--cohort`, the launcher's only mode) `metadata` and `select` are fixed by the
+cohort's frozen selection table and never run; without `--cohort` they run
+only with `--refresh-metadata`. The project checkpoint runner owns merge,
+filtering, finalization, and sanity after the producer has stopped.
 
 ## Inspect the installed release
 
@@ -40,10 +42,11 @@ bash projects/hymenoptera_amalgkit/scripts/run_full_campaign.sh
 For a single diagnostic species:
 
 ```bash
-uv run python scripts/rna/process_species.py \
+env -u VIRTUAL_ENV uv run --frozen --no-sync python scripts/rna/process_species.py \
   --species apis_mellifera \
   --config-dir projects/hymenoptera_amalgkit/config/amalgkit \
-  --data-root "$AMALGKIT_DATA_ROOT"
+  --data-root "$AMALGKIT_DATA_ROOT" \
+  --cohort "$AMALGKIT_DATA_ROOT/cohort/hymenoptera27-20261005"
 ```
 
 ## Evidence and resume

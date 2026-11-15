@@ -201,7 +201,7 @@ bash scripts/package/verify.sh --mode deps --test-type network # Include network
 bash scripts/package/verify.sh --mode deps --test-type all     # Full test suite
 
 # Verify setup without installing
-bash scripts/package/verify.sh --mode deps --verify-only
+bash scripts/package/verify.sh --mode deps
 ```
 
 ### Test Dependency Groups

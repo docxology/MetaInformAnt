@@ -8,8 +8,8 @@ options; confirm the installed binary with `amalgkit --help`.
 
 | Stage | Owner | Required evidence |
 |---|---|---|
-| `metadata` | streaming producer | source metadata table and query record |
-| `select` | streaming producer | selected table and rule-file hash |
+| `metadata` | frozen cohort; the producer runs it only without `--cohort` and with `--refresh-metadata` | source metadata table and query record |
+| `select` | frozen cohort; the producer runs it only without `--cohort` and with `--refresh-metadata` | selected table and rule-file hash |
 | `getfastq` | streaming producer | validated FASTQ or bounded failure record |
 | `integrate` | streaming producer | integrated metadata with local paths |
 | `quant` | streaming producer | abundance table and exact quantification sidecar |

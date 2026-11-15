@@ -72,7 +72,7 @@ Replace or extend the analysis with MetaInformAnt modules:
 
 ```python
 from metainformant.dna.population import nucleotide_diversity, tajimas_d
-from metainformant.ml.classification import train_classifier
+from metainformant.ml.models.classification import create_biological_classifier, evaluate_classifier
 ```
 
 ## Troubleshooting

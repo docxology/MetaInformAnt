@@ -568,7 +568,7 @@ counts_filtered <- counts[expressed, ]
 ```python
 from metainformant.rna.engine.workflow import execute_workflow, load_workflow_config
 
-cfg = load_workflow_config("config/amalgkit_apis_mellifera.yaml")
+cfg = load_workflow_config("config/amalgkit/amalgkit_apis_mellifera.yaml")
 execute_workflow(cfg)  # merge runs automatically after quant
 ```
 
@@ -598,7 +598,7 @@ print(f"Loaded expression matrix: {tpm.shape[1]} samples, {tpm.shape[0]} transcr
 - **Next Step**: [`09_wsfilter.md`](09_wsfilter.md) - Within-species filtering
 - **Next Step**: [`08_cstmm.md`](08_cstmm.md) - Cross-species TMM normalization
 - **Workflow Overview**: [`../amalgkit.md`](../amalgkit.md)
-- **Testing**: `tests/rna/test_rna_amalgkit_steps.py::test_merge_basic_execution`
+- **Testing**: `tests/rna/test_rna_step_runners_dispatch.py::test_each_step_runner_invokes_real_subcommand`
 
 ---
 

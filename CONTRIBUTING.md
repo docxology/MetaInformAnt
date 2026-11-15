@@ -18,10 +18,10 @@ Thank you for your interest in improving METAINFORMANT! This guide covers contri
 
 | Area | What's Needed | Contact |
 |------|---------------|---------|
-| **New modules** | Bioinformatics domain (epigenomics, proteomics, metabolomics) | @maintainers |
-| **Documentation** | Tutorials, example code, module guides | @docs-team |
-| **Performance** | NumPy/SciPy optimization, GPU support | @perf-team |
-| **LLM Integration** | New MCP tools, Claude/Cursor plugins | @ml-team |
+| **New modules** | Bioinformatics domain (epigenomics, proteomics, metabolomics) | The maintainers |
+| **Documentation** | Tutorials, example code, module guides | The maintainers |
+| **Performance** | NumPy/SciPy optimization, GPU support | The maintainers |
+| **LLM Integration** | New MCP tools, Claude/Cursor plugins | The maintainers |
 | **Bug fixes** | Issues tagged `bug` or `help wanted` | Any maintainer |
 
 ## Coding Standards
@@ -94,7 +94,7 @@ Every feature contribution MUST include documentation update:
  - Include expected output (console + figures)
 4. **docstring** in source code (Google style)
 
-**No docs → no merge** (enforced by CI).
+**No docs → no merge.**
 
 ## Pull Request Process
 
@@ -102,7 +102,7 @@ Every feature contribution MUST include documentation update:
 2. **CI must pass** — all tests green, lint clean
 3. **Address review comments** within 48h
 4. **Update CHANGELOG.md** (if user-facing change) — bullet under `[Unreleased]`
-5. **Request review** from @maintainers team
+5. **Request review** from the maintainers
 6. **Merge** only after at least 1 approval
 
 ### PR Checklist
@@ -148,6 +148,6 @@ By contributing, you agree your work is licensed under the project's [Apache 2.0
 
 ---
 
-**Questions?** Open a [Discussion](https://github.com/docxology/metainformant/discussions) or ping @maintainers.
+**Questions?** Open a [Discussion](https://github.com/docxology/metainformant/discussions) or contact the maintainers.
 
 **Thanks** to all contributors!

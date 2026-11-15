@@ -489,10 +489,10 @@ amalgkit cstmm \
 from metainformant.rna.engine.workflow import execute_workflow, load_workflow_config
 
 # Run workflow for each species
-species_list = ["amellifera", "pbarbatus", "cfloridanus"]
+species_list = ["apis_mellifera", "pogonomyrmex_barbatus", "camponotus_floridanus"]
 for species in species_list:
-    cfg = load_workflow_config(f"config/amalgkit_{species}.yaml")
-    execute_workflow(cfg)  # Runs: metadata → select → getfastq → quant → merge
+    cfg = load_workflow_config(f"config/amalgkit/amalgkit_{species}.yaml")
+    execute_workflow(cfg)  # Runs the per-species plan: metadata → ... → merge → wsfilter → finalize → sanity
 
 # Then run cross-species normalization
 # (cstmm is separate, as it requires all species to be merged first)
@@ -501,12 +501,11 @@ for species in species_list:
 ### Configuration
 
 ```yaml
-# config/amalgkit_comparative.yaml
-steps:
-  cstmm:
-    orthogroup_table: output/orthofinder/Orthogroups.tsv
-    dir_busco: output/busco
-    dir_count: output/amalgkit/comparative/merge
+# config/amalgkit/amalgkit_cross_species.yaml (optional ortholog-anchored pathway)
+cstmm:
+  enabled: false  # enable only after supplying a validated orthogroup table
+  orthogroup_table: ""
+  dir_count: cross_species/merge_inputs
 ```
 
 ## References

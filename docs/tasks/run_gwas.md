@@ -4,11 +4,10 @@ Complete association testing workflow from QC to fine-mapping.
 
 ## When to Use
 
-Use `run_gwas` for genome-wide association studies on SNP genotype data—not for eQTL colocalization (see `run_eqtl`) or rare variant aggregation (use `run_skat`). Supports linear, logistic, and Cox models.
+Use `run_gwas` for genome-wide association studies on SNP genotype data—not for eQTL colocalization (see `eqtl_coloc` below). Supports linear, logistic, and mixed models.
 
 ## Table of Contents
 
-- [End-to-End Pipeline](#end-to-end-pipeline)
 - [End-to-End Pipeline](#end-to-end-pipeline)
 - [Models](#models)
 - [Output Files](#output-files)
@@ -38,40 +37,57 @@ for hit in top_hits:
 
 ## End-to-End Pipeline
 
+The whole workflow runs from a YAML config (`--check` validates it without
+running); it applies QC, structure, association, multiple-testing correction
+and plots:
+
+```bash
+env -u VIRTUAL_ENV uv run --frozen --no-sync metainformant gwas run --config config/gwas/gwas_pbarbatus.yaml --check
+env -u VIRTUAL_ENV uv run --frozen --no-sync metainformant gwas run --config config/gwas/gwas_pbarbatus.yaml \
+  --output-dir output/gwas/pbarbatus
+```
+
+The individual stages are also available as scripts:
+
 ```bash
 # 1. QC & filter VCF
-python3 scripts/gwas/qc/filter_variants.py \
-  --input raw.vcf.gz \
+env -u VIRTUAL_ENV uv run --frozen --no-sync python scripts/gwas/qc/run_qc.py \
+  --vcf raw.vcf.gz \
   --output filtered.vcf.gz \
-  --maf 0.05 \
-  --missingness 0.1
+  --min-maf 0.05 \
+  --max-missing 0.1 \
+  --report qc_report.json
 
-# 2. Population structure (PCA)
-python3 scripts/gwas/structure/pca.py \
+# 2. Population structure (PCA) and kinship
+env -u VIRTUAL_ENV uv run --frozen --no-sync python scripts/gwas/structure/run_pca.py \
   --vcf filtered.vcf.gz \
-  --output pca.tsv \
-  --components 10
+  --n-components 10 \
+  --output pca.json
+env -u VIRTUAL_ENV uv run --frozen --no-sync python scripts/gwas/structure/run_kinship.py \
+  --vcf filtered.vcf.gz \
+  --method vanraden \
+  --output kinship.json
 
 # 3. Association testing
-python3 scripts/gwas/association/run_all.py \
+env -u VIRTUAL_ENV uv run --frozen --no-sync python scripts/gwas/association/run_association.py \
   --vcf filtered.vcf.gz \
-  --pheno data/traits.tsv \
-  --covariates pca.tsv \
-  --method linear  # or logistic for binary traits
-
-# 4. Multiple testing correction
-python3 scripts/gwas/qc/correct_pvalues.py \
-  --input gwas_results.tsv \
-  --method fdr  # or bonferroni, holm
+  --phenotypes data/traits.tsv \
+  --trait height \
+  --test-type linear \
+  --output gwas_results.tsv  # --test-type logistic for binary traits, auto to choose
 ```
+
+The species pipelines `scripts/gwas/run_amellifera_gwas.py` (`--config`,
+`--output`, `--traits`) and `scripts/gwas/run_pbarbatus_gwas.py` run complete
+workflows for *Apis mellifera* and *Pogonomyrmex barbatus*.
 
 ## Models
 
 | Trait Type | Method | Implementation |
 |------------|--------|---------------|
-| Quantitative (height, weight) | Linear regression | `--model linear` (SAIGE, PLINK) |
-| Binary (disease yes/no) | Logistic regression | `--model logistic` |
-| Survival (time-to-event) | Cox proportional hazards | `--model cox` |
+| Quantitative (height, weight) | Linear regression | `association.model: linear` in the YAML config, or `--test-type linear` |
+| Binary (disease yes/no) | Logistic regression | `association.model: logistic` in the YAML config, or `--test-type logistic` |
+| Related samples | Linear mixed model with kinship | `association.model: mixed` in the YAML config |
 
 ## Output Files
 
@@ -86,16 +102,12 @@ output/gwas/
 
 ## Flags
 
-```bash
---maf MIN               # Minor allele frequency filter (default: 0.01)
---geno MISSING          # Missingness filter per SNP (default: 0.1)
---mind MISSING          # Missingness filter per sample (default: 0.1)
---hwe P                 # Hardy-Weinberg equilibrium p-value threshold
---threads N             # Parallel threads (default: auto)
---covariates FILE       # Covariate matrix (PCA, batch, sex, age, etc.)
---method NAME           # linear | logistic | cox
---output-prefix PREFIX  # Output file prefix
-```
+| Script | Flags (defaults) |
+|--------|------------------|
+| `qc/run_qc.py` | `--vcf` (required), `--output`, `--min-maf` (0.05), `--max-missing` (0.10), `--hwe-pval` (1e-6), `--min-qual` (30.0), `--report` |
+| `structure/run_pca.py` | `--vcf` (required), `--n-components` (10), `--output` (required, JSON), `--plot` |
+| `structure/run_kinship.py` | `--vcf` (required), `--method` (`vanraden` or `ibs`), `--max-variants` (5000), `--output` (required, JSON) |
+| `association/run_association.py` | `--vcf`, `--phenotypes`, `--trait`, `--output` (all required), `--test-type` (`linear`, `logistic`, `auto`; default `auto`), `--max-variants` |
 
 ## Interpreting Results
 

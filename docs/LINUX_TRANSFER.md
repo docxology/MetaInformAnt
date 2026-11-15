@@ -1,117 +1,33 @@
-# Resuming Amalgkit on Linux
+# Moving the Amalgkit campaign to another host
 
-> **Snapshot**: 2026-03-02 — Pipeline running on Linux with SQLite-backed progress tracking.
+A fresh host for the frozen Hymenoptera cohort follows the project's hand-off
+guide, `projects/hymenoptera_amalgkit/doc/01_infrastructure/22_compute_handoff.md`
+(in the private project repository that is checked out as the
+`projects/hymenoptera_amalgkit` submodule). The guide's sequence is:
 
-## Prerequisites
+1. `projects/hymenoptera_amalgkit/scripts/bootstrap_compute_host.sh` prepares
+   the host and its data root (options are in the guide).
+2. `bash projects/hymenoptera_amalgkit/scripts/run_full_campaign.sh --species NAME`
+   runs that host's species in frozen-cohort mode.
 
-- Linux machine with Python 3.14+ and `uv` installed
-- Git clone of MetaInformAnt
+Each host quantifies only the species assigned to it (no species runs on two
+hosts) and owns one data root (`AMALGKIT_DATA_ROOT`).
+The campaign writer lock on `<data-root>/.campaign.flock` admits a single
+writer: the launcher holds it for its whole run, and a second launcher,
+producer or finalization pass against the same data root exits 73.
 
-## Quick Start
+The library-level steps behind the bootstrap, installing each cohort species'
+kallisto index and reference manifest under the new data root, are described
+in [Preparing a fresh data root for cohort species](rna/amalgkit/steps/06_quant_advanced.md#preparing-a-fresh-data-root-for-cohort-species).
 
-```bash
-# 1. Clone the repo
-git clone https://github.com/docxology/MetaInformAnt.git
-cd MetaInformAnt
-
-# 2. Install dependencies
-uv sync
-
-# 3. Install the pinned Amalgkit release
-uv sync --extra rna
-
-# 4. Check pipeline status (instant, uses SQLite DB)
-uv run python scripts/rna/check_pipeline_status.py -v
-```
-
-## Pipeline Progress Tracking
-
-Progress is tracked via an **SQLite database** at `output/amalgkit/pipeline_progress.db`.
-Status queries read this database instead of scanning the filesystem, which is too
-slow for species like `amellifera` (7,300+ samples).
-
-### Checking Status
+## Environment
 
 ```bash
-# Quick overview
-uv run python scripts/rna/check_pipeline_status.py
-
-# Per-state breakdown (pending/downloading/quantifying/quantified/failed)
-uv run python scripts/rna/check_pipeline_status.py -v
-
-# Show failed samples with errors
-uv run python scripts/rna/check_pipeline_status.py --failed
-
-# Check a single species
-uv run python scripts/rna/check_pipeline_status.py --species amellifera
-
-# Generate visual dashboard (PDF + PNG)
-uv run python scripts/rna/check_pipeline_status.py --dashboard
+uv sync --frozen --extra rna
+env -u VIRTUAL_ENV uv run --frozen --no-sync python scripts/rna/check_pipeline_status.py \
+  --data-root "$AMALGKIT_DATA_ROOT" --verbose
 ```
 
-### Sample States
-
-Each sample moves through the following states:
-
-```
-pending → downloading → downloaded → quantifying → quantified
-            ↘ failed       ↘ failed        ↘ failed
-```
-
-### Key Modules
-
-- `src/metainformant/rna/engine/progress_db.py` — `ProgressDB` class (SQLite, thread-safe)
-- `src/metainformant/rna/engine/progress_dashboard.py` — Dashboard visualization (PDF/PNG)
-
-## Resume Commands
-
-### Run the full streaming pipeline
-
-```bash
-# Full run for the 27-species configuration (processes smallest first, streams download → quant → delete)
-uv run python scripts/rna/run_all_species.py --max-gb 6.0 --workers 12 --threads 12
-```
-
-The orchestrator automatically:
-- Initializes all samples in the SQLite DB as `pending`
-- Reconciles existing quant results from the filesystem on startup
-- Skips already-quantified samples
-- Records state transitions atomically
-
-### Resume for a single species
-
-```bash
-# The pipeline resumes where it left off — just re-run:
-uv run python scripts/rna/run_all_species.py
-```
-
-## Config Files
-
-All species configs are in `config/amalgkit/amalgkit_<species>.yaml`. Each config contains:
-
-- `work_dir`: Path to working directory (e.g., `output/amalgkit/<species>/work`)
-- `steps.quant.index_dir`: Path to Kallisto index
-- `steps.quant.fasta_dir`: Path to genome FASTA
-- `steps.getfastq.max_bp`: Max base pairs per sample (50M)
-
-## Key Directories
-
-```
-output/amalgkit/
-  pipeline_progress.db             # SQLite progress database (instant status queries)
-  <species>/
-    fastq/                         # Downloaded FASTQ files (deleted after quant)
-    work/
-      metadata/metadata.tsv        # Sample metadata (from SRA)
-      index/                       # Kallisto index for this species
-      quant/<SRR_ID>/              # Kallisto quantification results
-      wsfilter/                    # Within-species filtered tables
-      finalize/                    # Final expression tables
-      sanity/                      # Sanity check outputs
-```
-
-## Known Issues
-
-1. **Size filtering**: Samples exceeding `--max-gb` are skipped during processing
-2. **FASTQ cleanup**: FASTQs are deleted after successful quantification to save disk space
-3. **Failed samples**: Check with `--failed` flag; common causes are corrupt downloads or missing index files
+`uv sync --frozen --extra rna` installs the pinned Amalgkit 0.16.108 from
+`uv.lock`. The status command reads `<data-root>/pipeline_progress.db` and does
+not take the writer lock.

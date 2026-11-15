@@ -8,10 +8,23 @@ with the configured NCBI/SRA fallback and records resumable evidence.
 
 | Script | Purpose |
 |---|---|
-| `run_all_species.py` | Configuration-derived multi-species launcher |
+| `run_all_species.py` | Multi-species streaming producer (the campaign launcher is `projects/hymenoptera_amalgkit/scripts/run_full_campaign.sh`) |
 | `process_species.py` | Current single-species wrapper using the same orchestrator as the all-species run |
 | `check_pipeline_status.py` | Inspect SQLite state and downstream evidence |
 | `clean_external_artifacts.py` | Manifest-backed archival of superseded artifacts and, explicitly, quant directories without a provenance sidecar |
+
+## Cohort and data-root maintenance
+
+| Script | Purpose |
+|---|---|
+| `prepare_cohort_host.py` | Prepare a fresh data root for frozen-cohort quantification on a new host |
+| `import_quantifications.py` | Import verified quantifications from other data roots into a campaign data root |
+| `export_quant_snapshot.py` | Export verified, reusable quantification outputs to a portable snapshot |
+| `reclaim_quantified_raw.py` | Reclaim raw inputs only for verified, reusable quantification outputs |
+| `reconcile_quantification_compatibility.py` | Classify and safely restore existing quantification outputs |
+| `campaign_watcher.py` | Detached, read-only campaign watcher |
+| `benchmark_campaign_scale.py` | Campaign-scale performance benchmark on disposable fixtures |
+| `new_clade_scaffold.py` | Scaffold a sibling clade project from the Hymenoptera template pattern |
 
 ## Validation and evidence
 

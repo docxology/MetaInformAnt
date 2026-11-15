@@ -32,8 +32,8 @@ bash scripts/package/test.sh --mode ultra-fast        # Core only (~5s)
 bash scripts/package/test.sh --mode coverage          # Full coverage
 bash scripts/package/test.sh --mode network           # Real API tests
 bash scripts/package/test.sh --pattern "test_core_*"  # Pattern match
-pytest tests/test_dna_comprehensive.py -v             # Single file
-pytest tests/test_core_functionality.py::TestCoreIO::test_json_operations -v  # Single test
+pytest tests/dna/test_dna_alignment.py -v             # Single file
+pytest tests/core/test_core_io.py::test_json_roundtrip -v  # Single test
 ```
 
 ### Code Quality
@@ -170,7 +170,7 @@ def test_api_integration() -> None:
 ## Code Style
 
 - Python 3.14+, 120 char lines
-- Black formatting, mypy type checking
+- black, isort and flake8 (max line length 120); mypy with an error budget of 0 (`scripts/quality/check_mypy_budget.py`)
 - Import order: `__future__` → stdlib → third-party → local → optional (try/except)
 - Always use type hints
 

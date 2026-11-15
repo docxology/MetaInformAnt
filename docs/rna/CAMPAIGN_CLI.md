@@ -10,24 +10,29 @@ thin wrapper: it resolves settings, runs preflight, then runs
 
 | Flag | Default | Meaning |
 | --- | --- | --- |
-| `--config-dir PATH` | repo `config/amalgkit` | Directory of `amalgkit_*.yaml` species configs |
+| `--config-dir PATH` | `projects/hymenoptera_amalgkit/config/amalgkit` if present, else `config/amalgkit` | Directory of `amalgkit_*.yaml` species configs |
 | `--species NAME` (repeatable) | all discovered | Restrict to these species |
 | `--data-root PATH` | `AMALGKIT_DATA_ROOT` or repo-local | Data root for work files and the progress DB; also sets `AMALGKIT_DATA_ROOT` |
 | `--dry-run` | off | List resolved species configs without running |
-| `--max-gb FLOAT` | built-in default | Max single-sample size in GB |
-| `--workers N` / `--threads N` | `PIPELINE_WORKERS`/`PIPELINE_THREADS`, else the host profile | Parallel workers / total kallisto threads; leaving either out derives the whole profile from the host (below) |
+| `--max-gb FLOAT` | `AMALGKIT_MAX_SAMPLE_GB`, then `PIPELINE_MAX_GB`, then 1000 | Max single-sample size in GB |
+| `--workers N` / `--threads N` | `PIPELINE_WORKERS`/`PIPELINE_THREADS`, else the host profile | Parallel workers / total kallisto threads; giving both (without acquisition overrides) selects the fixed profile, and leaving either out derives the whole profile from the host (below) |
 | `--discovery-workers N` | 4 | Concurrent species discovery (1 = serial diagnostics) |
-| `--quant-slots N` | bounded by workers/threads | Concurrent Kallisto quantifications |
-| `--fastq-threads N` / `--fastq-slots N` | bounded / up to 4 | fasterq-dump fallback threads and concurrency (limits external-disk contention) |
-| `--compression-threads N` | bounded from quant budget | Threads per pigz process |
-| `--validation-slots N` | up to 4 | Concurrent full local FASTQ validations |
-| `--max-in-flight N` | 2 × workers | Maximum submitted sample tasks |
+| `--quant-slots N` | host profile: min(CPUs, 8, memory guard); fixed profile: bounded by workers/threads | Concurrent Kallisto quantifications |
+| `--fastq-threads N` / `--fastq-slots N` | host profile: min(4, CPUs/2) / 1; fixed profile: bounded / up to 4 | fasterq-dump fallback threads and concurrency (limits external-disk contention) |
+| `--compression-threads N` | host profile: min(2, CPUs/4); fixed profile: bounded from quant budget | Threads per pigz process |
+| `--validation-slots N` | host profile: 2; fixed profile: up to 4 | Concurrent full local FASTQ validations |
+| `--max-in-flight N` | host profile: workers; fixed profile: 2 × workers | Maximum submitted sample tasks |
 | `--requantification-policy {preserve,version-drift,all}` | `$AMALGKIT_REQUANTIFICATION_POLICY` or `preserve` | Re-quantification trigger policy |
 | `--acquisition-slots N` | host profile: 8 | Concurrent whole-sample acquisitions (0 unbounded) |
 | `--ena-file-workers {1,2}` | host profile: 2 | Concurrent ENA files of one paired run |
 | `--scheduling-order {size_bands,smallest_first,species_order}` | `size_bands` | Fresh-acquisition order across species (`AMALGKIT_PIPELINE_SCHEDULING_ORDER`) |
 | `--fast-fail-ena` | off | No ENA retries, NCBI prefetch first, 64 KiB/s floor over 20 s (only for unset variables) |
 | `--print-profile` | off | Print the resolved resource profile as JSON and exit (no lock, no progress DB) |
+| `--reuse-dry-run FRACTION` | `AMALGKIT_PREFLIGHT_REUSE_DRY_RUN`, else 0.01 with `--cohort` and off without | Before discovery, classify this fraction of each species' recorded-quantified outputs and refuse (exit 69) if more than 1% would be quarantined; 0 turns it off |
+| `--cohort DIR` | none | Frozen cohort directory: tasks come only from it; Amalgkit `metadata`/`select` never run and `metadata_selected.tsv` is never rewritten |
+| `--cohort-definition PATH` | `<cohort>/COHORT.json` | Cohort definition file (the launcher passes the project's committed `COHORT.json`) |
+| `--cohort-definition-sha256 HEX` | none | Refuse unless the cohort definition has this sha256 |
+| `--refresh-metadata` | off | Allow Amalgkit `metadata`/`select` (an NCBI query) when metadata is missing or stale; not allowed with `--cohort`. Without it, missing or stale metadata is an error |
 
 ### Host resource profile
 
@@ -93,42 +98,46 @@ and `--species` also limits finalization.
 | `--status` | — | Writer lock holder, launcher status file and per-species completion (read-only) |
 | `AMALGKIT_PIPELINE_RETRY_PASSES` | 1 | Extra producer passes after exit 75 |
 | `AMALGKIT_PIPELINE_RETRY_DELAY_SECONDS` | 300 | Pause before a retry pass |
-| `AMALGKIT_PIPELINE_WORKERS` / `_THREADS` and the other `AMALGKIT_PIPELINE_*` profile variables | host profile | Read by the producer's profile |
+| `PIPELINE_WORKERS` / `PIPELINE_THREADS` and the `AMALGKIT_PIPELINE_*` profile variables (for example `AMALGKIT_PIPELINE_QUANT_SLOTS`, `AMALGKIT_PIPELINE_ACQUISITION_SLOTS`) | host profile | Read by the producer's profile; the launcher sets none of them |
 | `AMALGKIT_MIN_EXTERNAL_FREE_GB` / `AMALGKIT_MIN_SYSTEM_FREE_GB` | 8 / 4 | Preflight free-space floors |
 | `AMALGKIT_FAST_FAIL_ENA` | `no` | `yes` adds `--fast-fail-ena` |
 | `AMALGKIT_NCBI_PREFETCH_FIRST` | `yes` | Resumable verified prefetch before fasterq fallback |
 | `AMALGKIT_TEMP_ROOT` / `AMALGKIT_CACHE_ROOT` | `<data-root>/.tmp` / `.cache` | Producer `TMPDIR` / `XDG_CACHE_HOME`; uv's cache stays at its default unless `AMALGKIT_UV_CACHE_DIR` is set |
 | `AMALGKIT_CAFFEINATE` | `yes` | Re-execute under `caffeinate -dims` unless already under `caffeinate` |
 
-One launch runs preflight, then the producer; exit 75
-leads to bounded retry passes, and only a drained producer (exit 0) is followed
-by merge → wsfilter → finalize → sanity under
+One launch runs preflight, then the producer; exit 75 leads to bounded retry
+passes, and only a drained producer (exit 0) is followed by merge → wsfilter →
+finalize → sanity under
 `python -m metainformant.rna.engine.campaign_lock run --kind finalization`. The
-launcher itself takes no lock: it refuses to start (73) while another writer
-holds `.campaign.flock` or another launcher is live in
-`<data-root>/results/full_campaign.status` (verified by PID and process start
-time), and keeps that status file only for humans and that check. Child
-processes start with default SIGINT/SIGQUIT handling; the launcher forwards
-INT/TERM/HUP after a grace period and exits 130/143/129.
+launcher holds the writer lock on `<data-root>/.campaign.flock` for its whole
+life (`campaign_lock run --kind launcher`); its producer and finalization
+passes inherit that lock; a second launcher, producer or finalization pass
+exits 73, and a quantification import is refused (exit 2).
+`<data-root>/results/full_campaign.status` records the launcher for humans and
+for `--status`. Child processes start with default SIGINT/SIGQUIT handling;
+the launcher forwards INT/TERM/HUP after a grace period and exits 130/143/129.
 
-The producer itself (`scripts/rna/run_all_species.py`, `process_species.py`)
-holds the writer `flock` on `<data-root>/.campaign.flock` for its whole life;
-the kernel releases it on any death, so there is no stale lock to remove.
+Run on its own, the producer (`scripts/rna/run_all_species.py`,
+`process_species.py`) holds the writer `flock` on `<data-root>/.campaign.flock`
+for its whole life; the kernel releases it on any death, so there is no stale
+lock to remove.
 Quantification imports and progress-DB migrations take the same lock, and
 `python -m metainformant.rna.engine.campaign_lock status --data-root <root>`
 reports the holder (exit 0 quiescent, 73 busy). Producer exit codes:
 
 | Code | Meaning |
 | --- | --- |
-| 0 | Drained: every scheduled task is quantified, quarantined, held by the retry bookkeeping or permanently excluded |
+| 0 | Drained: in cohort mode every cohort row is quantified or permanently excluded; without a cohort, quarantined and held tasks also count as drained |
+| 65 | Cohort mode only: nothing is left to run, but rows are held by the retry bookkeeping, quarantined or above `--max-gb` (the summary's `needs_operator` counts them); finalization would refuse them |
 | 75 | Retryable work remains (failed, pending or backed-off tasks, or a species whose discovery failed); rerun the same command (the summary's `next_attempt_due_at` says when backed-off work is due) |
 | 73 | Another writer holds the data root |
 | 69 | Environment failure: preflight, cohort refusal, or the environment circuit breaker (`AMALGKIT_ENV_FAILURE_TRIP`, default 5 consecutive EPERM/EACCES/EROFS/ENXIO/ENOSPC failures) |
 | 70 | Internal error |
+| 2 | Invalid arguments, or a cohort that fails verification at startup |
 
 The launcher starts finalization only after exit 0, so a run that still ends
-with retryable work (75) after its retry passes leaves finalization to a later
-run. Each
+with retryable work (75) after its retry passes, or with rows that need an
+operator (65), leaves finalization to a later run. Each
 producer run logs INFO to `<data-root>/logs/run_all_species_<utc>_<pid>.log`.
 
 ## Disk-throttle behavior
@@ -144,7 +153,7 @@ wait.
 
 The orchestrator is resume-safe: SQLite progress DB (`PRAGMA quick_check` must
 pass), `.part` transfer files, and cached SRA inputs are all reused on restart.
-`scripts/checkpoint_full_campaign.sh` stops the launcher recorded in
+`projects/hymenoptera_amalgkit/scripts/checkpoint_full_campaign.sh` stops the launcher recorded in
 `results/full_campaign.status` (or else the live writer-lock holder, such as a
 bare `run_all_species.py`) and its process tree at a resume-safe checkpoint. The
 resume sweep re-audits every recorded quantification under the `preserve`

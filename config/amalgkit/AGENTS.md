@@ -8,7 +8,7 @@ Production-ready amalgkit RNA-seq workflow configurations for automated transcri
 
 | File | Description |
 | :--- | :--- |
-| `amalgkit_template.yaml` | **Reference**: 400+ line template with all options documented |
+| `amalgkit_template.yaml` | **Reference**: template with all options documented |
 | `amalgkit_test.yaml` | Minimal test configuration for validation |
 | `amalgkit_pogonomyrmex_barbatus.yaml` | **Production**: P. barbatus configuration |
 | `amalgkit_apis_mellifera.yaml` | **Production**: A. mellifera configuration |
@@ -98,10 +98,10 @@ steps:
 
 ## Runtime settings
 
-The project launcher passes bounded runtime budgets explicitly and reserves
-`AMALGKIT_DATA_ROOT` for the external data location. For a direct producer
-run, use the command-line options documented by the script rather than
-mutating configuration files:
+The producer derives its runtime budgets from the host; the project launcher
+sets none of them and reserves `AMALGKIT_DATA_ROOT` for the external data
+location. For a direct producer run, use the command-line options documented
+by the script rather than mutating configuration files:
 
 ```bash
 export AMALGKIT_DATA_ROOT=/Volumes/external_drive/Data/amalgkit
@@ -110,6 +110,7 @@ uv run python scripts/rna/run_all_species.py \
   --data-root "$AMALGKIT_DATA_ROOT" --dry-run
 ```
 
-Use `AMALGKIT_PIPELINE_THREADS`, `AMALGKIT_PIPELINE_WORKERS`, and the other
-project launcher variables only through
-`projects/hymenoptera_amalgkit/scripts/run_full_campaign.sh`.
+Override a budget with its producer option, `PIPELINE_WORKERS` /
+`PIPELINE_THREADS`, or the matching `AMALGKIT_PIPELINE_*` variable (for
+example `AMALGKIT_PIPELINE_QUANT_SLOTS`); see
+[`docs/rna/CAMPAIGN_CLI.md`](../../docs/rna/CAMPAIGN_CLI.md).

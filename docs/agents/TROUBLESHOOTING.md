@@ -112,7 +112,6 @@ grep -A 5 "ERROR.*Phase X" output/core/logs/pipeline.log | head -20
 
 **Fix**:
 - Validate external tool: `which kallisto` returns path
-- Validate config: `python -m metainformant.core.execution.workflow --validate config.yaml`
 - Check write permissions: `touch output/test.txt` (no error)
 - Ping external host: `ping ncbi.nlm.nih.gov`
 

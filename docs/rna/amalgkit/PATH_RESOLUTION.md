@@ -265,9 +265,9 @@ steps:
 
 The workflow automatically handles some path adjustments:
 
-1. **integrate fastq_dir adjustment**: `src/metainformant/rna/workflow.py::plan_workflow()` automatically adjusts `fastq_dir` to include the `getfastq` subdirectory if it exists
+1. **integrate fastq_dir adjustment**: `src/metainformant/rna/engine/workflow_planning.py::plan_workflow()` automatically adjusts `fastq_dir` to include the `getfastq` subdirectory if it exists
 
-2. **vdb-config repository path**: `src/metainformant/rna/workflow.py::execute_workflow()` sets `vdb-config` repository root to the getfastq directory so `prefetch` downloads to the correct location
+2. **Campaign-local SRA environment**: `src/metainformant/rna/engine/workflow_execution.py::execute_workflow()` calls `src/metainformant/rna/engine/workflow_steps.py::setup_vdb_config()`, which passes a campaign-local `VDB_CONFIG`, `NCBI_SETTINGS` and `TMPDIR` to SRA Toolkit subprocesses (it never changes the user's global vdb configuration) and creates the `getfastq` directory so `prefetch` downloads to the correct location
 
 3. **Symlink creation**: The workflow may create symlinks from `{work_dir}/getfastq/` to `{fastq_dir}/getfastq/` to ensure quant can find FASTQ files
 

@@ -81,11 +81,12 @@ uv run python scripts/rna/run_all_species.py \
   --config-dir projects/hymenoptera_amalgkit/config/amalgkit \
   --data-root "$AMALGKIT_DATA_ROOT" --dry-run
 
-# Run one species through the shared producer
-uv run python scripts/rna/process_species.py \
+# Run one cohort species through the shared producer (diagnostic)
+env -u VIRTUAL_ENV uv run --frozen --no-sync python scripts/rna/process_species.py \
   --species pogonomyrmex_barbatus \
   --config-dir projects/hymenoptera_amalgkit/config/amalgkit \
-  --data-root "$AMALGKIT_DATA_ROOT"
+  --data-root "$AMALGKIT_DATA_ROOT" \
+  --cohort "$AMALGKIT_DATA_ROOT/cohort/hymenoptera27-20261005"
 
 # Check producer and downstream evidence
 uv run python projects/hymenoptera_amalgkit/scripts/report_campaign_status.py \
@@ -101,8 +102,8 @@ uv run python scripts/rna/validate_configs.py
 # Run GWAS pipeline
 uv run python scripts/gwas/run_amellifera_gwas.py --config config/gwas/gwas_amellifera.yaml --output output/gwas/amellifera
 
-# Generate all visualizations
-uv run python scripts/gwas/visualization/visualizations.py --help
+# Regenerate the PCA scree plot from saved PCA results
+env -u VIRTUAL_ENV uv run --frozen --no-sync python scripts/gwas/visualization/generate_missing_plots.py --help
 ```
 
 ### Quality & Auditing (`quality/`)

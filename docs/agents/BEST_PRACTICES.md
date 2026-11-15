@@ -111,15 +111,18 @@ uv add --dev pytest-cov
 uv lock
 ```
 
-**Package groups** (defined in `pyproject.toml`):
+**Optional extras** (`[project.optional-dependencies]` in `pyproject.toml`):
 
-| Group | Purpose | Install |
+| Extra | Purpose | Install |
 |-------|---------|---------|
-| `rna` | RNA-seq analysis (amalgkit) | `uv sync --group rna` |
-| `gwas` | GWAS tools (PLINK, SAIGE) | `uv sync --group gwas` |
-| `viz` | Visualization (matplotlib, seaborn, plotly) | `uv sync --group viz` |
-| `dev` | Testing, linting, docs | `uv sync --group dev` |
-| `all` | Everything (default) | `uv sync --all-extras` |
+| `rna` | RNA-seq analysis (pinned amalgkit) | `uv sync --frozen --extra rna` |
+| `visualization` | Visualization (seaborn, plotly, bokeh, altair, graphviz) | `uv sync --frozen --extra visualization` |
+| `dev` | Testing, linting, docs | `uv sync --frozen --extra dev` |
+| all extras | Everything | `uv sync --frozen --all-extras` |
+
+`uv sync` also installs the `dev` dependency group by default; the other
+groups (`test-fast`, `test-network`, `test-external`, `test-all`) are added
+with `--group NAME`.
 
 ### Python Version
 
@@ -380,8 +383,8 @@ uv pip list --outdated
 uv add --upgrade biopython
 
 # Update all
-uv pip compile --upgrade pyproject.toml -o uv.lock
-uv sync
+uv lock --upgrade
+uv sync --frozen
 ```
 
 **Frequency**: Monthly, or before major analysis runs.
@@ -455,7 +458,6 @@ Schedule monthly if production deployment.
 - [ ] Inspect `checkpoint.json` (if exists) for partial state
 - [ ] Test handler in isolation with single item
 - [ ] Confirm external tools installed (kallisto, plink): `which kallisto`
-- [ ] Validate config schema: `python -m metainformant.core.execution.workflow --validate config.yaml`
 
 ### Reproducibility Verification
 

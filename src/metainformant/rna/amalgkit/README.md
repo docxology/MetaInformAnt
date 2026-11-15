@@ -6,7 +6,10 @@ Python wrapper for the amalgkit RNA-seq quantification tool.
 
 | File | Purpose |
 |------|---------|
-| [`amalgkit.py`](amalgkit.py) | Main CLI wrapper and command builder |
+| [`amalgkit.py`](amalgkit.py) | Public facade that re-exports the CLI wrapper |
+| [`_amalgkit_impl.py`](_amalgkit_impl.py) | CLI wrapper implementation: command builder, step functions, and the 0.16.108 pin checks (`validate_amalgkit_version`, `verify_installed_amalgkit`) |
+| [`commands.py`](commands.py) | Canonical command names and CLI option tables for the pinned Amalgkit build |
+| [`sra_environment.py`](sra_environment.py) | Campaign-local subprocess environments for SRA and FASTQ tooling |
 | [`genome_prep.py`](genome_prep.py) | Reference genome download and kallisto indexing |
 | [`index_prep.py`](index_prep.py) | Kallisto index preparation |
 | [`metadata_filter.py`](metadata_filter.py) | Sample metadata filtering and validation |
