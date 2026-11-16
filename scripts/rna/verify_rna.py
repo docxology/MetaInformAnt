@@ -32,9 +32,7 @@ CURRENT_DOCS = (
     REPO_ROOT / "docs" / "rna" / "CONFIGURATION.md",
 )
 # Optional private extension checkout (projects/hymenoptera_amalgkit).
-OPTIONAL_PRIVATE_DOCS = (
-    REPO_ROOT / "projects" / "hymenoptera_amalgkit" / "README.md",
-)
+OPTIONAL_PRIVATE_DOCS = (REPO_ROOT / "projects" / "hymenoptera_amalgkit" / "README.md",)
 
 
 def verify_modules() -> list[str]:
