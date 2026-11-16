@@ -79,7 +79,7 @@ Run the complete lock-owned project campaign:
 bash projects/hymenoptera_amalgkit/scripts/run_full_campaign.sh
 ```
 
-See the [Hymenoptera execution guide](../../../projects/hymenoptera_amalgkit/doc/00_setup/04_running_the_pipeline.md)
+See the Hymenoptera execution guide (`projects/hymenoptera_amalgkit/doc/00_setup/04_running_the_pipeline.md`, optional private extension)
 for storage, resume, evidence, and cross-species gates.
 
 ## Download and evidence boundary
@@ -94,6 +94,6 @@ records the same decision.
 ## Related documentation
 
 - [RNA workflow documentation](../../../docs/rna/README.md)
-- [Configuration FAQ](../../../projects/hymenoptera_amalgkit/config/amalgkit/amalgkit_faq.md)
-- [Storage contract](../../../projects/hymenoptera_amalgkit/doc/01_infrastructure/02_storage_contract.md)
-- [Reproducibility checklist](../../../projects/hymenoptera_amalgkit/docs/manuscript/reproducibility_checklist.md)
+- Configuration FAQ (`projects/hymenoptera_amalgkit/config/amalgkit/amalgkit_faq.md`, optional private extension)
+- Storage contract (`projects/hymenoptera_amalgkit/doc/01_infrastructure/02_storage_contract.md`, optional private extension)
+- Reproducibility checklist (`projects/hymenoptera_amalgkit/docs/manuscript/reproducibility_checklist.md`, optional private extension)

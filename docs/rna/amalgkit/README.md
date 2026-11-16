@@ -54,4 +54,4 @@ env -u VIRTUAL_ENV uv run --frozen --no-sync python scripts/rna/process_species.
 The producer records SQLite sample state, current metadata and quantification
 hashes, and resumable download progress. The downstream runner verifies those
 receipts before reusing any matrix. See the [command reference](commands.md),
-[workflow stages](steps/README.md), and [project storage contract](../../../projects/hymenoptera_amalgkit/doc/01_infrastructure/02_storage_contract.md).
+[workflow stages](steps/README.md), and project storage contract (`projects/hymenoptera_amalgkit/doc/01_infrastructure/02_storage_contract.md`, optional private extension).

@@ -209,7 +209,7 @@ counts.
 
 ## Hymenoptera method ownership
 
-The maintained [Hymenoptera adapter map](../../projects/hymenoptera_amalgkit/doc/02_workflow/04_metainformant_methods.md)
+The maintained Hymenoptera adapter map (`projects/hymenoptera_amalgkit/doc/02_workflow/04_metainformant_methods.md`, optional private extension)
 identifies reusable package methods and project-specific integrity/orchestration
 code. Both parent source and nested adapters must be compatible. A standalone
 clone uses the parent frozen environment or a current importable installation;

@@ -30,6 +30,9 @@ CURRENT_DOCS = (
     REPO_ROOT / "docs" / "rna" / "README.md",
     REPO_ROOT / "docs" / "rna" / "workflow.md",
     REPO_ROOT / "docs" / "rna" / "CONFIGURATION.md",
+)
+# Optional private extension checkout (projects/hymenoptera_amalgkit).
+OPTIONAL_PRIVATE_DOCS = (
     REPO_ROOT / "projects" / "hymenoptera_amalgkit" / "README.md",
 )
 
@@ -76,6 +79,10 @@ def verify_docs() -> list[str]:
     for document in CURRENT_DOCS:
         if not document.is_file():
             issues.append(f"missing documentation: {document}")
+    if (REPO_ROOT / "projects" / "hymenoptera_amalgkit").is_dir():
+        for document in OPTIONAL_PRIVATE_DOCS:
+            if not document.is_file():
+                issues.append(f"missing documentation: {document}")
     script_readme = REPO_ROOT / "scripts" / "rna" / "README.md"
     content = script_readme.read_text(encoding="utf-8") if script_readme.is_file() else ""
     for required in ("run_all_species.py", "process_species.py", "check_pipeline_status.py", "AMALGKIT_DATA_ROOT"):

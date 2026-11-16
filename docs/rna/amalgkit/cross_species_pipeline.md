@@ -47,7 +47,7 @@ uv run python scripts/run_cross_species_analysis.py \
   --output-dir output/cross_species
 ```
 
-Read [the project cross-species documentation](../../../projects/hymenoptera_amalgkit/doc/05_cross_species/README.md)
+Read the project cross-species documentation (`projects/hymenoptera_amalgkit/doc/05_cross_species/README.md`, optional private extension)
 for inclusion rules and evidence interpretation.
 
 ## Minimum release gate

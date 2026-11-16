@@ -116,7 +116,7 @@ scripts retaining manifests, selected-root paths, reporting and evidence gates.
 
 The mean-profile distance is distinct from the sample-aligned per-gene estimator
 in `compute_expression_divergence_matrix`. API availability does not establish
-that a full Hymenoptera analysis ran. See [project method ownership](../../../../projects/hymenoptera_amalgkit/doc/02_workflow/04_metainformant_methods.md)
+that a full Hymenoptera analysis ran. See project method ownership (`projects/hymenoptera_amalgkit/doc/02_workflow/04_metainformant_methods.md`, optional private extension)
 and the [scientific method contract](../../../../docs/rna/HYMENOPTERA_METHODS.md).
 
 ### Native diagnostic artifact contracts

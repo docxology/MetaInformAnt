@@ -114,7 +114,7 @@ manuscript release remain unavailable.
 
 See [durable quantification](DURABLE_QUANT.md),
 [analysis APIs](../../src/metainformant/rna/analysis/README.md), and the
-[project](../../projects/hymenoptera_amalgkit/README.md).
+project (`projects/hymenoptera_amalgkit/README.md`, optional private extension).
 
 ## Thin project orchestration
 
@@ -134,7 +134,7 @@ pairs remain NaN with their overlap counts; malformed declared matrices fail.
 This is distinct from correlating each gene across aligned samples and from
 comparing native feature fingerprints.
 
-See the [project ownership map](../../projects/hymenoptera_amalgkit/doc/02_workflow/04_metainformant_methods.md).
+See the project ownership map (`projects/hymenoptera_amalgkit/doc/02_workflow/04_metainformant_methods.md`, optional private extension).
 
 ## Acquisition integrity retries
 
@@ -166,7 +166,7 @@ end-to-end throughput improvement; those require separate stage measurements.
 An isolated local snapshot can exercise downstream methods while acquisition
 continues. Its eligible run IDs, frozen configuration/index hashes and verified
 restoration witnesses must be explicit; completed subsets do not establish species
-completion. The [local validation guide](../../projects/hymenoptera_amalgkit/doc/02_workflow/05_local_downstream_validation.md)
+completion. The local validation guide (`projects/hymenoptera_amalgkit/doc/02_workflow/05_local_downstream_validation.md`, optional private extension)
 records the real count/filtered-metadata input contract, checkpoint reuse, preserved
 sanity warnings and remaining orthology/design release gates.
 

@@ -23,4 +23,4 @@ Import module:
 from metainformant.pipelines import ...
 ```
 
-BeeWAS commands live in the `projects/apis_gwas` submodule (`beewas/` package) and run from there.
+BeeWAS commands live in the optional private `projects/apis_gwas` extension (`beewas/` package) and run from there.

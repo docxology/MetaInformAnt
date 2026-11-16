@@ -90,6 +90,6 @@ Source labels and recoding decisions remain in the evidence record.
 
 ## Related resources
 
-- [Project configuration README](../../projects/hymenoptera_amalgkit/config/amalgkit/README.md)
-- [Project running guide](../../projects/hymenoptera_amalgkit/doc/00_setup/04_running_the_pipeline.md)
-- [Analysis readiness](../../projects/hymenoptera_amalgkit/docs/manuscript/analysis_readiness.md)
+- Project configuration README (`projects/hymenoptera_amalgkit/config/amalgkit/README.md`, optional private extension)
+- Project running guide (`projects/hymenoptera_amalgkit/doc/00_setup/04_running_the_pipeline.md`, optional private extension)
+- Analysis readiness (`projects/hymenoptera_amalgkit/docs/manuscript/analysis_readiness.md`, optional private extension)

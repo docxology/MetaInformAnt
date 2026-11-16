@@ -101,6 +101,6 @@ campaign database.
 
 ## References
 
-- [Project configuration README](../../projects/hymenoptera_amalgkit/config/amalgkit/README.md)
-- [Project storage contract](../../projects/hymenoptera_amalgkit/doc/01_infrastructure/02_storage_contract.md)
+- Project configuration README (`projects/hymenoptera_amalgkit/config/amalgkit/README.md`, optional private extension)
+- Project storage contract (`projects/hymenoptera_amalgkit/doc/01_infrastructure/02_storage_contract.md`, optional private extension)
 - [Current workflow](workflow.md)
