@@ -29,7 +29,7 @@ silently substituted for the per-species finalization chain.
 - [Validation protocol](VALIDATION.md)
 - [End-to-end validation](END_TO_END_VALIDATION.md)
 - [Mounted-data setup](EXTERNAL_DRIVE_SETUP.md)
-- [Hymenoptera project documentation](../../projects/hymenoptera_amalgkit/README.md)
+- Hymenoptera project documentation (`projects/hymenoptera_amalgkit/README.md`, optional private extension)
 
 ## Execution contract
 

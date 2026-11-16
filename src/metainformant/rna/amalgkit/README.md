@@ -61,4 +61,4 @@ result = run_amalgkit("quant", AmalgkitParams(work_dir="work", threads=4))
 ## Related
 
 - [engine/](../engine/) - Workflow orchestration
-- [Hymenoptera configurations](../../../../projects/hymenoptera_amalgkit/config/amalgkit/) - Canonical species YAMLs and rules
+- Hymenoptera configurations (`projects/hymenoptera_amalgkit/config/amalgkit/`, optional private extension) - Canonical species YAMLs and rules

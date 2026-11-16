@@ -49,5 +49,5 @@ is interrupted. Never start a second producer against the same data root.
   samples for reproducibility.
 - Use the project cleanup tools with an explicit data root and report output.
 
-See the [storage contract](../../projects/hymenoptera_amalgkit/doc/01_infrastructure/02_storage_contract.md)
+See the storage contract (`projects/hymenoptera_amalgkit/doc/01_infrastructure/02_storage_contract.md`, optional private extension)
 for the complete retention and free-space rules.

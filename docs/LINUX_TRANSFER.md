@@ -3,7 +3,7 @@
 A fresh host for the frozen Hymenoptera cohort follows the project's hand-off
 guide, `projects/hymenoptera_amalgkit/doc/01_infrastructure/22_compute_handoff.md`
 (in the private project repository that is checked out as the
-`projects/hymenoptera_amalgkit` submodule). The guide's sequence is:
+optional private `projects/hymenoptera_amalgkit` extension). The guide's sequence is:
 
 1. `projects/hymenoptera_amalgkit/scripts/bootstrap_compute_host.sh` prepares
    the host and its data root (options are in the guide).

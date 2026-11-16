@@ -135,7 +135,7 @@ created.
   `Quant stalled (no output growth for ...)` instead of holding its slot
   for the full timeout. Opt-in because kallisto can legitimately spend long
   stretches in its EM phase before writing abundance files; see the
-  [performance contract](../../../../projects/hymenoptera_amalgkit/doc/01_infrastructure/04_performance_and_resume.md).
+  performance contract (`projects/hymenoptera_amalgkit/doc/01_infrastructure/04_performance_and_resume.md`, optional private extension).
 - `classify_sample_error()` (in `progress_db.py`) maps stored sample
   failure text to a durable class via the order-sensitive markers in
   `SAMPLE_ERROR_CLASSES` (first match wins): `environment_write_denied`,
@@ -189,8 +189,8 @@ orchestrator = StreamingPipelineOrchestrator(
 ```
 
 The project shell entrypoint supplies bounded resource budgets and owns the
-producer/downstream lock boundary. See the [running guide](../../../../projects/hymenoptera_amalgkit/doc/00_setup/04_running_the_pipeline.md)
-and [storage contract](../../../../projects/hymenoptera_amalgkit/doc/01_infrastructure/02_storage_contract.md).
+producer/downstream lock boundary. See the running guide (`projects/hymenoptera_amalgkit/doc/00_setup/04_running_the_pipeline.md`, optional private extension)
+and storage contract (`projects/hymenoptera_amalgkit/doc/01_infrastructure/02_storage_contract.md`, optional private extension).
 
 ### Frozen cohort mode
 

@@ -15,7 +15,7 @@ PROJECT_SHIM = REPO_ROOT / "projects/hymenoptera_amalgkit/scripts/metainformant_
 PROJECT_AVAILABLE = (REPO_ROOT / "projects/hymenoptera_amalgkit/README.md").is_file()
 requires_project_shim = pytest.mark.skipif(
     not PROJECT_AVAILABLE,
-    reason="Canonical Hymenoptera import shim is unavailable in this parent-only checkout",
+    reason="Optional private hymenoptera_amalgkit extension is not checked out",
 )
 
 SPECIES_LIST = "\n".join(

@@ -1,8 +1,7 @@
 # AGENTS.md — `MetaInformAnt/.github/`
 
 GitHub configuration for METAINFORMANT (verified 2026-11-13): `workflows/` (CI:
-`test.yml`, `build.yml`, `release.yml`, `security.yml`, plus a workflows
-`README.md`). The Python floor is 3.14; the workflows README lists the Python
+`test.yml`, `build.yml`, `release.yml`, `security.yml`, plus `GITHUB.md` and `workflows/README.md`; `.github/README.md` is omitted so GitHub renders the root `README.md` on the repository homepage). The Python floor is 3.14; the workflows README lists the Python
 versions of each job.
 
 ## Gotchas

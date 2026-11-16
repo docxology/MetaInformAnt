@@ -47,7 +47,7 @@ uv run python scripts/rna/run_all_species.py \
 bash projects/hymenoptera_amalgkit/scripts/run_full_campaign.sh
 ```
 
-`projects/hymenoptera_amalgkit` is a git submodule; the project YAMLs and
+`projects/hymenoptera_amalgkit` is an optional private extension checkout; the project YAMLs and
 `run_full_campaign.sh` exist only once it is checked out.
 
 For one species, use `scripts/rna/process_species.py --species <name>` with the

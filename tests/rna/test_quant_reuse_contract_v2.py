@@ -809,7 +809,7 @@ def real_apis_root() -> Path:
     if str(root.resolve()).startswith("/Volumes/"):
         pytest.fail("real-output fixtures must be copies, never the data volume itself")
     if not (PROJECT_CONFIG_DIR / "amalgkit_apis_mellifera.yaml").is_file():
-        pytest.skip("hymenoptera_amalgkit project configuration is not checked out")
+        pytest.skip("Optional private hymenoptera_amalgkit extension is not checked out")
     return root
 
 

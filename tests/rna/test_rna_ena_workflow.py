@@ -20,7 +20,7 @@ PROCESS_ONE = REPO_ROOT / "scripts" / "rna" / "process_species.py"
 
 pytestmark = pytest.mark.skipif(
     not CONFIG_DIR.is_dir(),
-    reason="Hymenoptera Amalgkit submodule is unavailable in this parent-only checkout",
+    reason="Optional private hymenoptera_amalgkit extension is not checked out",
 )
 
 

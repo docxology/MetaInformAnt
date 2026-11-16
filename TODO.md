@@ -7,7 +7,7 @@
 > history, not in this list.
 
 The Hymenoptera Amalgkit project has a separate, data-root-scoped backlog at
-[`projects/hymenoptera_amalgkit/TODO.md`](projects/hymenoptera_amalgkit/TODO.md).
+`projects/hymenoptera_amalgkit/TODO.md` (optional private extension).
 Keep that work there rather than mixing a live external-volume transcriptome
 campaign with the BeeWAS release backlog below.
 
