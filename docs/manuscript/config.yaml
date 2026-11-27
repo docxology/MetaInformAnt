@@ -1,0 +1,31 @@
+paper:
+  title: "MetaInformAnt Core Table and Metadata Methods"
+  subtitle: "An offline software verification study"
+  version: "0.4.0"
+authors:
+  - name: Daniel Ari Friedman
+    orcid: 0000-0001-6232-9096
+publication:
+  release_status: unreleased
+  repository_url: https://github.com/docxology/MetaInformAnt
+  transmission_bookends:
+    enabled: false
+metadata:
+  license: Apache-2.0
+  language: en
+render:
+  formats:
+    pdf: true
+    html: true
+    slides: false
+    docx: false
+    epub: false
+front_matter:
+  files:
+    - 00_abstract.md
+    - 01_introduction.md
+    - 02_architecture.md
+    - 03_methods.md
+    - 04_results.md
+    - 05_discussion.md
+    - 06_availability.md

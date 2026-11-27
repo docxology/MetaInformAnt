@@ -75,7 +75,7 @@ for _lexer_name in ('cron', 'csv', 'snakemake', 'tsv'):
 master_doc = 'index'
 
 # The reader chapters are rendered with their generated assets by Template.
-exclude_patterns = ['manuscript/reader/**']
+exclude_patterns = ['manuscript/reader/**', 'manuscript/[0-9][0-9]_*.md']
 
 # Language and locale
 language = 'en'
