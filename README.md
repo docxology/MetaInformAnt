@@ -305,7 +305,7 @@ graph TD
 
 ### Validation
 
-CI runs the deterministic test suite and the quality gate: black, isort,
+The tracked test workflow defines the deterministic test suite and quality gate: black, isort,
 flake8 (max line length 120) and mypy under the locked version with an error
 budget of 0 (`scripts/quality/check_mypy_budget.py`, budget
 `config/quality/mypy_error_budget.txt`). Root-level audit and validation
@@ -313,6 +313,13 @@ reports are retained as historical snapshots; regenerate current verification
 outputs under `output/`.
 
 ## Quick Start
+
+Use Python 3.14 or newer. To start with an independent check that uses
+synthetic tables, follow the [software-methods verification guide](docs/manuscript/README.md).
+It exercises the core TSV, JSON, and JSONL interfaces and records expected
+outcomes, observed outcomes, and file hashes. The broader package setup is in
+[QUICKSTART.md](QUICKSTART.md).
+
 
 ### I Want To...
 
@@ -682,7 +689,7 @@ See [Testing Guide](docs/testing.md) for detailed testing documentation and cove
 
 ## Requirements
 
-- Python 3.14+ (CI runs every lane on 3.14 and a fast lane on 3.15; the full extras do not install on 3.15 because `ray` has no cp315 wheels)
+- Python 3.14+. The tracked test workflow defines a full 3.14 matrix and a fast 3.15 lane. The full extras currently require 3.14 because `ray` lacks cp315 wheels.
 - Required for RNA workflows: kallisto 0.52.0 and SRA Toolkit 3.4.1 (`fasterq-dump`, `prefetch`, `vdb-validate`)
 - Optional: samtools, bcftools, bwa (for GWAS)
 
