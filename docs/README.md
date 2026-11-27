@@ -14,6 +14,7 @@ historical snapshots; regenerate current verification outputs under `output/`.
 | Entry Point | Description |
 |-------------|-------------|
 | [index.md](index.md) | Complete documentation index |
+| [Offline reader](manuscript/README.md) | Local table I/O, verification and manuscript render |
 | [DOCUMENTATION_GUIDE.md](DOCUMENTATION_GUIDE.md) | How to navigate docs |
 | [architecture.md](architecture.md) | System architecture |
 | [cli.md](cli.md) | CLI reference |

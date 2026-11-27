@@ -7,6 +7,8 @@
 
 ## Documentation Navigation
 
+The [offline reader](manuscript/README.md) demonstrates local table quality checks with a synthetic fixture.
+
 ### Current Status
 
 The deterministic test suite lives under `tests/`. CI runs it together with
@@ -277,6 +279,7 @@ uv run python scripts/rna/run_all_species.py \
 SETUP
 UV_SETUP
 DOCUMENTATION_GUIDE
+manuscript/README
 TUTORIALS
 INTEGRATION
 FAQ
