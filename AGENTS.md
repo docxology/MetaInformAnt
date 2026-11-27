@@ -38,6 +38,12 @@ replacement.
 
 ## Documentation Rules
 
+For documentation about core table handling, use the
+[synthetic software-methods checks](docs/manuscript/README.md) to support
+claims about the TSV, JSON, and JSONL interfaces. Domain workflows have
+separate evidence requirements.
+
+
 - Documentation should describe the current checkout, not historical audit status or aspirational completion claims.
 - Keep examples runnable or label them clearly as pseudocode.
 - Cross-link to existing local files only; verify relative paths after moving docs.
