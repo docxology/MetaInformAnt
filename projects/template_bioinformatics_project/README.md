@@ -6,7 +6,7 @@
 [![MetaInformAnt CI](https://github.com/docxology/MetaInformAnt/actions/workflows/test.yml/badge.svg)](https://github.com/docxology/MetaInformAnt/actions/workflows/test.yml)
 [![Python 3.14+](https://img.shields.io/badge/python-3.14%2B-blue.svg)](https://www.python.org/)
 [![uv](https://img.shields.io/badge/env-uv-green)](https://astral.sh/uv)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[Repository license](../../LICENSE)
 
 ---
 
