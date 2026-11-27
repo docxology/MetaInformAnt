@@ -1,0 +1,26 @@
+paper:
+  title: "MetaInformAnt Offline Reader"
+  subtitle: "Synthetic table quality checks"
+  version: "0.4.0"
+authors:
+  - name: Daniel Ari Friedman
+    orcid: 0000-0001-6232-9096
+publication:
+  release_status: unreleased
+  repository_url: https://github.com/docxology/MetaInformAnt
+  transmission_bookends:
+    enabled: false
+metadata:
+  license: Apache-2.0
+  language: en
+render:
+  formats:
+    pdf: true
+    html: true
+    slides: false
+    docx: false
+    epub: false
+front_matter:
+  files:
+    - 01_scope.md
+    - 02_table_check.md
