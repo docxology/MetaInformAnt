@@ -457,7 +457,7 @@ All modules live in [`src/metainformant/`](src/metainformant/) with documentatio
 ### Quick Links
 
 - **[Documentation index](docs/index.md)**
-- **[Offline reader](docs/manuscript/README.md)** — reproducible synthetic table check and manuscript build
+- **[Software-methods paper](docs/manuscript/README.md)** — public table APIs, synthetic verification and manuscript build
 
 - **[Documentation Guide](docs/DOCUMENTATION_GUIDE.md)** - Complete navigation guide
 - **[Capability Matrix](docs/CAPABILITY_MATRIX.md)** - Source-linked readiness and release boundaries

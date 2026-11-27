@@ -7,7 +7,7 @@
 
 ## Documentation Navigation
 
-The [offline reader](manuscript/README.md) demonstrates local table quality checks with a synthetic fixture.
+The [software-methods paper](manuscript/README.md) documents public table and metadata interfaces and a reproducible synthetic benchmark.
 
 ### Current Status
 

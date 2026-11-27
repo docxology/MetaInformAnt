@@ -1,0 +1,5 @@
+# Methods
+
+Each scale uses invented record identifiers and deterministic nonnegative integer counts. The reference totals are computed independently from the fixture construction using the exact sum of complete repeating periods and a final remainder. A valid table passes only if its parsed rows equal the original ordered records and its parsed total equals that reference. We check logical row equality because interoperating writers may differ in line terminators or quoting.
+
+For each scale the harness writes a matching set of four negative controls. Each changes a single dimension of the valid table, using an unexpected column, a non-integer count, a negative count, or a duplicate record identifier. The parser must reject each control for the intended reason. The same interfaces and checks are used for all scales. The benchmark records acceptance decisions and file bytes, without recording wall-clock timing. The analysis code, generated TSVs, JSON receipts, and plot are local artifacts.
